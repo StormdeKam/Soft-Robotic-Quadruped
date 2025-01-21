@@ -26,7 +26,7 @@ public:
     this->get_parameter("modbus_service", modbus_service_);
 
     // VTEM valve configuration params
-    this->declare_parameter<int>("num_valves", 16);
+    this->declare_parameter<int>("num_valves", 2);
     this->get_parameter("num_valves", num_valves_);
 
     // Safety feature: maximum pressure allowed

@@ -13,9 +13,9 @@
 int step_func(int i) {
     // step function to send to valve
     if (i % 1500 < 750) {
-        return 300;
+        return 400;
     } else {
-        return 450;
+        return 500;
     }
 }
 
