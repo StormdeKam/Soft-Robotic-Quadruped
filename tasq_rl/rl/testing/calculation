@@ -1,0 +1,16 @@
+from sympy import symbols, Eq, cos, sin, solve, simplify
+
+# Define symbols
+f1, f2, f3, fp, tx, ty, l, theta = symbols('f1 f2 f3 fp tx ty l theta')
+
+# Define equations
+eq1 = Eq(f1 + f2 + f3, fp)
+eq2 = Eq(-f2*l*cos(theta) + f3*l*cos(theta), tx)
+eq3 = Eq(-f1*l + f2*l*sin(theta) + f3*l*sin(theta), ty)
+
+# Solve the system for f1, f2, f3
+solution = solve((eq1, eq2, eq3), (f1, f2, f3), simplify=True)
+
+# Simplify the results
+solution_simplified = {k: simplify(v) for k, v in solution.items()}
+print(solution_simplified)

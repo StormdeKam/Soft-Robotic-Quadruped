@@ -1,0 +1,198 @@
+2025-05-12 10:40:30,605 INFO  AssemblyExportForm.cs: 309 - Saving URDF package to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3
+2025-05-12 10:40:30,615 INFO  ExportHelper.cs: 147 - Beginning the export process
+2025-05-12 10:40:30,615 INFO  ExportHelper.cs: 153 - Creating package directories with name urdfv3 and save path C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model
+2025-05-12 10:40:35,335 INFO  ExportHelper.cs: 162 - Creating CMakeLists.txt at C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\CMakeLists.txt
+2025-05-12 10:40:35,349 INFO  ExportHelper.cs: 166 - Creating joint names config at C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\config\joint_names_urdfv3.yaml
+2025-05-12 10:40:35,349 INFO  ExportHelper.cs: 170 - Creating package.xml at C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\package.xml
+2025-05-12 10:40:35,349 INFO  PackageXMLWriter.cs: 21 - Creating package.xml at C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\package.xml
+2025-05-12 10:40:35,352 INFO  ExportHelper.cs: 177 - Creating RVIZ launch file in C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\launch\
+2025-05-12 10:40:35,352 INFO  ExportHelper.cs: 182 - Creating Gazebo launch file in C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\launch\
+2025-05-12 10:40:35,354 INFO  ExportHelper.cs: 187 - Saving existing STL preferences
+2025-05-12 10:40:35,354 INFO  ExportHelper.cs: 450 - Saving users preferences
+2025-05-12 10:40:35,354 INFO  ExportHelper.cs: 190 - Modifying STL preferences
+2025-05-12 10:40:35,356 INFO  ExportHelper.cs: 464 - Setting STL preferences
+2025-05-12 10:40:35,356 INFO  ExportHelper.cs: 196 - Found 0 hidden components 
+2025-05-12 10:40:35,356 INFO  ExportHelper.cs: 197 - Hiding all components
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 204 - Beginning individual files export
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 270 - Exporting link: base_link
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 272 - Link base_link has 4 children
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 270 - Exporting link: l1_1
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 272 - Link l1_1 has 1 children
+2025-05-12 10:40:35,947 INFO  ExportHelper.cs: 270 - Exporting link: l1_2
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 272 - Link l1_2 has 1 children
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 270 - Exporting link: l1_3
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 272 - Link l1_3 has 1 children
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 270 - Exporting link: l1_4
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 272 - Link l1_4 has 1 children
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 270 - Exporting link: s1t
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 272 - Link s1t has 1 children
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 270 - Exporting link: s1b
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 272 - Link s1b has 0 children
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 317 - s1b: Exporting STL with coordinate frame Coordinate System1 <Suction_cup_bottom-1>
+2025-05-12 10:40:35,957 INFO  ExportHelper.cs: 322 - s1b: Reference geometry name Suction_cup_bottom-1
+2025-05-12 10:40:36,009 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s1b.STL
+2025-05-12 10:40:36,091 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,091 INFO  ExportHelper.cs: 317 - s1t: Exporting STL with coordinate frame Coordinate System1 <Suction cup top-1>
+2025-05-12 10:40:36,091 INFO  ExportHelper.cs: 322 - s1t: Reference geometry name Suction cup top-1
+2025-05-12 10:40:36,121 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s1t.STL
+2025-05-12 10:40:36,184 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,184 INFO  ExportHelper.cs: 317 - l1_4: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 4-1>
+2025-05-12 10:40:36,184 INFO  ExportHelper.cs: 322 - l1_4: Reference geometry name Leg_disk 4-1
+2025-05-12 10:40:36,204 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l1_4.STL
+2025-05-12 10:40:36,266 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,266 INFO  ExportHelper.cs: 317 - l1_3: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 3-1>
+2025-05-12 10:40:36,266 INFO  ExportHelper.cs: 322 - l1_3: Reference geometry name Leg_disk 3-1
+2025-05-12 10:40:36,286 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l1_3.STL
+2025-05-12 10:40:36,348 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,348 INFO  ExportHelper.cs: 317 - l1_2: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 2-1>
+2025-05-12 10:40:36,348 INFO  ExportHelper.cs: 322 - l1_2: Reference geometry name Leg_disk 2-1
+2025-05-12 10:40:36,378 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l1_2.STL
+2025-05-12 10:40:36,440 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,440 INFO  ExportHelper.cs: 317 - l1_1: Exporting STL with coordinate frame Coordinate System1 <Leg_disk-1>
+2025-05-12 10:40:36,440 INFO  ExportHelper.cs: 322 - l1_1: Reference geometry name Leg_disk-1
+2025-05-12 10:40:36,511 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l1_1.STL
+2025-05-12 10:40:36,583 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,583 INFO  ExportHelper.cs: 270 - Exporting link: l2_1
+2025-05-12 10:40:36,583 INFO  ExportHelper.cs: 272 - Link l2_1 has 1 children
+2025-05-12 10:40:36,593 INFO  ExportHelper.cs: 270 - Exporting link: l2_2
+2025-05-12 10:40:36,593 INFO  ExportHelper.cs: 272 - Link l2_2 has 1 children
+2025-05-12 10:40:36,595 INFO  ExportHelper.cs: 270 - Exporting link: l2_3
+2025-05-12 10:40:36,595 INFO  ExportHelper.cs: 272 - Link l2_3 has 1 children
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 270 - Exporting link: l2_4
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 272 - Link l2_4 has 1 children
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 270 - Exporting link: s2t
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 272 - Link s2t has 1 children
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 270 - Exporting link: s2b
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 272 - Link s2b has 0 children
+2025-05-12 10:40:36,597 INFO  ExportHelper.cs: 317 - s2b: Exporting STL with coordinate frame Coordinate System1 <Suction_cup_bottom-9>
+2025-05-12 10:40:36,614 INFO  ExportHelper.cs: 322 - s2b: Reference geometry name Suction_cup_bottom-9
+2025-05-12 10:40:36,706 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s2b.STL
+2025-05-12 10:40:36,767 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,767 INFO  ExportHelper.cs: 317 - s2t: Exporting STL with coordinate frame Coordinate System1 <Suction cup top-9>
+2025-05-12 10:40:36,767 INFO  ExportHelper.cs: 322 - s2t: Reference geometry name Suction cup top-9
+2025-05-12 10:40:36,788 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s2t.STL
+2025-05-12 10:40:36,849 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,849 INFO  ExportHelper.cs: 317 - l2_4: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 4-89>
+2025-05-12 10:40:36,849 INFO  ExportHelper.cs: 322 - l2_4: Reference geometry name Leg_disk 4-89
+2025-05-12 10:40:36,870 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l2_4.STL
+2025-05-12 10:40:36,932 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:36,932 INFO  ExportHelper.cs: 317 - l2_3: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 3-89>
+2025-05-12 10:40:36,932 INFO  ExportHelper.cs: 322 - l2_3: Reference geometry name Leg_disk 3-89
+2025-05-12 10:40:36,952 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l2_3.STL
+2025-05-12 10:40:37,014 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,014 INFO  ExportHelper.cs: 317 - l2_2: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 2-89>
+2025-05-12 10:40:37,014 INFO  ExportHelper.cs: 322 - l2_2: Reference geometry name Leg_disk 2-89
+2025-05-12 10:40:37,035 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l2_2.STL
+2025-05-12 10:40:37,096 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,096 INFO  ExportHelper.cs: 317 - l2_1: Exporting STL with coordinate frame Coordinate System1 <Leg_disk-89>
+2025-05-12 10:40:37,096 INFO  ExportHelper.cs: 322 - l2_1: Reference geometry name Leg_disk-89
+2025-05-12 10:40:37,117 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l2_1.STL
+2025-05-12 10:40:37,168 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,168 INFO  ExportHelper.cs: 270 - Exporting link: l3_1
+2025-05-12 10:40:37,168 INFO  ExportHelper.cs: 272 - Link l3_1 has 1 children
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 270 - Exporting link: l3_2
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 272 - Link l3_2 has 1 children
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 270 - Exporting link: l3_3
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 272 - Link l3_3 has 1 children
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 270 - Exporting link: l3_4
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 272 - Link l3_4 has 1 children
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 270 - Exporting link: s3t
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 272 - Link s3t has 1 children
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 270 - Exporting link: s3b
+2025-05-12 10:40:37,178 INFO  ExportHelper.cs: 272 - Link s3b has 0 children
+2025-05-12 10:40:37,188 INFO  ExportHelper.cs: 317 - s3b: Exporting STL with coordinate frame Coordinate System1 <Suction_cup_bottom-10>
+2025-05-12 10:40:37,188 INFO  ExportHelper.cs: 322 - s3b: Reference geometry name Suction_cup_bottom-10
+2025-05-12 10:40:37,209 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s3b.STL
+2025-05-12 10:40:37,271 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,271 INFO  ExportHelper.cs: 317 - s3t: Exporting STL with coordinate frame Coordinate System1 <Suction cup top-10>
+2025-05-12 10:40:37,271 INFO  ExportHelper.cs: 322 - s3t: Reference geometry name Suction cup top-10
+2025-05-12 10:40:37,300 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s3t.STL
+2025-05-12 10:40:37,351 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,351 INFO  ExportHelper.cs: 317 - l3_4: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 4-90>
+2025-05-12 10:40:37,351 INFO  ExportHelper.cs: 322 - l3_4: Reference geometry name Leg_disk 4-90
+2025-05-12 10:40:37,372 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l3_4.STL
+2025-05-12 10:40:37,433 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,433 INFO  ExportHelper.cs: 317 - l3_3: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 3-90>
+2025-05-12 10:40:37,433 INFO  ExportHelper.cs: 322 - l3_3: Reference geometry name Leg_disk 3-90
+2025-05-12 10:40:37,454 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l3_3.STL
+2025-05-12 10:40:37,506 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,506 INFO  ExportHelper.cs: 317 - l3_2: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 2-90>
+2025-05-12 10:40:37,506 INFO  ExportHelper.cs: 322 - l3_2: Reference geometry name Leg_disk 2-90
+2025-05-12 10:40:37,537 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l3_2.STL
+2025-05-12 10:40:37,588 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,588 INFO  ExportHelper.cs: 317 - l3_1: Exporting STL with coordinate frame Coordinate System1 <Leg_disk-90>
+2025-05-12 10:40:37,588 INFO  ExportHelper.cs: 322 - l3_1: Reference geometry name Leg_disk-90
+2025-05-12 10:40:37,609 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l3_1.STL
+2025-05-12 10:40:37,669 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,669 INFO  ExportHelper.cs: 270 - Exporting link: l4_1
+2025-05-12 10:40:37,669 INFO  ExportHelper.cs: 272 - Link l4_1 has 1 children
+2025-05-12 10:40:37,669 INFO  ExportHelper.cs: 270 - Exporting link: l4_2
+2025-05-12 10:40:37,669 INFO  ExportHelper.cs: 272 - Link l4_2 has 1 children
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 270 - Exporting link: l4_3
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 272 - Link l4_3 has 1 children
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 270 - Exporting link: l4_4
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 272 - Link l4_4 has 1 children
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 270 - Exporting link: s4t
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 272 - Link s4t has 1 children
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 270 - Exporting link: s4b
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 272 - Link s4b has 0 children
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 317 - s4b: Exporting STL with coordinate frame Coordinate System1 <Suction_cup_bottom-11>
+2025-05-12 10:40:37,679 INFO  ExportHelper.cs: 322 - s4b: Reference geometry name Suction_cup_bottom-11
+2025-05-12 10:40:37,710 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s4b.STL
+2025-05-12 10:40:37,761 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,761 INFO  ExportHelper.cs: 317 - s4t: Exporting STL with coordinate frame Coordinate System1 <Suction cup top-11>
+2025-05-12 10:40:37,761 INFO  ExportHelper.cs: 322 - s4t: Reference geometry name Suction cup top-11
+2025-05-12 10:40:37,792 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\s4t.STL
+2025-05-12 10:40:37,843 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,843 INFO  ExportHelper.cs: 317 - l4_4: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 4-91>
+2025-05-12 10:40:37,843 INFO  ExportHelper.cs: 322 - l4_4: Reference geometry name Leg_disk 4-91
+2025-05-12 10:40:37,863 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l4_4.STL
+2025-05-12 10:40:37,915 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,915 INFO  ExportHelper.cs: 317 - l4_3: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 3-91>
+2025-05-12 10:40:37,925 INFO  ExportHelper.cs: 322 - l4_3: Reference geometry name Leg_disk 3-91
+2025-05-12 10:40:37,946 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l4_3.STL
+2025-05-12 10:40:37,997 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:37,997 INFO  ExportHelper.cs: 317 - l4_2: Exporting STL with coordinate frame Coordinate System1 <Leg_disk 2-91>
+2025-05-12 10:40:37,997 INFO  ExportHelper.cs: 322 - l4_2: Reference geometry name Leg_disk 2-91
+2025-05-12 10:40:38,028 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l4_2.STL
+2025-05-12 10:40:38,080 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:38,090 INFO  ExportHelper.cs: 317 - l4_1: Exporting STL with coordinate frame Coordinate System1 <Leg_disk-91>
+2025-05-12 10:40:38,090 INFO  ExportHelper.cs: 322 - l4_1: Reference geometry name Leg_disk-91
+2025-05-12 10:40:38,111 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\l4_1.STL
+2025-05-12 10:40:38,162 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:38,162 INFO  ExportHelper.cs: 317 - base_link: Exporting STL with coordinate frame Origin_global
+2025-05-12 10:40:38,172 INFO  ExportHelper.cs: 322 - base_link: Reference geometry name 
+2025-05-12 10:40:38,192 INFO  ExportHelper.cs: 330 - Saving STL to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\meshes\base_link.STL
+2025-05-12 10:40:38,396 INFO  ExportHelper.cs: 405 - Removing SW header in STL file
+2025-05-12 10:40:38,396 INFO  ExportHelper.cs: 145 - Showing all components except previously hidden components
+2025-05-12 10:40:38,623 INFO  ExportHelper.cs: 145 - Resetting STL preferences
+2025-05-12 10:40:38,623 INFO  ExportHelper.cs: 478 - Returning STL preferences to user preferences
+2025-05-12 10:40:38,623 INFO  ExportHelper.cs: 228 - Writing URDF file to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\urdf\urdfv3.urdf
+2025-05-12 10:40:38,980 INFO  CSVImportExport.cs: 32 - Writing CSV file C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\urdf\urdfv3.csv
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,980 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 ERROR CSVImportExport.cs: 130 - The following columns were not written to the CSV: Link.Joint.ChildLink.link,
+2025-05-12 10:40:38,990 INFO  ExportHelper.cs: 234 - Copying log file
+2025-05-12 10:40:38,990 INFO  ExportHelper.cs: 439 - Copying C:\Users\storm\sw2urdf_logs\sw2urdf.log to C:\Users\storm\OneDrive - Delft University of Technology\Documenten\Documenten\Tu Delft\Master\Internship_Thesis\Soft Quadruped Project\CAD Files\PyBullet model\urdfv3\export.log

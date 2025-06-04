@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'j1_p1', 'j1_rx1', 'j1_ry1', 'j1_pxx', 'j1_pxx', 'j2_p1', 'j2_rx1', 'j2_ry1', 'j2_pxx', 'j2_pxx', 'j3_p1', 'j3_rx1', 'j3_ry1', 'j3_pxx', 'j3_pxx', 'j4_p1', 'j4_rx1', 'j4_ry1', 'j4_pxx', 'j4_pxx', ]
