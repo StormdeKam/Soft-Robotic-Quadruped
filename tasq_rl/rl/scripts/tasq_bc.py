@@ -7,7 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
 
 # --- Configurations ---
-MODEL_DIR = "tasq_rl/models/tasq_bc"
+MODEL_DIR = "rl/models/tasq_bc"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 

@@ -2,7 +2,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 import pybullet as p
-from tasq_rl.scripts.tasq_simulator import TASQSimulator  # Adjust this import path as needed
+from rl.scripts.tasq_simulator import TASQSimulator  # Adjust this import path as needed
 
 class TASQEnv(gym.Env):
     def __init__(self, urdf_path, no_links, gui=False, render_mode=None):

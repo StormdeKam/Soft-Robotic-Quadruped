@@ -5,7 +5,7 @@ import time
 import math
 import logging
 
-from tasq_rl.converters.converter_v2 import pneu2posandgains
+from rl.converters.converter_v2 import pneu2posandgains
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=11, render_mode=None):
