@@ -11,7 +11,7 @@ def demo_pressures(step):
     if step < n: #Raise body to neutral position
         #print("Raising COM 1")
         d_pressures[:,:] = dn*250   
-    
+
     elif step < 2*n: #Move COM to leg 3 by making leg 3 smaller and adding pressure to chamber 2 of leg 2 and chamber 3 of leg 4
         #print("Moving COM back")
         d_pressures=np.zeros((4,3))
@@ -37,10 +37,7 @@ def demo_pressures(step):
         d_pressures=np.zeros((4,3))
         d_pressures[1,2]=-dn*100
         d_pressures[2,:]=dn*350        
-        d_pressures[3,1]=-dn*100        
-
-    return d_pressures
-"""     
+        d_pressures[3,1]=-dn*100            
  
     elif step < 6*n: # Orient leg 1
         #print("orient leg 1 down")
@@ -59,6 +56,9 @@ def demo_pressures(step):
         d_pressures[1,2]=dn*100
         d_pressures[2,:]=-dn*100
         d_pressures[3,1]=dn*100
+
+    return d_pressures
+""" 
 
     elif step < 9*n: #Move COM to leg 2 by making leg 2 smaller and adding pressure to chamber 2 of leg 1 and chamber 3 of leg 3
         #print("Moving COM back")
@@ -191,7 +191,7 @@ def demo_pressures(step):
         d_pressures[3,:]=-dn*100
     else:
         d_pressures=np.zeros((4,3))
-    
+
     return d_pressures
 """
 def demo_suction(step):
@@ -229,7 +229,7 @@ def demo_suction(step):
     
     return np.array([ss1,ss2,ss3,ss4])
 
-sim = TASQSimulator("tasq_rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
+sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
 sim.run(steps=3000, pressure_callback=demo_pressures, suction_callback=demo_suction)
 print(sim.get_base_position_and_orientation())
 sim.disconnect()

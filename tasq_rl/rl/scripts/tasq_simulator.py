@@ -4,8 +4,8 @@ import numpy as np
 import time
 import math
 import logging
-
 from rl.converters.converter_v2 import pneu2posandgains
+from rl.utils.pressure_plotter import PressurePlotter   
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=11, render_mode=None):
@@ -81,7 +81,6 @@ class TASQSimulator:
                 self.prismatic_joints.append(joint_index)
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             
-        
 
         self.controlled_joints = self.revolute_joints + self.prismatic_joints
 
@@ -95,6 +94,13 @@ class TASQSimulator:
                 velocityGain=self.velocity_gain,
                 force=self.max_force
             )
+
+        # Foot link indices
+        self.foot_link_indices = np.zeros(4)
+        for leg_idx in range(4):
+            cup_link_idx = leg_idx*(self.no_links*4+2) + self.no_links*4 +1
+            self.foot_link_indices[leg_idx] = cup_link_idx  # list of 4 ints
+
 
     def apply_pressures(self, pressures):
         """
@@ -165,7 +171,7 @@ class TASQSimulator:
                 1
                 #print("total pos z = ", total_pos_z, "total target_pos_z =", total_target_pos_z)
                 
-    def apply_suction(self, suction_states, force_magnitude=0.01):
+    def apply_suction(self, suction_states, force_magnitude=1):
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
         suction_target_pos = -0.005
         suction_pos_gain = 0.8
@@ -245,17 +251,26 @@ class TASQSimulator:
         pressures = np.zeros((4, 3))
         suction_states = np.array([False, False, False, False])
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
+        #for plotting pressures:
+        #self.pressure_plotter = PressurePlotter(steps)
 
         for step in range(steps):            
             if pressure_callback:
                 pressures += pressure_callback(step)
                 self.apply_pressures(pressures)
+                # Plot pressures
+                """
+                flat_pressures = pressures.flatten()  # shape (12,)
+                self.pressure_plotter.plot_pressures(step, flat_pressures)
+                """
 
             if suction_callback:
                 suction_states = suction_callback(step)
                 self.apply_suction(suction_states)            
-            self.step()
             self.get_grfs()
+            self.step()
+        
+        #self.pressure_plotter.finish()
 
     def disconnect(self):
         #p.stopStateLogging(p.STATE_LOGGING_VIDEO_MP4)
@@ -280,13 +295,9 @@ class TASQSimulator:
         """
         grfs = np.zeros((4, 3))  # 4 feet, 3 force components (x, y, z)
 
-        # Foot link indices
         robot_id = self.robot_id
-        foot_link_indices = np.zeros(4)
-        for leg_idx in range(4):
-            cup_link_idx = leg_idx*(self.no_links*4+2) + self.no_links*4 +1
-            foot_link_indices[leg_idx] = cup_link_idx  # list of 4 ints
-        
+        foot_link_indices = self.foot_link_indices
+
         # Query all contact points involving the robot
         contact_points = p.getContactPoints(bodyA=robot_id)
 

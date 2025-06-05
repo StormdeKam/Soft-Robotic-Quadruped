@@ -24,7 +24,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/base_link.STL" />
+          filename="./urdfv3/meshes/base_link.STL" />
       </geometry>
       <material
         name="TPU">
@@ -38,7 +38,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/base_link.STL" />
+          filename="./urdfv3/meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -49,7 +49,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -64,7 +64,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -78,7 +78,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -102,7 +102,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -117,7 +117,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -131,7 +131,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -139,7 +139,7 @@
     name="j1_p1"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l1_1" />
@@ -148,8 +148,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -160,7 +160,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -175,7 +175,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -189,7 +189,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -206,8 +206,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -218,7 +218,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -233,7 +233,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -247,7 +247,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -264,8 +264,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -276,7 +276,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -291,7 +291,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -305,7 +305,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -313,7 +313,7 @@
     name="j1_p2"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l1_4" />
@@ -322,8 +322,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -334,7 +334,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -349,7 +349,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -363,7 +363,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -371,7 +371,7 @@
     name="j1_p3"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l1_5" />
@@ -380,8 +380,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -392,7 +392,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -407,7 +407,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -421,7 +421,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -438,8 +438,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -450,7 +450,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -465,7 +465,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -479,7 +479,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -496,8 +496,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -508,7 +508,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -523,7 +523,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -537,7 +537,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -545,7 +545,7 @@
     name="j1_p4"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l1_8" />
@@ -554,8 +554,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -566,7 +566,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -581,7 +581,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -595,7 +595,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -603,7 +603,7 @@
     name="j1_p5"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l1_9" />
@@ -612,8 +612,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -624,7 +624,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -639,7 +639,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -653,7 +653,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -670,8 +670,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -682,7 +682,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -697,7 +697,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -711,7 +711,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -728,8 +728,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -755,7 +755,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -769,7 +769,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
     </collision>
   </link>
@@ -786,8 +786,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -813,7 +813,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -827,7 +827,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
     </collision>
   </link>
@@ -856,7 +856,7 @@
         xyz="0 -7.034E-19 6.9389E-18"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="8.6395E-23"
@@ -871,7 +871,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -885,7 +885,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -909,7 +909,7 @@
         xyz="0 4.5623E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-5.2491E-25"
@@ -924,7 +924,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -938,7 +938,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -946,7 +946,7 @@
     name="j2_p1"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l2_1" />
@@ -955,8 +955,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -967,7 +967,7 @@
         xyz="0 1.1878E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-4.0475E-26"
@@ -982,7 +982,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -996,7 +996,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1013,8 +1013,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1025,7 +1025,7 @@
         xyz="0 6.3442E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="8.5299E-26"
@@ -1040,7 +1040,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1054,7 +1054,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1071,8 +1071,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1083,7 +1083,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -1098,7 +1098,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1112,7 +1112,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -1120,7 +1120,7 @@
     name="j2_p2"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l2_4" />
@@ -1129,8 +1129,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1141,7 +1141,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -1156,7 +1156,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1170,7 +1170,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1178,7 +1178,7 @@
     name="j2_p3"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l2_5" />
@@ -1187,8 +1187,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1199,7 +1199,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -1214,7 +1214,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1228,7 +1228,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1245,8 +1245,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1257,7 +1257,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -1272,7 +1272,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1286,7 +1286,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1303,8 +1303,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1315,7 +1315,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -1330,7 +1330,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1344,7 +1344,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -1352,7 +1352,7 @@
     name="j2_p4"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l2_8" />
@@ -1361,8 +1361,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1373,7 +1373,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -1388,7 +1388,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1402,7 +1402,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1410,7 +1410,7 @@
     name="j2_p5"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l2_9" />
@@ -1419,8 +1419,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1431,7 +1431,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -1446,7 +1446,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1460,7 +1460,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1477,8 +1477,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1489,7 +1489,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -1504,7 +1504,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1518,7 +1518,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1535,8 +1535,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1562,7 +1562,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -1576,7 +1576,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
     </collision>
   </link>
@@ -1593,8 +1593,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1620,7 +1620,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -1634,7 +1634,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
     </collision>
   </link>
@@ -1663,7 +1663,7 @@
         xyz="0 -7.8102E-19 -6.9389E-18"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="1.1145E-22"
@@ -1678,7 +1678,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1692,7 +1692,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -1716,7 +1716,7 @@
         xyz="0 1.5954E-19 -6.9389E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-5.3647E-25"
@@ -1731,7 +1731,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1745,7 +1745,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1753,7 +1753,7 @@
     name="j3_p1"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l3_1" />
@@ -1762,8 +1762,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1774,7 +1774,7 @@
         xyz="0 -1.4524E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-5.3701E-26"
@@ -1789,7 +1789,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1803,7 +1803,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1820,8 +1820,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1832,7 +1832,7 @@
         xyz="0 -1.3516E-21 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="3.1225E-26"
@@ -1847,7 +1847,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1861,7 +1861,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1878,8 +1878,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1890,7 +1890,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -1905,7 +1905,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1919,7 +1919,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -1927,7 +1927,7 @@
     name="j3_p2"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l3_4" />
@@ -1936,8 +1936,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -1948,7 +1948,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -1963,7 +1963,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -1977,7 +1977,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -1985,7 +1985,7 @@
     name="j3_p3"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l3_5" />
@@ -1994,8 +1994,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2006,7 +2006,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -2021,7 +2021,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2035,7 +2035,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2052,8 +2052,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2064,7 +2064,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -2079,7 +2079,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2093,7 +2093,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2110,8 +2110,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2122,7 +2122,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -2137,7 +2137,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2151,7 +2151,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -2159,7 +2159,7 @@
     name="j3_p4"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l3_8" />
@@ -2168,8 +2168,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2180,7 +2180,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -2195,7 +2195,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2209,7 +2209,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2217,7 +2217,7 @@
     name="j3_p5"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l3_9" />
@@ -2226,8 +2226,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2238,7 +2238,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -2253,7 +2253,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2267,7 +2267,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2284,8 +2284,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2296,7 +2296,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -2311,7 +2311,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2325,7 +2325,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2342,8 +2342,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2369,7 +2369,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -2383,7 +2383,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
     </collision>
   </link>
@@ -2400,8 +2400,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2427,7 +2427,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -2441,7 +2441,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
     </collision>
   </link>
@@ -2467,10 +2467,10 @@
     name="l4_1">
     <inertial>
       <origin
-        xyz="0 -5.8677E-19 0"
+        xyz="-1.3924E-06 1.7287E-08 0.022244"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -2485,10 +2485,10 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
-        name="Elastico">
+        name="Elasico">
           <color
           rgba="1 1 0.9 1" />
       </material>
@@ -2499,7 +2499,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -2523,7 +2523,7 @@
         xyz="0 4.8757E-19 -6.9389E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-4.7764E-25"
@@ -2538,7 +2538,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2552,7 +2552,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2560,7 +2560,7 @@
     name="j4_p1"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l4_1" />
@@ -2569,8 +2569,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2581,7 +2581,7 @@
         xyz="0 3.35804994851586E-19 -3.46944695195361E-18"
         rpy="0 0 0" />
       <mass
-        value="0.001055602604182062" />
+        value="0.0038705302604182062" />
       <inertia
         ixx="2.80470246735844E-08"
         ixy="-1.13157348651793E-26"
@@ -2596,7 +2596,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2610,7 +2610,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2627,8 +2627,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2639,7 +2639,7 @@
         xyz="0 3.93106983422941E-19 -3.46944695195361E-18"
         rpy="0 0 0" />
       <mass
-        value="0.001055602604182062" />
+        value="0.0038705302604182062" />
       <inertia
         ixx="2.80470246735844E-08"
         ixy="1.20075620032431E-25"
@@ -2654,7 +2654,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2668,7 +2668,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2685,8 +2685,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2697,7 +2697,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -2712,7 +2712,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2726,7 +2726,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -2734,7 +2734,7 @@
     name="j4_p2"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l4_4" />
@@ -2743,8 +2743,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2755,7 +2755,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -2770,7 +2770,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2784,7 +2784,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2792,7 +2792,7 @@
     name="j4_p3"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l4_5" />
@@ -2801,8 +2801,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2813,7 +2813,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -2828,7 +2828,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2842,7 +2842,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2859,8 +2859,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2871,7 +2871,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -2886,7 +2886,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2900,7 +2900,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -2917,8 +2917,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2929,7 +2929,7 @@
         xyz="0 -5.8677E-19 0"
         rpy="0 0 0" />
       <mass
-        value="0.006333" />
+        value="0.023221" />
       <inertia
         ixx="6.23E-07"
         ixy="0.9885E-22"
@@ -2944,7 +2944,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -2958,7 +2958,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l1.STL" />
+          filename="./urdfv3/meshes/l1.STL" />
       </geometry>
     </collision>
   </link>
@@ -2966,7 +2966,7 @@
     name="j4_p4"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l4_8" />
@@ -2975,8 +2975,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -2987,7 +2987,7 @@
         xyz="0 3.3184E-20 0"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-9.51715E-25"
@@ -3002,7 +3002,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -3016,7 +3016,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -3024,7 +3024,7 @@
     name="j4_p5"
     type="prismatic">
     <origin
-      xyz="0 0 -0.022"
+      xyz="0 0 -0.0252"
       rpy="0 0 0" />
     <parent
       link="l4_9" />
@@ -3033,8 +3033,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -3045,7 +3045,7 @@
         xyz="0 -1.0812E-19 -3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="-8.7806E-26"
@@ -3060,7 +3060,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -3074,7 +3074,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -3091,8 +3091,8 @@
     <axis
       xyz="1 0 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -3103,7 +3103,7 @@
         xyz="0 -1.1116E-19 3.4694E-18"
         rpy="0 0 0" />
       <mass
-        value="0.0010556" />
+        value="0.00387053" />
       <inertia
         ixx="2.8047E-08"
         ixy="4.764E-26"
@@ -3118,7 +3118,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
       <material
         name="Elastico">
@@ -3132,7 +3132,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/l2.STL" />
+          filename="./urdfv3/meshes/l2.STL" />
       </geometry>
     </collision>
   </link>
@@ -3149,8 +3149,8 @@
     <axis
       xyz="0 1 0" />
     <limit
-      lower="-0.73"
-      upper="0.73"
+      lower="-0.7333"
+      upper="0.7333"
       effort="0"
       velocity="0" />
   </joint>
@@ -3176,7 +3176,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -3190,7 +3190,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/st.STL" />
+          filename="./urdfv3/meshes/st.STL" />
       </geometry>
     </collision>
   </link>
@@ -3207,8 +3207,8 @@
     <axis
       xyz="0 0 1" />
     <limit
-      lower="-0.0037"
-      upper="0.0037"
+      lower="-0.007333"
+      upper="0.007333"
       effort="0"
       velocity="0" />
   </joint>
@@ -3234,7 +3234,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
       <material
         name="Silicon">
@@ -3248,7 +3248,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://urdfv3/meshes/sb.STL" />
+          filename="./urdfv3/meshes/sb.STL" />
       </geometry>
     </collision>
   </link>

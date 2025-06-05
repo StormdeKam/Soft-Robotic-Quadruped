@@ -10,10 +10,10 @@ kp__th_1 = 0.008# position gain for revolute joints when no pressure is applied 
 kd__th_1 = 0.1# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
 kp__dz_1 = 0.05# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
 kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-c1 = 0.0000002 # constant to map torque to change in position gain for revolute joints
-c2 = 0.0000001 # constant to map torque to change in velocity gain for revolute joints
-c3 = 0.0000002 # constant to map force to change in position gain for prismatic joints
-c4 = 0.0000001 # constant to map force to change in velocity gain for prismatic joints
+c1 = 2 # constant to map torque to change in position gain for revolute joints
+c2 = 1 # constant to map torque to change in velocity gain for revolute joints
+c3 = 20 # constant to map force to change in position gain for prismatic joints
+c4 = 10 # constant to map force to change in velocity gain for prismatic joints
 
 def pneu2posandgains(pressures, no_links):
     pressure1, pressure2, pressure3 = pressures
@@ -42,8 +42,9 @@ def pneu2posandgains(pressures, no_links):
     # Target angles and position
     thx = T[0]/(kp_thx_n * deg2rad)
     thy = T[1]/(kp_thy_n * deg2rad)
-    dz = F[2]/kp_dz_n
+    dz = -F[2]/kp_dz_n
 
+    """
     print("\n=== Computed Target Joint Positions ===")
     print(f"{'Axis':<5} | {'Target Pos':>12}")
     print("-" * 22)
@@ -51,6 +52,7 @@ def pneu2posandgains(pressures, no_links):
     print(f"{'Y':<5} | {thy:12.4f}")
     print(f"{'Z':<5} | {dz:12.8f}")
     print()
+    """
 
     return (
         thx, thy, dz,
