@@ -171,7 +171,7 @@ class TASQSimulator:
                 1
                 #print("total pos z = ", total_pos_z, "total target_pos_z =", total_target_pos_z)
                 
-    def apply_suction(self, suction_states, force_magnitude=1):
+    def apply_suction(self, suction_states, force_magnitude=3):
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
         suction_target_pos = -0.005
         suction_pos_gain = 0.8
@@ -196,7 +196,6 @@ class TASQSimulator:
                 direction = [0,0,pos_plane[2] - pos_cup[2]]
                 distance = sum(d ** 2 for d in direction) ** 0.5
                 if distance > 0 and distance < 0.03 and angle_error > angle_threshold:
-                    #print(f"leg {leg+1} sucking") 
                     #"""Apply an attracting force from bodyB:linkB to self.robot_id:cup_link_idx."""
                     force = [0,0,-force_magnitude]  
                     p.applyExternalForce(

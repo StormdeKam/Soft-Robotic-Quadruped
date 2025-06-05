@@ -41,7 +41,7 @@ def demo_pressures(step):
  
     elif step < 6*n: # Orient leg 1
         #print("orient leg 1 down")
-        d_pressures[0,0]=dn*250
+        d_pressures[0,0]=dn*150
         #d_pressures[0,1]=dn*150
         d_pressures[0,1:]=-dn*350
 
@@ -52,13 +52,11 @@ def demo_pressures(step):
     elif step < 8*n: #Raise body to neutral position
         #print("Raising COM 2")
         d_pressures=np.zeros((4,3))
+        d_pressures[0,0]=dn*100
         d_pressures[0,1:]=dn*250
         d_pressures[1,2]=dn*100
         d_pressures[2,:]=-dn*100
         d_pressures[3,1]=dn*100
-
-    return d_pressures
-""" 
 
     elif step < 9*n: #Move COM to leg 2 by making leg 2 smaller and adding pressure to chamber 2 of leg 1 and chamber 3 of leg 3
         #print("Moving COM back")
@@ -191,7 +189,8 @@ def demo_pressures(step):
         d_pressures[3,:]=-dn*100
     else:
         d_pressures=np.zeros((4,3))
-
+    return d_pressures
+""" 
     return d_pressures
 """
 def demo_suction(step):

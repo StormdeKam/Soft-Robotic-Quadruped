@@ -4,16 +4,16 @@ deg2rad = np.pi/180 #conversion factor from degrees to rad
 theta = np.pi/6 # positioning angle for hall sensors in rad
 hs_radius = 0.0065 # positioning radius for hall sensors in m
 
-k1 = 0.0002 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-k2 = 0.0000005 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-kp__th_1 = 0.008# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-kd__th_1 = 0.1# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+k1 = 0.000015 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+kp__th_1 = 0.005# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
 kp__dz_1 = 0.05# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
 kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
 c1 = 2 # constant to map torque to change in position gain for revolute joints
 c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-c3 = 20 # constant to map force to change in position gain for prismatic joints
-c4 = 10 # constant to map force to change in velocity gain for prismatic joints
+c3 = 2 # constant to map force to change in position gain for prismatic joints
+c4 = 1 # constant to map force to change in velocity gain for prismatic joints
 
 def pneu2posandgains(pressures, no_links):
     pressure1, pressure2, pressure3 = pressures
@@ -30,10 +30,10 @@ def pneu2posandgains(pressures, no_links):
     v2 = hs_radius*(-np.sin(theta) * vx - np.cos(theta) * vy)
     v3 = hs_radius*(-np.sin(theta) * vx + np.cos(theta) * vy)
     # Resulting torque and force
-    T = k1*(np.cross(p1,v1) + np.cross(p2,v2) + np.cross(p3,v3)) 
-    F = k2*(p1 + p2 + p3)
+    T = k1*(np.cross(p1,v1) + np.cross(p2,v2) + np.cross(p3,v3)) *no_links
+    F = k2*(p1 + p2 + p3) *no_links
     # Feedback gains 
-    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links 
+    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links
     kd_thx_n = (kd__th_1 + np.abs(T[0]) * c2) * no_links
     kp_thy_n = (kp__th_1 + np.abs(T[1]) * c1) * no_links
     kd_thy_n = (kd__th_1 + np.abs(T[1]) * c2) * no_links
