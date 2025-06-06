@@ -5,7 +5,7 @@ import time
 import math
 import logging
 from rl.converters.converter_v2 import pneu2posandgains
-from rl.utils.pressure_plotter import PressurePlotter   
+#from rl.utils.pressure_plotter import PressurePlotter   
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=11, render_mode=None):
