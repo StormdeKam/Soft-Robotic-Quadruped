@@ -4,6 +4,8 @@ from stable_baselines3 import SAC
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 from rl.scripts.tasq_env import TASQEnv  # Make sure this path is correct
+from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
+
 
 # --- Configurations ---
 MODEL_DIR = "tasq_rl/models/tasq_sac"
@@ -17,7 +19,13 @@ N_ENVS = 1  # Increase to parallelize (if TASQEnv supports it)
 def make_env():
     return TASQEnv(urdf_path="tasq_rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)
 
-env = make_vec_env(make_env, n_envs=N_ENVS)
+# Wrap in DummyVecEnv
+env = DummyVecEnv([make_env])
+
+# Apply frame stacking (e.g., stack last 4 observations)
+stacked_env = VecFrameStack(env, n_stack=4)
+
+#env = make_vec_env(make_env, n_envs=N_ENVS)
 
 # --- Load or create model ---
 latest_model_path = None
@@ -30,10 +38,10 @@ if os.path.exists(MODEL_DIR):
 
 if latest_model_path:
     print(f"Loading model: {latest_model_path}")
-    model = SAC.load(latest_model_path, env=env)
+    model = SAC.load(latest_model_path, env=stacked_env)
 else:
     print("Creating new SAC model.")
-    model = SAC("MlpPolicy", env, verbose=1)
+    model = SAC("MlpPolicy", stacked_env, verbose=1)
 
 # --- Setup checkpoint callback ---
 checkpoint_callback = CheckpointCallback(

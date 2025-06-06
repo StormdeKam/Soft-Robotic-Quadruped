@@ -266,7 +266,6 @@ class TASQSimulator:
             if suction_callback:
                 suction_states = suction_callback(step)
                 self.apply_suction(suction_states)            
-            self.get_grfs()
             self.step()
         
         #self.pressure_plotter.finish()
