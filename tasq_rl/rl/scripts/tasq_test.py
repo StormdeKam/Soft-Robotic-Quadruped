@@ -46,7 +46,7 @@ def run_behavior_cloning(model_path, env, device):
     # Get obs_dim and action_dim from saved model or specify here:
     # You must know obs_dim and action_dim from training, or save in a config
     original_obs_dim = 41 # set your original observation dim (from states shape)
-    action_dim = 12  # For example, or get from saved data
+    action_dim = 16  # For example, or get from saved data
     N = 4  # stacking frames
     
     obs_dim = original_obs_dim * N
@@ -56,11 +56,14 @@ def run_behavior_cloning(model_path, env, device):
     model.eval()
     
     state_buffer = []
+
+    suction_states = np.zeros(4)
+    pressures = np.zeros((4,3))
     
     steps = 1000
     for step in range(steps):
         # Get observation from simulator
-        state = get_env_observation(env)
+        state = get_env_observation(env, pressures, suction_states)
         
         # Stack observations
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
@@ -106,18 +109,28 @@ def run_sac(model_path, env):
     print("SAC run complete.")
 
 
-def get_env_observation(env):
+def get_env_observation(env, pressures, suction_states):
     """
     Compose the observation vector to match training input
     (e.g., concatenate base position, orientation, grfs, etc.)
     """
-    base_pos = np.array(env.get_base_position())
-    base_ori = np.array(env.get_base_orientation())  # quaternion
-    grfs = env.get_grfs()
+    base_pos = env.get_base_position()          # shape (3,)
+    base_quat = env.get_base_orientation()      # shape (4,)
+    base_vel = env.get_base_velocity()          # shape (6,)
+    # Ground reaction forces
+    grfs = env.get_grfs()                       # shape (12,)
+
+    # Combine all into one observation array
+    obs = np.concatenate([
+        base_pos,
+        base_quat,
+        base_vel,
+        pressures.flatten(),
+        suction_states,
+        grfs
+    ]).astype(np.float32)
     # Add other observations as needed
     
-    # Example: concatenate all
-    obs = np.concatenate([base_pos, base_ori, grfs])
     return obs
 
 
@@ -148,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # Create environment (no GUI by default)
-    env = TASQSimulator(urdf_path=args.urdf_path, gui=False, no_links=7)
+    env = TASQSimulator(urdf_path="rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     
     if args.mode == "bc":
         if not args.bc_model_path:

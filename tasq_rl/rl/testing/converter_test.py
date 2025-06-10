@@ -1,6 +1,6 @@
 import numpy as np
 
-from rl.converters.converter_v2 import pneu2posandgains 
+from rl.converters.converter import pneu2posandgains 
 
 target_pos_x, target_pos_y, target_pos_z, pos_gain_x, vel_gain_x, pos_gain_y, vel_gain_y, pos_gain_z, vel_gain_z = pneu2posandgains(np.array([400,0,0]),7)
 #print(target_pos_x, target_pos_y, target_pos_z, pos_gain_x, vel_gain_x, pos_gain_y, vel_gain_y, pos_gain_z, vel_gain_z)

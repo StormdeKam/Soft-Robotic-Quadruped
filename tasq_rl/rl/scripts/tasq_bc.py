@@ -13,11 +13,11 @@ MODEL_NAME = "tasq_bc"
 
 BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
-EPOCHS = 100
+EPOCHS = 5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 VAL_SPLIT = 0.2
 
-print(DEVICE)
+print("Started behavior cloning training using ", DEVICE)
 
 # --- Load demonstration data ---
 states = np.load("rl/datasets/demo_states.npy")   # shape: (N, obs_dim)

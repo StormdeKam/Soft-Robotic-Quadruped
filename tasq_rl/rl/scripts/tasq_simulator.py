@@ -4,11 +4,11 @@ import numpy as np
 import time
 import math
 import logging
-from rl.converters.converter_v2 import pneu2posandgains
+from rl.converters.converter import pneu2posandgains
 #from rl.utils.pressure_plotter import PressurePlotter   
 
 class TASQSimulator:
-    def __init__(self, urdf_path, gui=False, no_links=11, render_mode=None):
+    def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -208,8 +208,8 @@ class TASQSimulator:
                     # Change the friction force between the suction cup and the ground plane
                     p.changeDynamics(
                         bodyUniqueId=self.robot_id,
-                        linkIndex=cup_link_idx,             # Use -1 for base link
-                        lateralFriction=20       # New friction value
+                        linkIndex=cup_link_idx+1,             # Use -1 for base link
+                        lateralFriction=5       # New friction value
                     )
                     #Change the suction cup target_position
                 #"""
@@ -236,7 +236,7 @@ class TASQSimulator:
                     p.changeDynamics(
                         bodyUniqueId=self.robot_id,
                         linkIndex=cup_link_idx,             # Use -1 for base link
-                        lateralFriction=500      # New friction value
+                        lateralFriction=0.5    # New friction value
                     )
                 #"""
 
@@ -256,6 +256,7 @@ class TASQSimulator:
         for step in range(steps):            
             if pressure_callback:
                 pressures += pressure_callback(step)
+                print(pressures)
                 self.apply_pressures(pressures)
                 # Plot pressures
                 """
