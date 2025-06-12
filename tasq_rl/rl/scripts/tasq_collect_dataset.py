@@ -289,6 +289,7 @@ def run_episode(episode_idx):
     noisy_d_pressures = np.zeros(12)
     suction_states = np.zeros(4)
     pressures = np.zeros((4,3))
+    normalized_pressures = np.zeros(12)
     episode_states = []
     episode_actions = []
     for step in range(total_steps):
@@ -303,24 +304,34 @@ def run_episode(episode_idx):
             base_pos,
             base_quat,
             base_vel,
-            noisy_d_pressures.flatten(),
+            normalized_pressures,
             suction_states,
             grfs
         ]).astype(np.float32)
+        #print(state)
 
         d_pressures = demo_pressures(step)  # (4, 3)
         suction_states = demo_suction(step)  # (4,)
         
         # Flatten action: 12 pressures + 4 suctions = (16,)
-        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.1, size=(4,3))
+        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.01, size=(4,3))
         noisy_d_pressures = d_pressures + random_gaussian_noise
+        noisy_d_pressures = np.clip(noisy_d_pressures, -2*np.pi, 2*np.pi)
+        #print(noisy_d_pressures.flatten())
+        #print("noisy pressure = ", noisy_d_pressures.flatten())
+        #print("pressures = ", d_pressures.flatten())
+        #print("noise  ratio = ", np.abs((noisy_d_pressures.flatten() -d_pressures.flatten()) / d_pressures.flatten()))
         suction_states = suction_states.astype(np.float32)
-        action = np.concatenate([noisy_d_pressures.flatten(), suction_states])
+        normalized_d_pressures = noisy_d_pressures/(2*np.pi)
+        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
         
         pressures += noisy_d_pressures
+        pressures = np.clip(pressures, 0,400)
+        normalized_pressures = (pressures/200 -1).flatten()
         sim.apply_pressures(pressures)
         sim.apply_suction(suction_states)
         sim.step()
+        
         
         episode_states.append(state)
         episode_actions.append(action)
@@ -351,7 +362,7 @@ if __name__ == "__main__":
 states_array = np.array(all_states, dtype=np.float32)
 actions_array = np.array(all_actions, dtype=np.float32)
 
-np.save(os.path.join(save_path, "demo_states2.npy"), states_array)
-np.save(os.path.join(save_path, "demo_actions2.npy"), actions_array)
+np.save(os.path.join(save_path, "demo_states3.npy"), states_array)
+np.save(os.path.join(save_path, "demo_actions3.npy"), actions_array)
 
 print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")

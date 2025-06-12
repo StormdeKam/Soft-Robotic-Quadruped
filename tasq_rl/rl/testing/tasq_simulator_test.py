@@ -211,7 +211,7 @@ def demo_suction(step):
     return np.array([ss1,ss2,ss3,ss4])
 
 
-sim = TASQSimulator("rl/urdfs/TASQ_n3.urdf", gui=True, no_links=3)
+sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=False, no_links=7)
 sim.run(steps=3*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction)
 print(sim.get_base_position_and_orientation())
 sim.disconnect()

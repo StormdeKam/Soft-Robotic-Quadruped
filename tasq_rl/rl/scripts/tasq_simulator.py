@@ -5,7 +5,7 @@ import time
 import math
 import logging
 from rl.converters.converter import pneu2posandgains
-#from rl.utils.pressure_plotter import PressurePlotter   
+from rl.utils.pressure_plotter import PressurePlotter   
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
@@ -103,6 +103,7 @@ class TASQSimulator:
 
 
     def apply_pressures(self, pressures):
+        #print(pressures)
         """
         Apply actuator pressures to the robot. Converts them to joint target positions/gains.
 
@@ -251,25 +252,25 @@ class TASQSimulator:
         suction_states = np.array([False, False, False, False])
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
         #for plotting pressures:
-        #self.pressure_plotter = PressurePlotter(steps)
+        self.pressure_plotter = PressurePlotter(steps)
 
         for step in range(steps):            
             if pressure_callback:
                 pressures += pressure_callback(step)
-                print(pressures)
+                #print(pressures)
                 self.apply_pressures(pressures)
                 # Plot pressures
-                """
+                #"""
                 flat_pressures = pressures.flatten()  # shape (12,)
                 self.pressure_plotter.plot_pressures(step, flat_pressures)
-                """
+                #"""
 
             if suction_callback:
                 suction_states = suction_callback(step)
                 self.apply_suction(suction_states)            
             self.step()
         
-        #self.pressure_plotter.finish()
+        self.pressure_plotter.finish()
 
     def disconnect(self):
         #p.stopStateLogging(p.STATE_LOGGING_VIDEO_MP4)

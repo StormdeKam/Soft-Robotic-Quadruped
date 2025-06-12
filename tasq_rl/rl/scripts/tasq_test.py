@@ -63,7 +63,8 @@ def run_behavior_cloning(model_path, env, device):
     steps = 1000
     for step in range(steps):
         # Get observation from simulator
-        state = get_env_observation(env, pressures, suction_states)
+        normalized_pressures = pressures/200 -1
+        state = get_env_observation(env, normalized_pressures, suction_states)
         
         # Stack observations
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
@@ -143,7 +144,7 @@ def action_to_pressures_and_suction(action):
     
     Adjust as needed based on your action space.
     """
-    pressures = action[:12].reshape(4, 3) * 400  # Scale from [-1,1] to [0,400] mBar
+    pressures = (action[:12].reshape(4, 3) + 1) * 200  # Scale from [-1,1] to [0,400] mBar
     suction_raw = action[12:]
     suction_states = suction_raw > 0.5
     return pressures, suction_states
