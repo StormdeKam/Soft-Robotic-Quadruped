@@ -8,7 +8,7 @@ starttime = time.time()
 
 # --- Parameters ---
 gait_length = 2700
-num_episodes = 1000  # Number of simulation rollouts
+num_episodes = 200  # Number of simulation rollouts
 total_steps = 3 * gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)
@@ -337,12 +337,12 @@ def run_episode(episode_idx):
         episode_actions.append(action)
 
     sim.disconnect()
-    endtime = time.time()
-    runtime = starttime - endtime
-    est_rem_time = (runtime/episode_idx) * (num_episodes - episode_idx) # seconds
-    est_rem_time_hours = est_rem_time // 3600 #hours
-    est_rem_time_minutes = est_rem_time // 60 # minutes
-    print(f"Episode {episode_idx + 1}/{num_episodes} complete at {endtime}, estimated remaining time: {est_rem_time_hours}h {est_rem_time_minutes}min ")
+    #endtime = time.time()
+    #runtime = starttime - endtime
+    #est_rem_time = (runtime/episode_idx) * (num_episodes - episode_idx) # seconds
+    #est_rem_time_hours = est_rem_time // 3600 #hours
+    #est_rem_time_minutes = est_rem_time // 60 # minutes
+    print(f"Episode {episode_idx + 1}/{num_episodes} complete") # at {endtime}, estimated remaining time: {est_rem_time_hours}h {est_rem_time_minutes}min ")
     # same code as your for-loop inside here
     return episode_states, episode_actions
 
