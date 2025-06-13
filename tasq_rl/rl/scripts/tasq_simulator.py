@@ -28,6 +28,7 @@ class TASQSimulator:
         self._load_environment()        
         self._initialize_robot()
 
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -258,12 +259,12 @@ class TASQSimulator:
         if self.step_count == 4:
             self.time = 0
             self.step_count = 0
-
+        
+        #pressue and suction logging
         if self._current_pressures is not None:
             log_row = self._current_pressures + suction_states.tolist()
             self.log_data.append(log_row)
             self._current_pressures = None  # Reset after logging
-    
         
     def step(self):
         p.stepSimulation()
@@ -326,14 +327,15 @@ class TASQSimulator:
 
     def disconnect(self):
         # Save log to CSV
-        if self.log_data:
-            import csv
-            header = [f"p_{i}" for i in range(12)] + [f"suction_{i}" for i in range(4)]
-            with open("rl/log/tasq_log.csv", "w", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(header)
-                writer.writerows(self.log_data)
-            print("[INFO] Pressure and suction data saved to tasq_log.csv")
+        if self.data_logging:
+            if self.log_data:
+                import csv
+                header = [f"p_{i}" for i in range(12)] + [f"suction_{i}" for i in range(4)]
+                with open("rl/log/tasq_log.csv", "w", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(header)
+                    writer.writerows(self.log_data)
+                print("[INFO] Pressure and suction data saved to tasq_log.csv")
         #p.stopStateLogging(p.STATE_LOGGING_VIDEO_MP4)
         p.disconnect()
 

@@ -3,8 +3,8 @@ import numpy as np
 import os
 from rl.scripts.tasq_simulator import TASQSimulator
 import time
-
-starttime = time.time()
+from tqdm import tqdm
+from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
 gait_length = 2700
@@ -348,9 +348,8 @@ def run_episode(episode_idx):
     print(f"Episode {episode_idx + 1}/{num_episodes} complete") # at {endtime}, estimated remaining time: {est_rem_time_hours}h {est_rem_time_minutes}min ")
     # same code as your for-loop inside here
     return episode_states, episode_actions
-
+"""
 if __name__ == "__main__":
-    from multiprocessing import freeze_support
     freeze_support()  # Optional but recommended for Windows compatibility
 
     with Pool(processes=os.cpu_count()) as pool:
@@ -369,3 +368,39 @@ np.save(os.path.join(save_path, "demo_states4.npy"), states_array)
 np.save(os.path.join(save_path, "demo_actions4.npy"), actions_array)
 
 print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")
+"""
+if __name__ == "__main__":
+    freeze_support()
+    manager = Manager()
+    lock = manager.Lock()
+
+    args = [(i, lock) for i in range(num_episodes)]
+    start_time = time.time()
+
+    with Pool(processes=os.cpu_count()) as pool:
+        results = []
+        with tqdm(total=num_episodes) as pbar:
+            for i, result in enumerate(pool.imap_unordered(run_episode, args)):
+                results.append(result)
+                pbar.update(1)
+                elapsed = time.time() - start_time
+                eps_done = i + 1
+                eps_rem = num_episodes - eps_done
+                time_per_ep = elapsed / eps_done
+                est_rem_time = eps_rem * time_per_ep
+                est_minutes = int(est_rem_time // 60)
+                est_seconds = int(est_rem_time % 60)
+                print(f"Episode {eps_done}/{num_episodes} complete — est. time remaining: {est_minutes}m {est_seconds}s")
+
+    # Unpack results
+    for ep_states, ep_actions in results:
+        all_states.extend(ep_states)
+        all_actions.extend(ep_actions)
+
+    # Save final data
+    states_array = np.array(all_states, dtype=np.float32)
+    actions_array = np.array(all_actions, dtype=np.float32)
+    np.save(os.path.join(save_path, "demo_states5.npy"), states_array)
+    np.save(os.path.join(save_path, "demo_actions5.npy"), actions_array)
+
+    print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")
