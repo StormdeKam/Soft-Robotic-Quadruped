@@ -13,12 +13,16 @@ import torch.nn as nn
 class BCActor(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super().__init__()
+        self.fc1 = nn.Linear(obs_dim, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc3 = nn.Linear(256, action_dim)
+
         self.net = nn.Sequential(
-            nn.Linear(obs_dim, 256),
+            self.fc1,
             nn.ReLU(),
-            nn.Linear(256, 256),
+            self.fc2,
             nn.ReLU(),
-            nn.Linear(256, action_dim),
+            self.fc3,
             nn.Tanh()
         )
         
@@ -45,7 +49,7 @@ def run_behavior_cloning(model_path, env, device):
     
     # Get obs_dim and action_dim from saved model or specify here:
     # You must know obs_dim and action_dim from training, or save in a config
-    original_obs_dim = 41 # set your original observation dim (from states shape)
+    original_obs_dim = 42 # set your original observation dim (from states shape)
     action_dim = 16  # For example, or get from saved data
     N = 4  # stacking frames
     
@@ -76,7 +80,8 @@ def run_behavior_cloning(model_path, env, device):
             action = model(state_tensor).cpu().numpy().squeeze()
         
         # Convert predicted action to pressures and suction states here, e.g.:
-        pressures, suction_states = action_to_pressures_and_suction(action)
+        d_pressures, suction_states = action_to_pressures_and_suction(action)
+        pressures += d_pressures
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
@@ -120,6 +125,9 @@ def get_env_observation(env, pressures, suction_states):
     base_vel = env.get_base_velocity()          # shape (6,)
     # Ground reaction forces
     grfs = env.get_grfs()                       # shape (12,)
+    # Time
+    gait_length = 2700
+    normalized_time = env.get_time()/(5*gait_length)
 
     # Combine all into one observation array
     obs = np.concatenate([
@@ -128,7 +136,8 @@ def get_env_observation(env, pressures, suction_states):
         base_vel,
         pressures.flatten(),
         suction_states,
-        grfs
+        grfs,
+        normalized_time
     ]).astype(np.float32)
     # Add other observations as needed
     
@@ -144,10 +153,10 @@ def action_to_pressures_and_suction(action):
     
     Adjust as needed based on your action space.
     """
-    pressures = (action[:12].reshape(4, 3) + 1) * 200  # Scale from [-1,1] to [0,400] mBar
+    d_pressures = (action[:12].reshape(4, 3)) * 2*np.pi  # Scale from [-1,1] to [0,400] mBar
     suction_raw = action[12:]
     suction_states = suction_raw > 0.5
-    return pressures, suction_states
+    return d_pressures, suction_states
 
 
 if __name__ == "__main__":

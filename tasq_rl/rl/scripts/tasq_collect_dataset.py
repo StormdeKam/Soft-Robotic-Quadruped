@@ -8,8 +8,8 @@ starttime = time.time()
 
 # --- Parameters ---
 gait_length = 2700
-num_episodes = 200  # Number of simulation rollouts
-total_steps = 3 * gait_length
+num_episodes = 100  # Number of simulation rollouts
+total_steps = 3*gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)
 
@@ -298,6 +298,8 @@ def run_episode(episode_idx):
         base_quat = sim.get_base_orientation()      # shape (4,)
         base_vel = sim.get_base_velocity()          # shape (6,)
         grfs = sim.get_grfs()                       # shape (12,)
+        time = sim.get_time()                       # shape (1, )
+        normalized_time = time/(5*gait_length)
 
         # Combine all into one observation array
         state = np.concatenate([
@@ -306,7 +308,8 @@ def run_episode(episode_idx):
             base_vel,
             normalized_pressures,
             suction_states,
-            grfs
+            grfs,
+            normalized_time
         ]).astype(np.float32)
         #print(state)
 
@@ -362,7 +365,7 @@ if __name__ == "__main__":
 states_array = np.array(all_states, dtype=np.float32)
 actions_array = np.array(all_actions, dtype=np.float32)
 
-np.save(os.path.join(save_path, "demo_states3.npy"), states_array)
-np.save(os.path.join(save_path, "demo_actions3.npy"), actions_array)
+np.save(os.path.join(save_path, "demo_states4.npy"), states_array)
+np.save(os.path.join(save_path, "demo_actions4.npy"), actions_array)
 
 print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")

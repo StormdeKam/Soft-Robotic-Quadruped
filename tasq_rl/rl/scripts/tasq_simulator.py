@@ -5,7 +5,6 @@ import time
 import math
 import logging
 from rl.converters.converter import pneu2posandgains
-from rl.utils.pressure_plotter import PressurePlotter   
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
@@ -28,6 +27,9 @@ class TASQSimulator:
         
         self._load_environment()        
         self._initialize_robot()
+
+        self.log_data = []  # Buffer for logging pressure + suction
+        self._current_pressures = None  # Temporarily holds last pressures
 
         # Create a logger
         self.logger = logging.getLogger("suction_logger")
@@ -62,6 +64,9 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
+        self.time = 0
+        self.prev_suction_states = [False, False, False, False]
+        self.step_count = -1
 
         self.num_joints = p.getNumJoints(self.robot_id)
 
@@ -104,6 +109,7 @@ class TASQSimulator:
 
     def apply_pressures(self, pressures):
         #print(pressures)
+        
         """
         Apply actuator pressures to the robot. Converts them to joint target positions/gains.
 
@@ -171,6 +177,8 @@ class TASQSimulator:
             if leg_index==1:
                 1
                 #print("total pos z = ", total_pos_z, "total target_pos_z =", total_target_pos_z)
+
+        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
     def apply_suction(self, suction_states, force_magnitude=3):
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
@@ -240,8 +248,23 @@ class TASQSimulator:
                         lateralFriction=0.5    # New friction value
                     )
                 #"""
+        self.time += 1
+        if np.array_equal(suction_states, self.prev_suction_states):
+            self.prev_suction_states = suction_states
+        else:
+            self.step_count += 1
+            self.prev_suction_states = suction_states
 
-               
+        if self.step_count == 4:
+            self.time = 0
+            self.step_count = 0
+
+        if self._current_pressures is not None:
+            log_row = self._current_pressures + suction_states.tolist()
+            self.log_data.append(log_row)
+            self._current_pressures = None  # Reset after logging
+    
+        
     def step(self):
         p.stepSimulation()
         if self.gui:
@@ -251,34 +274,23 @@ class TASQSimulator:
         pressures = np.zeros((4, 3))
         suction_states = np.array([False, False, False, False])
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
-        #for plotting pressures:
-        self.pressure_plotter = PressurePlotter(steps)
 
         for step in range(steps):            
             if pressure_callback:
                 pressures += pressure_callback(step)
-                #print(pressures)
                 self.apply_pressures(pressures)
-                # Plot pressures
-                #"""
-                flat_pressures = pressures.flatten()  # shape (12,)
-                self.pressure_plotter.plot_pressures(step, flat_pressures)
-                #"""
 
             if suction_callback:
                 suction_states = suction_callback(step)
                 self.apply_suction(suction_states)            
             self.step()
-        
-        self.pressure_plotter.finish()
-
-    def disconnect(self):
-        #p.stopStateLogging(p.STATE_LOGGING_VIDEO_MP4)
-        p.disconnect()
 
     def get_base_position(self):
         pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         return pos
+    
+    def get_time(self):
+        return np.array([self.time])
     
     def get_base_orientation(self):
         _, ori = p.getBasePositionAndOrientation(self.robot_id)
@@ -311,6 +323,21 @@ class TASQSimulator:
                 total_force = normal_force + lateral1 + lateral2
                 grfs[i] += total_force  # accumulate in case of multiple contacts
         return grfs.flatten()
+
+    def disconnect(self):
+        # Save log to CSV
+        if self.log_data:
+            import csv
+            header = [f"p_{i}" for i in range(12)] + [f"suction_{i}" for i in range(4)]
+            with open("rl/log/tasq_log.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(header)
+                writer.writerows(self.log_data)
+            print("[INFO] Pressure and suction data saved to tasq_log.csv")
+        #p.stopStateLogging(p.STATE_LOGGING_VIDEO_MP4)
+        p.disconnect()
+
+    
 
 
 
