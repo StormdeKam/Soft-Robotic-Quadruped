@@ -68,8 +68,8 @@ def run_behavior_cloning(model_path, env, device):
     for step in range(steps):
         # Get observation from simulator
         normalized_pressures = pressures/200 -1
-        state = get_env_observation(env, normalized_pressures, suction_states)
-        
+        state = get_env_observation(env, normalized_pressures)
+
         # Stack observations
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
         
@@ -82,6 +82,7 @@ def run_behavior_cloning(model_path, env, device):
         # Convert predicted action to pressures and suction states here, e.g.:
         d_pressures, suction_states = action_to_pressures_and_suction(action)
         pressures += d_pressures
+        pressures = np.clip(pressures,0,400)
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
@@ -115,7 +116,7 @@ def run_sac(model_path, env):
     print("SAC run complete.")
 
 
-def get_env_observation(env, pressures, suction_states):
+def get_env_observation(env, pressures):
     """
     Compose the observation vector to match training input
     (e.g., concatenate base position, orientation, grfs, etc.)
@@ -123,6 +124,7 @@ def get_env_observation(env, pressures, suction_states):
     base_pos = env.get_base_position()          # shape (3,)
     base_quat = env.get_base_orientation()      # shape (4,)
     base_vel = env.get_base_velocity()          # shape (6,)
+    suction_states = env.get_suction_state()
     # Ground reaction forces
     grfs = env.get_grfs()                       # shape (12,)
     # Time

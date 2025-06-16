@@ -8,7 +8,7 @@ from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
 gait_length = 2700
-num_episodes = 100  # Number of simulation rollouts
+num_episodes = 600  # Number of simulation rollouts
 total_steps = 3*gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)
@@ -317,7 +317,7 @@ def run_episode(episode_idx):
         suction_states = demo_suction(step)  # (4,)
         
         # Flatten action: 12 pressures + 4 suctions = (16,)
-        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.01, size=(4,3))
+        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.05, size=(4,3))
         noisy_d_pressures = d_pressures + random_gaussian_noise
         noisy_d_pressures = np.clip(noisy_d_pressures, -2*np.pi, 2*np.pi)
         #print(noisy_d_pressures.flatten())
@@ -345,7 +345,7 @@ def run_episode(episode_idx):
     #est_rem_time = (runtime/episode_idx) * (num_episodes - episode_idx) # seconds
     #est_rem_time_hours = est_rem_time // 3600 #hours
     #est_rem_time_minutes = est_rem_time // 60 # minutes
-    print(f"Episode {episode_idx + 1}/{num_episodes} complete") # at {endtime}, estimated remaining time: {est_rem_time_hours}h {est_rem_time_minutes}min ")
+    #print(f"Episode {episode_idx + 1}/{num_episodes} complete") # at {endtime}, estimated remaining time: {est_rem_time_hours}h {est_rem_time_minutes}min ")
     # same code as your for-loop inside here
     return episode_states, episode_actions
 """
@@ -388,9 +388,9 @@ if __name__ == "__main__":
                 eps_rem = num_episodes - eps_done
                 time_per_ep = elapsed / eps_done
                 est_rem_time = eps_rem * time_per_ep
-                est_minutes = int(est_rem_time // 60)
-                est_seconds = int(est_rem_time % 60)
-                print(f"Episode {eps_done}/{num_episodes} complete — est. time remaining: {est_minutes}m {est_seconds}s")
+                est_hours = int(est_rem_time // 3600)
+                est_minutes = int((est_rem_time // 60) % 60)
+                print(f"Episode {eps_done}/{num_episodes} complete — est. time remaining: {est_hours}h {est_minutes}m")
 
     # Unpack results
     for ep_states, ep_actions in results:

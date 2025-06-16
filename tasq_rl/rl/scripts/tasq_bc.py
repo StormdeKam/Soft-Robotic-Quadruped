@@ -16,7 +16,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4 #original 3e-4
-EPOCHS = 400
+EPOCHS = 20
 SAVE_INTERVAL = 50
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states3.npy",
-    action_path="rl/datasets/demo_actions3.npy",
+    state_path="rl/datasets/demo_states4.npy",
+    action_path="rl/datasets/demo_actions4.npy",
     N=4
 )
 

@@ -1,48 +1,59 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import csv
 
-class PressurePlotter:
-    def __init__(self, steps):
-        self.steps = steps
-        self.pressure_history = np.zeros((12, steps))
-        self.x_data = np.arange(steps)
+def load_log_data(filepath):
+    with open(filepath, newline='') as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        data = []
+        for row in reader:
+            converted_row = []
+            for x in row:
+                if x == "True":
+                    converted_row.append(1.0)
+                elif x == "False":
+                    converted_row.append(0.0)
+                else:
+                    converted_row.append(float(x))
+            data.append(converted_row)
+    return header, np.array(data)
 
-        plt.ion()
-        self.fig, self.axes = plt.subplots(nrows=12, ncols=1, figsize=(8, 16), sharex=True)
+def plot_pressures_and_suctions(filepath):
+    header, data = load_log_data(filepath)
+    
+    pressures = data[:, :12]  # first 12 columns
+    suctions = data[:, 12:]  # last 4 columns
+    
+    timesteps = np.arange(len(data))
+    
+    # --- Plot pressures ---
+    plt.figure(figsize=(12, 6))
+    for i in range(12):
+        plt.plot(timesteps, pressures[:, i], label=f'P{i+1}')
+    plt.title("Pressures Over Time")
+    plt.xlabel("Timestep")
+    plt.ylabel("Pressure (mBar)")
+    plt.legend(loc='upper right', ncol=4)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("pressures_plot.png")
+    plt.show()
 
-        self.lines = []
-        for i, ax in enumerate(self.axes):
-            line, = ax.plot(self.x_data, np.zeros_like(self.x_data), label=f'P[{i}]', color='tab:blue')
-            ax.set_ylabel(f'P[{i}]')
-            ax.set_ylim(0, 500)  # adjust range as needed
-            ax.grid(True)
-            self.lines.append(line)
+    # --- Plot suction states ---
+    plt.figure(figsize=(10, 4))
+    for i in range(4):
+        plt.step(timesteps, suctions[:, i], label=f'Suction {i+1}', where='post')
+    plt.title("Suction Cup States Over Time")
+    plt.xlabel("Timestep")
+    plt.ylabel("Suction State (0 or 1)")
+    plt.ylim(-0.1, 1.1)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("suction_states_plot.png")
+    plt.show()
 
-        self.axes[-1].set_xlabel("Step")
-        self.fig.tight_layout()
-
-        self.fig.canvas.draw()
-        self.bg = self.fig.canvas.copy_from_bbox(self.fig.bbox)
-        for ax in self.axes:
-            ax.draw_artist(ax.patch)
-            for line in ax.lines:
-                ax.draw_artist(line)
-        self.fig.canvas.blit(self.fig.bbox)
-
-    def plot_pressures(self, step, flat_pressures):
-        self.pressure_history[:, step] = flat_pressures
-
-        for i, line in enumerate(self.lines):
-            line.set_ydata(self.pressure_history[i])
-            self.axes[i].draw_artist(line)
-
-        self.fig.canvas.restore_region(self.bg)
-        for ax in self.axes:
-            for line in ax.lines:
-                ax.draw_artist(line)
-        self.fig.canvas.blit(self.fig.bbox)
-        self.fig.canvas.flush_events()
-
-    def finish(self):
-        plt.ioff()
-        plt.show()
+# --- Call the function with your CSV file ---
+if __name__ == "__main__":
+    plot_pressures_and_suctions("rl/log/tasq_log.csv")

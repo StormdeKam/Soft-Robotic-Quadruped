@@ -65,8 +65,9 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
-        self.time = 0
+        self.cycle_time = 0
         self.prev_suction_states = [False, False, False, False]
+        self.suction_states = [False, False, False, False]
         self.step_count = -1
 
         self.num_joints = p.getNumJoints(self.robot_id)
@@ -128,7 +129,7 @@ class TASQSimulator:
         prismatics_per_leg = len(self.prismatic_joints) // 4
         
         for leg_index, leg_pressures in enumerate(pressures):
-            if leg_pressures.any() <= 400:                
+            if leg_pressures.all() <= 400:                
                 target_pos_x, target_pos_y, target_pos_z, \
                 pos_gain_x, vel_gain_x, \
                 pos_gain_y, vel_gain_y, \
@@ -249,15 +250,18 @@ class TASQSimulator:
                         lateralFriction=0.5    # New friction value
                     )
                 #"""
-        self.time += 1
+        self.cycle_time += 1
         if np.array_equal(suction_states, self.prev_suction_states):
+            self.suction_states = self.prev_suction_states
+        elif self.cycle_time - self.step_count*(2700/4) > 500:
+            self.step_count += 1
+            self.suction_states = suction_states
             self.prev_suction_states = suction_states
         else:
-            self.step_count += 1
-            self.prev_suction_states = suction_states
+            self.suction_states = self.prev_suction_states
 
-        if self.step_count == 4:
-            self.time = 0
+        if self.step_count >= 4:
+            self.cycle_time = 0
             self.step_count = 0
         
         #pressue and suction logging
@@ -286,12 +290,15 @@ class TASQSimulator:
                 self.apply_suction(suction_states)            
             self.step()
 
+    def get_suction_state(self):
+        return self.suction_states
+    
     def get_base_position(self):
         pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         return pos
     
     def get_time(self):
-        return np.array([self.time])
+        return np.array([self.cycle_time])
     
     def get_base_orientation(self):
         _, ori = p.getBasePositionAndOrientation(self.robot_id)
