@@ -68,8 +68,8 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
-        self.suction_states = [False, True, True, True]
-        self.gait_length = 2700
+        self.suction_states = np.array([False, True, True, True])
+        self.gait_length = 2200
         self.cycle_time = 0
 
         self.num_joints = p.getNumJoints(self.robot_id)

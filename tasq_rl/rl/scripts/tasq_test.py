@@ -49,8 +49,8 @@ def run_behavior_cloning(model_path, env, device):
     
     # Get obs_dim and action_dim from saved model or specify here:
     # You must know obs_dim and action_dim from training, or save in a config
-    original_obs_dim = 42 # set your original observation dim (from states shape)
-    action_dim = 16  # For example, or get from saved data
+    original_obs_dim = 43 # set your original observation dim (from states shape)
+    action_dim = 17  # For example, or get from saved data
     N = 4  # stacking frames
     
     obs_dim = original_obs_dim * N
@@ -63,7 +63,7 @@ def run_behavior_cloning(model_path, env, device):
 
     suction_states = np.zeros(4)
     pressures = np.zeros((4,3))
-    initial_gait_length = 2700
+    initial_gait_length = 2200
     gait_length = initial_gait_length
     
     steps = 3000
@@ -71,10 +71,9 @@ def run_behavior_cloning(model_path, env, device):
         # Get observation from simulator
         normalized_pressures = pressures/200 -1
         state = get_env_observation(env, normalized_pressures)
-
         # Stack observations
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
-        
+        #print(stacked_state.shape)
         # Convert to tensor
         state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
         
@@ -84,8 +83,7 @@ def run_behavior_cloning(model_path, env, device):
         # Convert predicted action to pressures and suction states here, e.g.:
         d_pressures, suction_states, gait_length = action_to_pressures_and_suction(action)
         pressures += d_pressures
-        pressures = np.clip(pressures,0,400)
-        gait_length 
+        pressures = np.clip(pressures,0,400) 
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
@@ -125,18 +123,17 @@ def get_env_observation(env, pressures):
     Compose the observation vector to match training input
     (e.g., concatenate base position, orientation, grfs, etc.)
     """
-    base_pos = env.get_base_position()          # shape (3,)
-    base_quat = env.get_base_orientation()      # shape (4,)
-    base_vel = env.get_base_velocity()          # shape (6,)
-    suction_states = env.get_suction_state()
-    # Ground reaction forces
-    grfs = env.get_grfs()                       # shape (12,)
-    # Time
-    initial_gait_length = 2700
-    normalized_time = env.get_time()/(5*initial_gait_length)
-    # Gait length
-    normalized_gait_length = (env.get_gait_length - initial_gait_length) / initial_gait_length
+    base_pos = np.array(env.get_base_position())          # (3,)
+    base_quat = np.array(env.get_base_orientation())      # (4,)
+    base_vel = np.array(env.get_base_velocity())          # (6,)
+    suction_states = np.array(env.get_suction_state())    # (4,)
+    grfs = np.array(env.get_grfs())                       # (12,)
 
+    # Time and gait length (ensure they are floats)
+    initial_gait_length = 2200
+    # Safe scalar extraction
+    normalized_time = env.get_time().item() / (5 * initial_gait_length)
+    normalized_gait_length = float((env.get_gait_length() - initial_gait_length) / initial_gait_length)
     # Combine all into one observation array
     obs = np.concatenate([
         base_pos,
@@ -145,11 +142,10 @@ def get_env_observation(env, pressures):
         pressures.flatten(),
         suction_states,
         grfs,
-        normalized_time,
-        normalized_gait_length
+        [normalized_time],
+        [normalized_gait_length]
     ]).astype(np.float32)
     # Add other observations as needed
-    
     return obs
 
 
@@ -163,9 +159,9 @@ def action_to_pressures_and_suction(action):
     Adjust as needed based on your action space.
     """
     d_pressures = (action[:12].reshape(4, 3)) * 2*np.pi  # Scale from [-1,1] to [0,400] mBar
-    suction_raw = action[12:]
+    suction_raw = action[12:16]
     suction_states = suction_raw > 0.5
-    initial_gait_length = 2700
+    initial_gait_length = 2200
     gait_length = action[-1] * initial_gait_length + initial_gait_length
     return d_pressures, suction_states, gait_length
 

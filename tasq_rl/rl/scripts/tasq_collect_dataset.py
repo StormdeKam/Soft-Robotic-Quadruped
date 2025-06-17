@@ -7,7 +7,7 @@ from tqdm import tqdm
 from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
-gait_length = 2700
+gait_length = 2200
 num_episodes = 150  # Number of simulation rollouts
 total_steps = 3*gait_length
 save_path = "rl/datasets"
@@ -19,7 +19,7 @@ all_actions = []
 # --- Gait callbacks ---
 n = 100
 
-# --- Pressure and suction functions (copied from your gait demo) ---
+# Dummy callback that sends oscillating pressures for 4 legs (3 per leg)
 def demo_pressures(step):
     dn = 1/n
     d_pressures = np.zeros((4,3))
@@ -62,32 +62,32 @@ def demo_pressures(step):
         d_pressures[0,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[0,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
-    elif rel_step < 8*n: # Activate suction leg 1, deactivate suction leg 3
+    elif rel_step < 7*n+1: # Activate suction leg 1, deactivate suction leg 3
         #print("Activate suction leg 1, deactivate suction leg 3")
         d_pressures=np.zeros((4,3))
         #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
-    elif rel_step < 9*n: #Raise body to neutral position
+    elif rel_step < 8*n: #Raise body to neutral position
         #print("Raising COM 2")
         d_pressures[0,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[250,250,250,  250,250,250,    250,250,250,    250,250,250]
-    elif rel_step < 10*n: #Move COM to leg 1 by making leg 1 smaller and adding pressure to chamber 3 of leg 2 and chamber 2 of leg 4
+    elif rel_step < 9*n: #Move COM to leg 1 by making leg 1 smaller and adding pressure to chamber 3 of leg 2 and chamber 2 of leg 4
         #print("Moving COM back")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[1,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[3,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[0,0,0,  250,250,350,    0,0,0,    250,350,250]
-    elif rel_step < 11*n: # Lift leg 3
+    elif rel_step < 10*n: # Lift leg 3
         #print("Lifting leg 3")
         d_pressures[2,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         #[0,0,0,  250,250,350,    150,0,0,    250,350,250]
-    elif rel_step < 12*n: # Move leg 3 and COM to front
+    elif rel_step < 11*n: # Move leg 3 and COM to front
         d_pressures=np.zeros((4,3))
         d_pressures[1,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[3,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[0,0,0,  250,250,250,    150,0,0,    250,250,250]
-    elif rel_step < 13*n: # Place leg 3 down
+    elif rel_step < 12*n: # Place leg 3 down
         #print("Place leg 3 down")
         d_pressures[0,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
@@ -95,11 +95,11 @@ def demo_pressures(step):
         d_pressures[2,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[350,350,350,  150,150,150,    150,350,350,    150,150,150]
-    elif rel_step < 14*n: # Activate suction leg 3, deactivate suction leg 4
+    elif rel_step < 12*n+1: # Activate suction leg 3, deactivate suction leg 4
         #print("Activate suction leg 3, deactivate suction leg 4")
         d_pressures=np.zeros((4,3))
         #[350,350,350,  150,150,150,    150,350,350,    150,150,150]
-    elif rel_step < 15*n: #Raise body to neutral position
+    elif rel_step < 13*n: #Raise body to neutral position
         #print("Raising COM")
         d_pressures=np.zeros((4,3))
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
@@ -108,36 +108,36 @@ def demo_pressures(step):
         d_pressures[2,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[250,250,250,  250,250,250,    250,250,250,    250,250,250]
-    elif rel_step < 16*n: #Move COM to leg 2 and 3 by making leg 2 and 3 smaller and adding pressure to chamber 2 of leg 1 and chamber 3 of leg 3
+    elif rel_step < 14*n: #Move COM to leg 2 and 3 by making leg 2 and 3 smaller and adding pressure to chamber 2 of leg 1 and chamber 3 of leg 3
         #print("Moving COM back")
         d_pressures=np.zeros((4,3))
         d_pressures[0,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         #[400,400,400,  0,0,0,    400,400,400,    250,250,250]
-    elif rel_step < 17*n: # Lift leg 4
+    elif rel_step < 15*n: # Lift leg 4
         #print("Lifting leg 4")
         d_pressures[3,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[3,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[400,400,400,  0,0,0,    400,400,400,    0,350,350]
-    elif rel_step < 18*n: # Move leg 4 and COM to front
+    elif rel_step < 16*n: # Move leg 4 and COM to front
         #print("move leg 4 to front")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150 
         d_pressures[3,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[250,250,250,  0,0,0,    400,400,400,    150,350,0]
-    elif rel_step < 19*n: # Place leg 4 down
+    elif rel_step < 17*n: # Place leg 4 down
         #print("Place leg 4 down")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[3,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*300
         d_pressures[3,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         #[150,150,150,  350,350,350,    400,400,400,    150,50,250]
-    elif rel_step < 20*n: # Activate suction leg 3, deactivate suction leg 4
+    elif rel_step < 17*n+1: # Activate suction leg 3, deactivate suction leg 4
         #print("Activate suction leg 3, deactivate suction leg 4")
         d_pressures=np.zeros((4,3))
         #[150,150,150,  350,350,350,    400,400,400,    150,50,250]
-    elif rel_step < 21*n: #Raise body to neutral position
+    elif rel_step < 18*n: #Raise body to neutral position
         #print("Raising COM 3")
         d_pressures[0,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
@@ -145,24 +145,24 @@ def demo_pressures(step):
         d_pressures[3,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[3,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         #[250,250,250,  250,250,250,    250,250,250,    250,250,250]
-    elif rel_step < 22*n: #Move COM to leg 3 and 4 by making leg 3 and 4 smaller and adding pressure to chamber 1 and 3 of leg 1
+    elif rel_step < 19*n: #Move COM to leg 3 and 4 by making leg 3 and 4 smaller and adding pressure to chamber 1 and 3 of leg 1
         #print("Moving COM back")
         d_pressures[0,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         #[400,400,400,  0,0,0,    400,400,400,    0,0,0]
-    elif rel_step < 23*n: # Lift leg 2
+    elif rel_step < 20*n: # Lift leg 2
         #print("Lifting leg 2")
         d_pressures[1,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[1,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[400,400,400,  250,0,350,    400,400,400,    0,0,0]
-    elif rel_step < 24*n: # Move leg 2 and COM to front
+    elif rel_step < 21*n: # Move leg 2 and COM to front
         #print("move leg 2 to front")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         #[250,250,250,  250,0,350,    250,250,250,    0,0,0]
-    elif rel_step < 25*n: # Place leg 2 down
+    elif rel_step < 22*n: # Place leg 2 down
         #print("Place leg 2 down")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100 
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
@@ -171,11 +171,11 @@ def demo_pressures(step):
         d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[150,150,150,  100,350,100,    100,100,100,    350,350,350]
-    elif rel_step < 26*n: # Activate suction leg 1, deactivate suction leg 2
+    elif rel_step < 22*n+1: # Activate suction leg 2, deactivate suction leg 3
         #print("Activate suction leg 2, deactivate suction leg 3")
         d_pressures=np.zeros((4,3))
 
-    elif rel_step < 27*n: #Zero pressure position
+    elif rel_step < 22*n: #Zero pressure position
         #print("Zero pressure position")
         d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
@@ -192,25 +192,25 @@ def demo_suction(step):
     gait_cycle = step // gait_length
     rel_step = step % gait_length
     
-    if rel_step < 8*n:
+    if rel_step < 7*n:
         ss1 = False
         ss2 = True
         ss3 = True
         ss4 = True
     
-    elif rel_step < 14*n:
+    elif rel_step < 12*n:
         ss1 = True
         ss2 = True
         ss3 = False
         ss4 = True
 
-    elif rel_step < 20*n:
+    elif rel_step < 17*n:
         ss1 = True
         ss2 = True
         ss3 = True
         ss4 = False
 
-    elif rel_step < 26*n:
+    elif rel_step < 22*n:
         ss1 = True
         ss2 = False
         ss3 = True
@@ -221,7 +221,7 @@ def demo_suction(step):
         ss2 = True
         ss3 = True
         ss4 = True
-
+    
     return np.array([ss1,ss2,ss3,ss4])
 
 # --- Data Collection Loop ---
