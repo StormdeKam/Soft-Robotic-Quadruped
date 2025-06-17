@@ -111,6 +111,7 @@ class TASQEnv(gym.Env):
         w_height = 2.0
         w_orient = 2.0
         w_smooth = 0.1
+        #w_gait_length
 
         # Combine total reward
         reward = -(

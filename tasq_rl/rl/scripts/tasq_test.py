@@ -134,6 +134,8 @@ def get_env_observation(env, pressures):
     # Safe scalar extraction
     normalized_time = env.get_time().item() / (5 * initial_gait_length)
     normalized_gait_length = float((env.get_gait_length() - initial_gait_length) / initial_gait_length)
+    normalized_gait_length = np.clip(normalized_gait_length, -1,1)
+    print(normalized_time)
     # Combine all into one observation array
     obs = np.concatenate([
         base_pos,

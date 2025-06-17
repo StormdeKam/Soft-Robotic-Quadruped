@@ -8,6 +8,7 @@ from rl.converters.converter import pneu2posandgains
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
+        self.start_yaw = np.random.uniform(-np.pi, np.pi)
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -21,9 +22,9 @@ class TASQSimulator:
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.8)
         p.resetDebugVisualizerCamera(cameraDistance=0.5,
-                                 cameraYaw=45,
+                                 cameraYaw=90+self.start_yaw*(180/np.pi),
                                  cameraPitch=-20,
-                                 cameraTargetPosition=[0, 0, 0.1])
+                                 cameraTargetPosition=[0, 0, 0.2])
         
         self._load_environment()        
         self._initialize_robot()
@@ -52,7 +53,6 @@ class TASQSimulator:
         self.start_x = np.random.uniform(-0.2, 0.2)
         self.start_y = np.random.uniform(-0.2, 0.2)
         self.start_pos = [self.start_x, self.start_y, 0.12]
-        self.start_yaw = np.random.uniform(-np.pi, np.pi)
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
         """

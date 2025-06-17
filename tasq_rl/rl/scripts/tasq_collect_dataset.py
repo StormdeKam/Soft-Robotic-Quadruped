@@ -8,7 +8,7 @@ from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
 gait_length = 2200
-num_episodes = 150  # Number of simulation rollouts
+num_episodes = 1  # Number of simulation rollouts
 total_steps = 3*gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)

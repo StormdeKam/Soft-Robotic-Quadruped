@@ -9,7 +9,7 @@ from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc"
+MODEL_DIR = "rl/models/tasq_bc/no_steady_states"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -17,7 +17,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4 #original 3e-4
 EPOCHS = 100
-SAVE_INTERVAL = 25
+SAVE_INTERVAL = 5
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Optional: Cap GPU memory usage (e.g., 90%)
@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states6.npy",
-    action_path="rl/datasets/demo_actions6.npy",
+    state_path="rl/datasets/demo_states8.npy",
+    action_path="rl/datasets/demo_actions8.npy",
     N=4
 )
 
@@ -60,7 +60,7 @@ class BCActor(nn.Module):
         )
 
 
-        self.initialize_weights()
+        #self.initialize_weights()
 
     def initialize_weights(self):
         weight = self.fc1.weight.data
