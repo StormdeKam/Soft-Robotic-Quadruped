@@ -63,6 +63,8 @@ def run_behavior_cloning(model_path, env, device):
 
     suction_states = np.zeros(4)
     pressures = np.zeros((4,3))
+    initial_gait_length = 2700
+    gait_length = initial_gait_length
     
     steps = 3000
     for step in range(steps):
@@ -80,12 +82,14 @@ def run_behavior_cloning(model_path, env, device):
             action = model(state_tensor).cpu().numpy().squeeze()
         
         # Convert predicted action to pressures and suction states here, e.g.:
-        d_pressures, suction_states = action_to_pressures_and_suction(action)
+        d_pressures, suction_states, gait_length = action_to_pressures_and_suction(action)
         pressures += d_pressures
         pressures = np.clip(pressures,0,400)
+        gait_length 
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
+        env.change_gait_length(gait_length)
         env.step()
     
     env.disconnect()
@@ -128,8 +132,10 @@ def get_env_observation(env, pressures):
     # Ground reaction forces
     grfs = env.get_grfs()                       # shape (12,)
     # Time
-    gait_length = 2700
-    normalized_time = env.get_time()/(5*gait_length)
+    initial_gait_length = 2700
+    normalized_time = env.get_time()/(5*initial_gait_length)
+    # Gait length
+    normalized_gait_length = (env.get_gait_length - initial_gait_length) / initial_gait_length
 
     # Combine all into one observation array
     obs = np.concatenate([
@@ -139,7 +145,8 @@ def get_env_observation(env, pressures):
         pressures.flatten(),
         suction_states,
         grfs,
-        normalized_time
+        normalized_time,
+        normalized_gait_length
     ]).astype(np.float32)
     # Add other observations as needed
     
@@ -158,7 +165,9 @@ def action_to_pressures_and_suction(action):
     d_pressures = (action[:12].reshape(4, 3)) * 2*np.pi  # Scale from [-1,1] to [0,400] mBar
     suction_raw = action[12:]
     suction_states = suction_raw > 0.5
-    return d_pressures, suction_states
+    initial_gait_length = 2700
+    gait_length = action[-1] * initial_gait_length + initial_gait_length
+    return d_pressures, suction_states, gait_length
 
 
 if __name__ == "__main__":

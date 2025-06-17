@@ -68,10 +68,9 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
-        self.cycle_time = 0
-        self.prev_suction_states = [False, True, True, True]
         self.suction_states = [False, True, True, True]
-        self.step_count = 0
+        self.gait_length = 2700
+        self.cycle_time = 0
 
         self.num_joints = p.getNumJoints(self.robot_id)
 
@@ -186,6 +185,7 @@ class TASQSimulator:
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
     def apply_suction(self, suction_states, force_magnitude=3):
+        self.suction_states = suction_states
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
         suction_target_pos = -0.005
         suction_pos_gain = 0.8
@@ -253,7 +253,7 @@ class TASQSimulator:
                         lateralFriction=0.5    # New friction value
                     )
                 #"""
-        self.cycle_time += 1
+        """
         if np.array_equal(suction_states, self.prev_suction_states):
             self.suction_states = self.prev_suction_states
 
@@ -265,13 +265,20 @@ class TASQSimulator:
         if self.step_count >= 4:
             self.cycle_time = 0
             self.step_count = 0
+        """
         #pressue and suction logging
         if self._current_pressures is not None:
             log_row = self._current_pressures + suction_states.tolist()
             self.log_data.append(log_row)
             self._current_pressures = None  # Reset after logging
-        
+    
+    def change_gait_length(self, new_gait_length):
+        self.gait_length = new_gait_length
+
     def step(self):
+        self.cycle_time += 1
+        if self.cycle_time > self.gait_length:
+            self.cycle_time = 0
         p.stepSimulation()
         if self.gui:
             time.sleep(1. / 240.)
@@ -293,13 +300,16 @@ class TASQSimulator:
 
     def get_suction_state(self):
         return self.suction_states
+
+    def get_time(self):
+        return np.array([self.cycle_time])
+    
+    def get_gait_length(self):
+        return self.gait_length
     
     def get_base_position(self):
         pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         return pos
-    
-    def get_time(self):
-        return np.array([self.cycle_time])
     
     def get_base_orientation(self):
         _, ori = p.getBasePositionAndOrientation(self.robot_id)

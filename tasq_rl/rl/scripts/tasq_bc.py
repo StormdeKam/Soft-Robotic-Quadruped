@@ -74,6 +74,7 @@ class BCActor(nn.Module):
         suction_idx = slice(25, 29)
         grf_idx = slice(29, 41)
         time_idx = 42
+        gait_length_idx = 43
 
         # Smaller weights for base and GRF features
         weight[:, base_pos_idx] = 0.01 * torch.randn_like(weight[:, base_pos_idx])
@@ -82,9 +83,10 @@ class BCActor(nn.Module):
         weight[:, grf_idx] = 0.01 * torch.randn_like(weight[:, grf_idx])
 
         # Larger weights for pressures, suctions and time
-        weight[:, pressure_idx] = 0.05 * torch.randn_like(weight[:, pressure_idx])
-        weight[:, suction_idx] = 0.05 * torch.randn_like(weight[:, suction_idx])
-        weight[:, time_idx] = 0.1 * torch.randn_like(weight[:, grf_idx])
+        weight[:, pressure_idx] = 0.1 * torch.randn_like(weight[:, pressure_idx])
+        weight[:, suction_idx] = 0.1 * torch.randn_like(weight[:, suction_idx])
+        weight[:, time_idx] = 0.5 * torch.randn_like(weight[:, time_idx])
+        weight[:, gait_length_idx] = 0.5 * torch.randn_like(weight[:, gait_length_idx])
 
 
         # Optional: zero out the bias

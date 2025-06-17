@@ -8,7 +8,7 @@ from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
 gait_length = 2700
-num_episodes = 100  # Number of simulation rollouts
+num_episodes = 150  # Number of simulation rollouts
 total_steps = 3*gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)
@@ -293,14 +293,16 @@ def run_episode(episode_idx):
     normalized_pressures = np.zeros(12)
     episode_states = []
     episode_actions = []
+    normalized_gait_length = np.zeros(1)
     for step in range(total_steps):
         # Get state
         base_pos = sim.get_base_position()          # shape (3,)
         base_quat = sim.get_base_orientation()      # shape (4,)
         base_vel = sim.get_base_velocity()          # shape (6,)
         grfs = sim.get_grfs()                       # shape (12,)
-        time = sim.get_time()                       # shape (1, )
-        normalized_time = time/(5*gait_length)
+        time = sim.get_time()                       
+        normalized_time = time/(5*gait_length)      # shape (1, )
+        
 
         # Combine all into one observation array
         state = np.concatenate([
@@ -310,13 +312,15 @@ def run_episode(episode_idx):
             normalized_pressures,
             suction_states,
             grfs,
-            normalized_time
+            normalized_time,
+            normalized_gait_length
         ]).astype(np.float32)
         #print(normalized_time, ": ", suction_states)
         
 
-        d_pressures = demo_pressures(step)  # (4, 3)
-        suction_states = demo_suction(step)  # (4,)
+        d_pressures = demo_pressures(step)          # (4, 3)
+        suction_states = demo_suction(step)         # (4,)
+        normalized_gait_length = np.zeros(1)                 # (1,)
         
         # Flatten action: 12 pressures + 4 suctions = (16,)
         random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4,3))
@@ -328,15 +332,15 @@ def run_episode(episode_idx):
         #print("noise  ratio = ", np.abs((noisy_d_pressures.flatten() -d_pressures.flatten()) / d_pressures.flatten()))
         suction_states = suction_states.astype(np.float32)
         normalized_d_pressures = noisy_d_pressures/(2*np.pi)
-        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
+        action = np.concatenate([normalized_d_pressures.flatten(), suction_states, normalized_gait_length])
         
         pressures += noisy_d_pressures
         pressures = np.clip(pressures, 0,400)
         normalized_pressures = (pressures/200 -1).flatten()
         sim.apply_pressures(pressures)
         sim.apply_suction(suction_states)
+        #sim.change_gait_length(gait_length)
         sim.step()
-        
         
         episode_states.append(state)
         episode_actions.append(action)
@@ -402,7 +406,7 @@ if __name__ == "__main__":
     # Save final data
     states_array = np.array(all_states, dtype=np.float32)
     actions_array = np.array(all_actions, dtype=np.float32)
-    np.save(os.path.join(save_path, "demo_states6.npy"), states_array)
-    np.save(os.path.join(save_path, "demo_actions6.npy"), actions_array)
+    np.save(os.path.join(save_path, "demo_states7.npy"), states_array)
+    np.save(os.path.join(save_path, "demo_actions7.npy"), actions_array)
 
     print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")
