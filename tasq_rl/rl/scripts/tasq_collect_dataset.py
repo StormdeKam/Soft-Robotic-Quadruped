@@ -293,16 +293,12 @@ def run_episode(episode_idx):
     normalized_pressures = np.zeros(12)
     episode_states = []
     episode_actions = []
-    normalized_gait_length = np.zeros(1)
     for step in range(total_steps):
         # Get state
         base_pos = sim.get_base_position()          # shape (3,)
         base_quat = sim.get_base_orientation()      # shape (4,)
         base_vel = sim.get_base_velocity()          # shape (6,)
-        grfs = sim.get_grfs()                       # shape (12,)
-        time = sim.get_time()                       
-        normalized_time = time/(5*gait_length)      # shape (1, )
-        
+        grfs = sim.get_grfs()                       # shape (12,)        
 
         # Combine all into one observation array
         state = np.concatenate([
@@ -311,16 +307,12 @@ def run_episode(episode_idx):
             base_vel,
             normalized_pressures,
             suction_states,
-            grfs,
-            normalized_time,
-            normalized_gait_length
+            grfs
         ]).astype(np.float32)
         #print(normalized_time, ": ", suction_states)
-        
 
         d_pressures = demo_pressures(step)          # (4, 3)
         suction_states = demo_suction(step)         # (4,)
-        normalized_gait_length = np.zeros(1)                 # (1,)
         
         # Flatten action: 12 pressures + 4 suctions = (16,)
         random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4,3))
@@ -332,14 +324,13 @@ def run_episode(episode_idx):
         #print("noise  ratio = ", np.abs((noisy_d_pressures.flatten() -d_pressures.flatten()) / d_pressures.flatten()))
         suction_states = suction_states.astype(np.float32)
         normalized_d_pressures = noisy_d_pressures/(2*np.pi)
-        action = np.concatenate([normalized_d_pressures.flatten(), suction_states, normalized_gait_length])
+        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
         
         pressures += noisy_d_pressures
         pressures = np.clip(pressures, 0,400)
         normalized_pressures = (pressures/200 -1).flatten()
         sim.apply_pressures(pressures)
         sim.apply_suction(suction_states)
-        #sim.change_gait_length(gait_length)
         sim.step()
         
         episode_states.append(state)

@@ -10,38 +10,31 @@ from rl.scripts.tasq_simulator import TASQSimulator  # Adjust path if needed
 # --- Behavior Cloning model class (same as your training) ---
 import torch.nn as nn
 
-class BCActor(nn.Module):
-    def __init__(self, obs_dim, action_dim):
+class RNNActor(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=1):
         super().__init__()
-        self.fc1 = nn.Linear(obs_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, action_dim)
-
-        self.net = nn.Sequential(
-            self.fc1,
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim, 256),
             nn.ReLU(),
-            self.fc2,
-            nn.ReLU(),
-            self.fc3,
+            nn.Linear(256, output_dim),
             nn.Tanh()
         )
-        
+
     def forward(self, x):
-        return self.net(x)
+        # x: [batch_size, seq_len, input_dim]
+        out, _ = self.lstm(x)
+        last_out = out[:, -1, :]  # Use final output from sequence
+        return self.fc(last_out)
 
 
 def stack_states(state_buffer, new_state, max_len=4):
-    """
-    Maintain a buffer of the last max_len states and return flattened stacked state
-    """
     if len(state_buffer) >= max_len:
         state_buffer.pop(0)
     state_buffer.append(new_state)
-    if len(state_buffer) < max_len:
-        # Pad with copies of first state until length max_len
-        while len(state_buffer) < max_len:
-            state_buffer.insert(0, new_state)
-    return np.concatenate(state_buffer, axis=-1), state_buffer
+    while len(state_buffer) < max_len:
+        state_buffer.insert(0, new_state)
+    return np.stack(state_buffer, axis=0), state_buffer  # shape:
 
 
 def run_behavior_cloning(model_path, env, device):
@@ -49,13 +42,14 @@ def run_behavior_cloning(model_path, env, device):
     
     # Get obs_dim and action_dim from saved model or specify here:
     # You must know obs_dim and action_dim from training, or save in a config
-    original_obs_dim = 42 # set your original observation dim (from states shape)
+    original_obs_dim = 41 # set your original observation dim (from states shape)
     action_dim = 16  # For example, or get from saved data
     N = 4  # stacking frames
     
-    obs_dim = original_obs_dim * N
-    
-    model = BCActor(obs_dim, action_dim).to(device)
+    obs_dim = original_obs_dim
+    seq_len = N
+    model = RNNActor(input_dim=obs_dim, hidden_dim=128, output_dim=action_dim).to(device)
+
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
@@ -63,8 +57,6 @@ def run_behavior_cloning(model_path, env, device):
 
     suction_states = np.zeros(4)
     pressures = np.zeros((4,3))
-    initial_gait_length = 2700
-    gait_length = initial_gait_length
     
     steps = 3000
     for step in range(steps):
@@ -76,20 +68,18 @@ def run_behavior_cloning(model_path, env, device):
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
         
         # Convert to tensor
-        state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
+        sequence_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)  # shape: (1, seq_len, obs_dim)
         
         with torch.no_grad():
-            action = model(state_tensor).cpu().numpy().squeeze()
+            action = model(sequence_tensor).cpu().numpy().squeeze()
         
         # Convert predicted action to pressures and suction states here, e.g.:
-        d_pressures, suction_states, gait_length = action_to_pressures_and_suction(action)
+        d_pressures, suction_states = action_to_pressures_and_suction(action)
         pressures += d_pressures
-        pressures = np.clip(pressures,0,400)
-        gait_length 
+        pressures = np.clip(pressures,0,400) 
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
-        env.change_gait_length(gait_length)
         env.step()
     
     env.disconnect()
@@ -131,11 +121,6 @@ def get_env_observation(env, pressures):
     suction_states = env.get_suction_state()
     # Ground reaction forces
     grfs = env.get_grfs()                       # shape (12,)
-    # Time
-    initial_gait_length = 2700
-    normalized_time = env.get_time()/(5*initial_gait_length)
-    # Gait length
-    normalized_gait_length = (env.get_gait_length - initial_gait_length) / initial_gait_length
 
     # Combine all into one observation array
     obs = np.concatenate([
@@ -144,9 +129,7 @@ def get_env_observation(env, pressures):
         base_vel,
         pressures.flatten(),
         suction_states,
-        grfs,
-        normalized_time,
-        normalized_gait_length
+        grfs
     ]).astype(np.float32)
     # Add other observations as needed
     
@@ -165,9 +148,8 @@ def action_to_pressures_and_suction(action):
     d_pressures = (action[:12].reshape(4, 3)) * 2*np.pi  # Scale from [-1,1] to [0,400] mBar
     suction_raw = action[12:]
     suction_states = suction_raw > 0.5
-    initial_gait_length = 2700
-    gait_length = action[-1] * initial_gait_length + initial_gait_length
-    return d_pressures, suction_states, gait_length
+
+    return d_pressures, suction_states
 
 
 if __name__ == "__main__":

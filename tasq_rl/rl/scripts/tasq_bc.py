@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states6.npy",
-    action_path="rl/datasets/demo_actions6.npy",
+    state_path="rl/datasets/demo_states7.npy",
+    action_path="rl/datasets/demo_actions7.npy",
     N=4
 )
 
@@ -43,62 +43,30 @@ train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, pin_memory
 val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, pin_memory=True, num_workers=4)
 
 # --- Define model ---
-class BCActor(nn.Module):
-    def __init__(self, obs_dim, action_dim):
+# --- Define RNN model ---
+class RNNActor(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=1):
         super().__init__()
-        self.fc1 = nn.Linear(obs_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, action_dim)
-
-        self.net = nn.Sequential(
-            self.fc1,
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim, 256),
             nn.ReLU(),
-            self.fc2,
-            nn.ReLU(),
-            self.fc3,
+            nn.Linear(256, output_dim),
             nn.Tanh()
         )
 
-
-        self.initialize_weights()
-
-    def initialize_weights(self):
-        weight = self.fc1.weight.data
-        bias = self.fc1.bias.data
-
-        # Feature index ranges
-        base_pos_idx = slice(0, 3)
-        base_quat_idx = slice(3, 7)
-        base_vel_idx = slice(7, 13)
-        pressure_idx = slice(13, 25)
-        suction_idx = slice(25, 29)
-        grf_idx = slice(29, 41)
-        time_idx = 42
-        gait_length_idx = 43
-
-        # Smaller weights for base and GRF features
-        weight[:, base_pos_idx] = 0.01 * torch.randn_like(weight[:, base_pos_idx])
-        weight[:, base_quat_idx] = 0.01 * torch.randn_like(weight[:, base_quat_idx])
-        weight[:, base_vel_idx] = 0.01 * torch.randn_like(weight[:, base_vel_idx])
-        weight[:, grf_idx] = 0.01 * torch.randn_like(weight[:, grf_idx])
-
-        # Larger weights for pressures, suctions and time
-        weight[:, pressure_idx] = 0.1 * torch.randn_like(weight[:, pressure_idx])
-        weight[:, suction_idx] = 0.1 * torch.randn_like(weight[:, suction_idx])
-        weight[:, time_idx] = 0.5 * torch.randn_like(weight[:, time_idx])
-        weight[:, gait_length_idx] = 0.5 * torch.randn_like(weight[:, gait_length_idx])
-
-
-        # Optional: zero out the bias
-        bias.zero_()
-
-
     def forward(self, x):
-        return self.net(x)
+        # x: [batch_size, seq_len, input_dim]
+        out, _ = self.lstm(x)  # [batch_size, seq_len, hidden_dim]
+        last_out = out[:, -1, :]  # Use last time step's output
+        return self.fc(last_out)
 
-obs_dim = dataset.obs_dim * dataset.N
+# --- Model and optimizer setup ---
+obs_dim = dataset.obs_dim
+seq_len = dataset.N
 action_dim = dataset.action_dim
-model = BCActor(obs_dim, action_dim).to(DEVICE)
+
+model = RNNActor(input_dim=obs_dim, hidden_dim=128, output_dim=action_dim).to(DEVICE)
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 criterion = nn.MSELoss()
 
@@ -115,7 +83,8 @@ for epoch in range(1, EPOCHS + 1):
 
     # 🟦 tqdm here for training loop
     for batch_states, batch_actions in tqdm(train_loader, desc=f"Epoch {epoch}/{EPOCHS} - Training", leave=False):
-        batch_states = batch_states.to(DEVICE, non_blocking=True)
+        # For training and validation:
+        batch_states = batch_states.view(batch_states.size(0), seq_len, obs_dim).to(DEVICE, non_blocking=True)
         batch_actions = batch_actions.to(DEVICE, non_blocking=True)
 
         optimizer.zero_grad()
@@ -134,7 +103,8 @@ for epoch in range(1, EPOCHS + 1):
     # 🟦 tqdm here for validation loop
     with torch.no_grad():
         for val_states, val_actions in tqdm(val_loader, desc=f"Epoch {epoch}/{EPOCHS} - Validation", leave=False):
-            val_states = val_states.to(DEVICE, non_blocking=True)
+            # For training and validation:
+            val_states = val_states.view(val_states.size(0), seq_len, obs_dim).to(DEVICE, non_blocking=True)
             val_actions = val_actions.to(DEVICE, non_blocking=True)
 
             val_pred = model(val_states)
