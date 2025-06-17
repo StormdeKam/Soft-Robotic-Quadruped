@@ -25,7 +25,7 @@ class BCActor(nn.Module):
 
 # --- Load model ---
 model = BCActor(obs_dim=42*4, action_dim=16)
-model.load_state_dict(torch.load("rl/models/tasq_bc/tasq_bc_ep25_20250613-125957.pt"))
+model.load_state_dict(torch.load("rl/models/tasq_bc/tasq_bc_ep100_20250617-105411.pt"))
 model.eval()
 
 # --- Load states and sample 25 stacked observations ---

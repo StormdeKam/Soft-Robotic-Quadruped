@@ -28,7 +28,7 @@ class TASQSimulator:
         self._load_environment()        
         self._initialize_robot()
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -49,8 +49,11 @@ class TASQSimulator:
     
     def _load_environment(self):
         self.plane_id = p.loadURDF("plane.urdf")
-        self.start_pos = [0, 0, 0.15]
-        self.start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        self.start_x = np.random.uniform(-0.2, 0.2)
+        self.start_y = np.random.uniform(-0.2, 0.2)
+        self.start_pos = [self.start_x, self.start_y, 0.12]
+        self.start_yaw = np.random.uniform(-np.pi, np.pi)
+        self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
         """
         print(f"[DEBUG] Robot loaded with ID: {self.robot_id}")

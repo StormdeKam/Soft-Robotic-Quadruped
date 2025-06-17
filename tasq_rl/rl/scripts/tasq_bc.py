@@ -17,7 +17,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4 #original 3e-4
 EPOCHS = 100
-SAVE_INTERVAL = 5
+SAVE_INTERVAL = 25
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Optional: Cap GPU memory usage (e.g., 90%)
@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states5.npy",
-    action_path="rl/datasets/demo_actions5.npy",
+    state_path="rl/datasets/demo_states6.npy",
+    action_path="rl/datasets/demo_actions6.npy",
     N=4
 )
 
@@ -60,7 +60,7 @@ class BCActor(nn.Module):
         )
 
 
-        #self.initialize_weights()
+        self.initialize_weights()
 
     def initialize_weights(self):
         weight = self.fc1.weight.data
@@ -82,8 +82,8 @@ class BCActor(nn.Module):
         weight[:, grf_idx] = 0.01 * torch.randn_like(weight[:, grf_idx])
 
         # Larger weights for pressures, suctions and time
-        weight[:, pressure_idx] = 0.1 * torch.randn_like(weight[:, pressure_idx])
-        weight[:, suction_idx] = 0.1 * torch.randn_like(weight[:, suction_idx])
+        weight[:, pressure_idx] = 0.05 * torch.randn_like(weight[:, pressure_idx])
+        weight[:, suction_idx] = 0.05 * torch.randn_like(weight[:, suction_idx])
         weight[:, time_idx] = 0.1 * torch.randn_like(weight[:, grf_idx])
 
 
