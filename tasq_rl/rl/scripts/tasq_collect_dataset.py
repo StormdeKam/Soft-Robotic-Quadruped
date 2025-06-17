@@ -8,7 +8,7 @@ from multiprocessing import freeze_support, Manager
 
 # --- Parameters ---
 gait_length = 2700
-num_episodes = 600  # Number of simulation rollouts
+num_episodes = 100  # Number of simulation rollouts
 total_steps = 3*gait_length
 save_path = "rl/datasets"
 os.makedirs(save_path, exist_ok=True)
@@ -171,7 +171,7 @@ def demo_pressures(step):
         d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[150,150,150,  100,350,100,    100,100,100,    350,350,350]
-    elif rel_step < 26*n: # Activate suction leg 2, deactivate suction leg 3
+    elif rel_step < 26*n: # Activate suction leg 1, deactivate suction leg 2
         #print("Activate suction leg 2, deactivate suction leg 3")
         d_pressures=np.zeros((4,3))
 
@@ -217,11 +217,11 @@ def demo_suction(step):
         ss4 = True
     
     else:
-        ss1 = True
+        ss1 = False
         ss2 = True
         ss3 = True
         ss4 = True
-    
+
     return np.array([ss1,ss2,ss3,ss4])
 
 # --- Data Collection Loop ---
@@ -285,6 +285,7 @@ def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
     urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
     urdf_path = urdf_dict[no_links]
+    #urdf_path = "rl/urdfs/TASQ_n7.urdf"
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     noisy_d_pressures = np.zeros(12)
     suction_states = np.zeros(4)
@@ -311,13 +312,14 @@ def run_episode(episode_idx):
             grfs,
             normalized_time
         ]).astype(np.float32)
-        #print(state)
+        #print(normalized_time, ": ", suction_states)
+        
 
         d_pressures = demo_pressures(step)  # (4, 3)
         suction_states = demo_suction(step)  # (4,)
         
         # Flatten action: 12 pressures + 4 suctions = (16,)
-        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.05, size=(4,3))
+        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4,3))
         noisy_d_pressures = d_pressures + random_gaussian_noise
         noisy_d_pressures = np.clip(noisy_d_pressures, -2*np.pi, 2*np.pi)
         #print(noisy_d_pressures.flatten())
@@ -400,7 +402,7 @@ if __name__ == "__main__":
     # Save final data
     states_array = np.array(all_states, dtype=np.float32)
     actions_array = np.array(all_actions, dtype=np.float32)
-    np.save(os.path.join(save_path, "demo_states5.npy"), states_array)
-    np.save(os.path.join(save_path, "demo_actions5.npy"), actions_array)
+    np.save(os.path.join(save_path, "demo_states6.npy"), states_array)
+    np.save(os.path.join(save_path, "demo_actions6.npy"), actions_array)
 
     print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")

@@ -66,9 +66,9 @@ class TASQSimulator:
         self.revolute_joints = []
         self.prismatic_joints = []
         self.cycle_time = 0
-        self.prev_suction_states = [False, False, False, False]
-        self.suction_states = [False, False, False, False]
-        self.step_count = -1
+        self.prev_suction_states = [False, True, True, True]
+        self.suction_states = [False, True, True, True]
+        self.step_count = 0
 
         self.num_joints = p.getNumJoints(self.robot_id)
 
@@ -253,17 +253,15 @@ class TASQSimulator:
         self.cycle_time += 1
         if np.array_equal(suction_states, self.prev_suction_states):
             self.suction_states = self.prev_suction_states
-        elif self.cycle_time - self.step_count*(2700/4) > 500:
+
+        else:
             self.step_count += 1
             self.suction_states = suction_states
             self.prev_suction_states = suction_states
-        else:
-            self.suction_states = self.prev_suction_states
 
         if self.step_count >= 4:
             self.cycle_time = 0
             self.step_count = 0
-        
         #pressue and suction logging
         if self._current_pressures is not None:
             log_row = self._current_pressures + suction_states.tolist()
@@ -275,7 +273,7 @@ class TASQSimulator:
         if self.gui:
             time.sleep(1. / 240.)
                 
-    def run(self, steps=1000, pressure_callback=None, suction_callback=None):
+    def run(self, steps=2000, pressure_callback=None, suction_callback=None):
         pressures = np.zeros((4, 3))
         suction_states = np.array([False, False, False, False])
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")

@@ -22,7 +22,7 @@ class StackedDataset(Dataset):
         obs_dim = self.obs_dim
         for i in range(self.N):
             time_index = (i + 1) * obs_dim - 1  # last feature in each frame
-            stacked_obs[time_index] += np.random.normal(loc=0.0, scale=0.005)
+            stacked_obs[time_index] += np.random.normal(loc=0.0, scale=0.001)
 
         action = self.actions[idx].astype(np.float32)
         return torch.from_numpy(stacked_obs), torch.from_numpy(action)

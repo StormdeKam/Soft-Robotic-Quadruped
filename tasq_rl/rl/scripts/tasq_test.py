@@ -64,7 +64,7 @@ def run_behavior_cloning(model_path, env, device):
     suction_states = np.zeros(4)
     pressures = np.zeros((4,3))
     
-    steps = 1000
+    steps = 5000
     for step in range(steps):
         # Get observation from simulator
         normalized_pressures = pressures/200 -1
