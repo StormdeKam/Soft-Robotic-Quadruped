@@ -406,7 +406,7 @@ if __name__ == "__main__":
     # Save final data
     states_array = np.array(all_states, dtype=np.float32)
     actions_array = np.array(all_actions, dtype=np.float32)
-    np.save(os.path.join(save_path, "demo_states7.npy"), states_array)
-    np.save(os.path.join(save_path, "demo_actions7.npy"), actions_array)
+    np.save(os.path.join(save_path, "demo_states8.npy"), states_array)
+    np.save(os.path.join(save_path, "demo_actions8.npy"), actions_array)
 
     print(f"Saved {len(states_array)} state-action pairs to '{save_path}'")
