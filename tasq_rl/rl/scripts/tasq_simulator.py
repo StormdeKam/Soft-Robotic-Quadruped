@@ -29,7 +29,7 @@ class TASQSimulator:
         self._load_environment()        
         self._initialize_robot()
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -69,7 +69,7 @@ class TASQSimulator:
         self.revolute_joints = []
         self.prismatic_joints = []
         self.suction_states = np.array([False, True, True, True])
-        self.gait_length = 2200
+        self.gait_length = 2300
         self.cycle_time = 0
 
         self.num_joints = p.getNumJoints(self.robot_id)
