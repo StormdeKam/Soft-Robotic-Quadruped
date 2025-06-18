@@ -3,8 +3,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
 
@@ -15,12 +14,12 @@ MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
-LEARNING_RATE = 1e-4 #original 3e-4
+LEARNING_RATE = 1e-4
 EPOCHS = 100
 SAVE_INTERVAL = 25
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# Optional: Cap GPU memory usage (e.g., 90%)
+
 if torch.cuda.is_available():
     torch.cuda.set_per_process_memory_fraction(0.9)
 
@@ -37,38 +36,48 @@ dataset = StackedDataset(
 # --- Datasets & loader ---
 val_size = int(len(dataset) * VAL_SPLIT)
 train_size = len(dataset) - val_size
-train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, pin_memory=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, pin_memory=True, num_workers=4)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
 
-# --- Define model ---
-# --- Define RNN model ---
+# --- Define RNN model with two heads ---
 class RNNActor(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=1):
+    def __init__(self, input_dim, hidden_dim, pressure_dim=12, suction_dim=4, num_layers=1):
         super().__init__()
         self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
-        self.fc = nn.Sequential(
+        self.shared_fc = nn.Sequential(
             nn.Linear(hidden_dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, output_dim),
-            nn.Tanh()
+            nn.ReLU()
         )
+        self.pressure_head = nn.Linear(256, pressure_dim)  # MSE output
+        self.suction_head = nn.Linear(256, suction_dim)    # BCEWithLogits output
 
     def forward(self, x):
-        # x: [batch_size, seq_len, input_dim]
-        out, _ = self.lstm(x)  # [batch_size, seq_len, hidden_dim]
-        last_out = out[:, -1, :]  # Use last time step's output
-        return self.fc(last_out)
+        out, _ = self.lstm(x)
+        last_out = out[:, -1, :]
+        shared = self.shared_fc(last_out)
+        pressures = self.pressure_head(shared)
+        suctions = self.suction_head(shared)
+        return pressures, suctions
 
 # --- Model and optimizer setup ---
 obs_dim = dataset.obs_dim
 seq_len = dataset.N
 action_dim = dataset.action_dim
 
-model = RNNActor(input_dim=obs_dim, hidden_dim=128, output_dim=action_dim).to(DEVICE)
+model = RNNActor(input_dim=obs_dim, hidden_dim=128).to(DEVICE)
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-criterion = nn.MSELoss()
+mse_loss = nn.MSELoss()
+bce_loss = nn.BCEWithLogitsLoss()
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer,
+    mode='min',
+    factor=0.5,        # Reduce LR by this factor
+    patience=5,        # Wait 5 epochs before reducing
+    min_lr=1e-6,       # Don't go lower than this
+    verbose=True
+)
 
 # --- Log file setup ---
 with open(LOG_FILE, "w") as f:
@@ -77,19 +86,25 @@ with open(LOG_FILE, "w") as f:
 # --- Training loop ---
 print("Beginning training...")
 start_time = time.time()
+
 for epoch in range(1, EPOCHS + 1):
     model.train()
     total_train_loss = 0.0
 
-    # 🟦 tqdm here for training loop
     for batch_states, batch_actions in tqdm(train_loader, desc=f"Epoch {epoch}/{EPOCHS} - Training", leave=False):
-        # For training and validation:
         batch_states = batch_states.view(batch_states.size(0), seq_len, obs_dim).to(DEVICE, non_blocking=True)
         batch_actions = batch_actions.to(DEVICE, non_blocking=True)
 
+        target_pressures = batch_actions[:, :12]
+        target_suctions = batch_actions[:, 12:]
+
         optimizer.zero_grad()
-        pred = model(batch_states)
-        loss = criterion(pred, batch_actions)
+        pred_pressures, pred_suctions = model(batch_states)
+
+        loss_pressures = mse_loss(pred_pressures, target_pressures)
+        loss_suctions = bce_loss(pred_suctions, target_suctions)
+        loss = loss_pressures + loss_suctions
+
         loss.backward()
         optimizer.step()
 
@@ -100,19 +115,25 @@ for epoch in range(1, EPOCHS + 1):
     # --- Validation ---
     model.eval()
     total_val_loss = 0.0
-    # 🟦 tqdm here for validation loop
+
     with torch.no_grad():
         for val_states, val_actions in tqdm(val_loader, desc=f"Epoch {epoch}/{EPOCHS} - Validation", leave=False):
-            # For training and validation:
             val_states = val_states.view(val_states.size(0), seq_len, obs_dim).to(DEVICE, non_blocking=True)
             val_actions = val_actions.to(DEVICE, non_blocking=True)
 
-            val_pred = model(val_states)
-            val_loss = criterion(val_pred, val_actions)
+            target_pressures = val_actions[:, :12]
+            target_suctions = val_actions[:, 12:]
+
+            pred_pressures, pred_suctions = model(val_states)
+
+            val_loss_pressures = mse_loss(pred_pressures, target_pressures)
+            val_loss_suctions = bce_loss(pred_suctions, target_suctions)
+            val_loss = val_loss_pressures + val_loss_suctions
+
             total_val_loss += val_loss.item() * val_states.size(0)
 
     avg_val_loss = total_val_loss / val_size
-
+    scheduler.step(avg_val_loss)
     # --- Logging ---
     elapsed = time.time() - start_time
     avg_epoch_time = elapsed / epoch
@@ -120,7 +141,8 @@ for epoch in range(1, EPOCHS + 1):
     rem_hours = int(remaining // 3600)
     rem_mins = int((remaining % 3600) // 60)
 
-    print(f"[Epoch {epoch}/{EPOCHS}] Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f} | ETA: {rem_hours}h {rem_mins}m")
+    current_lr = optimizer.param_groups[0]['lr']
+    print(f"[Epoch {epoch}/{EPOCHS}] Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f} | LR: {current_lr:.2e} | ETA: {rem_hours}h {rem_mins}m") 
 
     # Save checkpoint
     if epoch % SAVE_INTERVAL == 0 or epoch == EPOCHS:

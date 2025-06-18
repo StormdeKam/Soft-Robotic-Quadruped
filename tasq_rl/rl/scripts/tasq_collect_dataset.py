@@ -217,7 +217,7 @@ def demo_suction(step):
         ss4 = True
     
     else:
-        ss1 = True
+        ss1 = False
         ss2 = True
         ss3 = True
         ss4 = True
