@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states7.npy",
-    action_path="rl/datasets/demo_actions7.npy",
+    state_path="rl/datasets/RNN/demo_states.npy",
+    action_path="rl/datasets/RNN/demo_states.npy",
     N=4
 )
 
