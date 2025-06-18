@@ -8,7 +8,7 @@ from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc"
+MODEL_DIR = "rl/models/tasq_bc/RNN"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -16,7 +16,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4
 EPOCHS = 100
-SAVE_INTERVAL = 25
+SAVE_INTERVAL = 5
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -28,9 +28,9 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/RNN/demo_states.npy",
-    action_path="rl/datasets/RNN/demo_states.npy",
-    N=4
+    state_path="rl/datasets/demo_states8.npy",
+    action_path="rl/datasets/demo_actions8.npy",
+    N=10
 )
 
 # --- Datasets & loader ---
@@ -75,8 +75,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     mode='min',
     factor=0.5,        # Reduce LR by this factor
     patience=5,        # Wait 5 epochs before reducing
-    min_lr=1e-6,       # Don't go lower than this
-    verbose=True
+    min_lr=1e-6       # Don't go lower than this
 )
 
 # --- Log file setup ---
