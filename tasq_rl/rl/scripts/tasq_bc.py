@@ -17,7 +17,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4 #original 3e-4
 EPOCHS = 100
-SAVE_INTERVAL = 5
+SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Optional: Cap GPU memory usage (e.g., 90%)
@@ -29,8 +29,8 @@ print("Started behavior cloning training using", DEVICE)
 # --- Load demonstration data efficiently ---
 print("Loading dataset...")
 dataset = StackedDataset(
-    state_path="rl/datasets/demo_states8.npy",
-    action_path="rl/datasets/demo_actions8.npy",
+    state_path="rl/datasets/no_steady_states/demo_states_merged.npy",
+    action_path="rl/datasets/no_steady_states/demo_actions_merged.npy",
     N=4
 )
 
@@ -101,6 +101,13 @@ action_dim = dataset.action_dim
 model = BCActor(obs_dim, action_dim).to(DEVICE)
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 criterion = nn.MSELoss()
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer,
+    mode='min',
+    factor=0.5,        # Reduce LR by this factor
+    patience=5,        # Wait 5 epochs before reducing
+    min_lr=1e-6,       # Don't go lower than this
+)
 
 # --- Log file setup ---
 with open(LOG_FILE, "w") as f:
@@ -142,7 +149,7 @@ for epoch in range(1, EPOCHS + 1):
             total_val_loss += val_loss.item() * val_states.size(0)
 
     avg_val_loss = total_val_loss / val_size
-
+    scheduler.step(avg_val_loss)
     # --- Logging ---
     elapsed = time.time() - start_time
     avg_epoch_time = elapsed / epoch
@@ -150,7 +157,8 @@ for epoch in range(1, EPOCHS + 1):
     rem_hours = int(remaining // 3600)
     rem_mins = int((remaining % 3600) // 60)
 
-    print(f"[Epoch {epoch}/{EPOCHS}] Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f} | ETA: {rem_hours}h {rem_mins}m")
+    current_lr = optimizer.param_groups[0]['lr']
+    print(f"[Epoch {epoch}/{EPOCHS}] Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f} | LR: {current_lr:.2e} | ETA: {rem_hours}h {rem_mins}m")
 
     # Save checkpoint
     if epoch % SAVE_INTERVAL == 0 or epoch == EPOCHS:

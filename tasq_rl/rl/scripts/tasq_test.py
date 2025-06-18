@@ -49,8 +49,8 @@ def run_behavior_cloning(model_path, env, device):
     
     # Get obs_dim and action_dim from saved model or specify here:
     # You must know obs_dim and action_dim from training, or save in a config
-    original_obs_dim = 43 # set your original observation dim (from states shape)
-    action_dim = 17  # For example, or get from saved data
+    original_obs_dim = 41 # set your original observation dim (from states shape)
+    action_dim = 16  # For example, or get from saved data
     N = 4  # stacking frames
     
     obs_dim = original_obs_dim * N
@@ -81,13 +81,13 @@ def run_behavior_cloning(model_path, env, device):
             action = model(state_tensor).cpu().numpy().squeeze()
         
         # Convert predicted action to pressures and suction states here, e.g.:
-        d_pressures, suction_states, gait_length = action_to_pressures_and_suction(action)
+        d_pressures, suction_states = action_to_pressures_and_suction(action) #, gait_length
         pressures += d_pressures
         pressures = np.clip(pressures,0,400) 
         
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
-        env.change_gait_length(gait_length)
+        #env.change_gait_length(gait_length)
         env.step()
     
     env.disconnect()
@@ -130,12 +130,11 @@ def get_env_observation(env, pressures):
     grfs = np.array(env.get_grfs())                       # (12,)
 
     # Time and gait length (ensure they are floats)
-    initial_gait_length = 2200
+    #initial_gait_length = 2300
     # Safe scalar extraction
-    normalized_time = env.get_time().item() / (5 * initial_gait_length)
-    normalized_gait_length = float((env.get_gait_length() - initial_gait_length) / initial_gait_length)
-    normalized_gait_length = np.clip(normalized_gait_length, -1,1)
-    print(normalized_time)
+    #normalized_time = env.get_time().item() / (5 * initial_gait_length)
+    #normalized_gait_length = float((env.get_gait_length() - initial_gait_length) / initial_gait_length)
+    #normalized_gait_length = np.clip(normalized_gait_length, -1,1)
     # Combine all into one observation array
     obs = np.concatenate([
         base_pos,
@@ -143,9 +142,9 @@ def get_env_observation(env, pressures):
         base_vel,
         pressures.flatten(),
         suction_states,
-        grfs,
-        [normalized_time],
-        [normalized_gait_length]
+        grfs#,
+        #[normalized_time],
+        #[normalized_gait_length]
     ]).astype(np.float32)
     # Add other observations as needed
     return obs
@@ -163,9 +162,9 @@ def action_to_pressures_and_suction(action):
     d_pressures = (action[:12].reshape(4, 3)) * 2*np.pi  # Scale from [-1,1] to [0,400] mBar
     suction_raw = action[12:16]
     suction_states = suction_raw > 0.5
-    initial_gait_length = 2200
-    gait_length = action[-1] * initial_gait_length + initial_gait_length
-    return d_pressures, suction_states, gait_length
+    #initial_gait_length = 2300
+    #gait_length = action[-1] * initial_gait_length + initial_gait_length
+    return d_pressures, suction_states#, gait_length
 
 
 if __name__ == "__main__":
