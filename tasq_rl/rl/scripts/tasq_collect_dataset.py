@@ -324,9 +324,12 @@ def merge_npy_chunks(folder, prefix, output_name):
 if __name__ == "__main__":
     freeze_support()
     manager = Manager()
+    lock = manager.Lock()
 
-    args = list(range(num_episodes))
+    args = [(i, lock) for i in range(num_episodes)]
     start_time = time.time()
+    #args = list(range(num_episodes))
+    #start_time = time.time()
 
     all_states_buffer = []
     all_actions_buffer = []
@@ -338,6 +341,14 @@ if __name__ == "__main__":
                 all_actions_buffer.append(actions_np)
                 pbar.update(1)
 
+                elapsed = time.time() - start_time
+                eps_done = ep_idx + 1
+                eps_rem = num_episodes - eps_done
+                time_per_ep = elapsed / eps_done
+                est_rem_time = eps_rem * time_per_ep
+                est_hours = int(est_rem_time // 3600)
+                est_minutes = int((est_rem_time // 60) % 60)
+                print(f"Episode {eps_done}/{num_episodes} complete — est. time remaining: {est_hours}h {est_minutes}m")
                 # Save every save_interval episodes
                 if (ep_idx + 1) % save_interval == 0:
                     chunk_id = (ep_idx + 1) // save_interval - 1
@@ -346,6 +357,7 @@ if __name__ == "__main__":
                     np.save(os.path.join(save_path, f"demo_states_{chunk_id}.npy"), states_concat)
                     np.save(os.path.join(save_path, f"demo_actions_{chunk_id}.npy"), actions_concat)
                     print(f"Saved chunk {chunk_id} with {states_concat.shape[0]} samples")
+                    
 
                     # Clear buffers
                     all_states_buffer.clear()
