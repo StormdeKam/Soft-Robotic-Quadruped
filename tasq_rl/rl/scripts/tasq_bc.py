@@ -15,8 +15,8 @@ MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
-LEARNING_RATE = 1e-4 #original 3e-4
-EPOCHS = 100
+LEARNING_RATE = 3e-6 #original 3e-4
+EPOCHS = 20
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -61,6 +61,13 @@ class BCActor(nn.Module):
 
 
         #self.initialize_weights()
+    def initialize_weights_from_checkpoint(self, checkpoint_path, device="cpu"):
+        state_dict = torch.load(checkpoint_path, map_location=device)
+        self.load_state_dict(state_dict)
+        self.to(device)
+        self.eval()
+        print(f"Loaded weights from {checkpoint_path}")
+        return model
 
     def initialize_weights(self):
         weight = self.fc1.weight.data
@@ -99,6 +106,10 @@ class BCActor(nn.Module):
 obs_dim = dataset.obs_dim * dataset.N
 action_dim = dataset.action_dim
 model = BCActor(obs_dim, action_dim).to(DEVICE)
+try:
+    model = model.initialize_weights_from_checkpoint("rl/models/tasq_bc/no_steady_states/tasq_bc_ep100_20250619-025729.pt", DEVICE)
+except RuntimeError as e:
+    print(f"Weight loading failed: {e}")
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 criterion = nn.MSELoss()
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(

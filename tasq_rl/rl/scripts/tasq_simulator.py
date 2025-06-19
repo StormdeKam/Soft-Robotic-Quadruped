@@ -29,7 +29,7 @@ class TASQSimulator:
         self._load_environment()        
         self._initialize_robot()
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
