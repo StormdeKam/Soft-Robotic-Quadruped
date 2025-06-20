@@ -37,7 +37,7 @@ def plot_pressures_and_suctions(filepath):
     plt.legend(loc='upper right', ncol=4)
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("pressures_plot.png")
+    plt.savefig("figures/pressures_plot.png")
     plt.show()
 
     # --- Plot suction states ---
@@ -51,7 +51,7 @@ def plot_pressures_and_suctions(filepath):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("suction_states_plot.png")
+    plt.savefig("figures/suction_states_plot.png")
     plt.show()
 
 # --- Call the function with your CSV file ---

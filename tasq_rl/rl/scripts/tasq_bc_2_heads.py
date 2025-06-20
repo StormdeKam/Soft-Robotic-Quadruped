@@ -9,14 +9,14 @@ from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/2_heads"
+MODEL_DIR = "rl/models/tasq_bc/random_gait_cycle_start"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
-EPOCHS = 100
+EPOCHS = 200
 SAVE_INTERVAL = 5
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,8 +27,8 @@ print("Started behavior cloning training using", DEVICE)
 
 # --- Load dataset ---
 dataset = StackedDataset(
-    state_path="rl/datasets/no_steady_states/demo_states_merged.npy",
-    action_path="rl/datasets/no_steady_states/demo_actions_merged.npy",
+    state_path="rl/datasets/random_gait_cycle_start/demo_states_merged.npy",
+    action_path="rl/datasets/random_gait_cycle_start/demo_actions_merged.npy",
     N=4
 )
 

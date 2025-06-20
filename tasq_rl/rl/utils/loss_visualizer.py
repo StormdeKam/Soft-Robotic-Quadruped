@@ -53,5 +53,5 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig("loss_all_in_one.png", dpi=300)
+plt.savefig("figures/loss_all_in_one.png", dpi=300)
 plt.show()

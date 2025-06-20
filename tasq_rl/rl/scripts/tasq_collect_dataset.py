@@ -9,9 +9,9 @@ import re
 
 # --- Parameters ---
 gait_length = 2300
-num_episodes = 1000 #Number of simulation rollouts
-total_steps = 3*gait_length
-save_path = "rl/datasets/no_steady_states"
+num_episodes = 500 #Number of simulation rollouts
+total_steps = 6*gait_length
+save_path = "rl/datasets/random_gait_cycle_start"
 os.makedirs(save_path, exist_ok=True)
 
 all_states = []
@@ -51,7 +51,8 @@ def demo_pressures(step):
         #[0,350,0,  400,400,400,    0,0,0,    400,400,400]
     elif rel_step < 5*n: # Orient leg 1
         #print("orient leg 1 down")
-        d_pressures[0,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
+        d_pressures[0,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[0,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         #[0,350,350,  400,400,400,    0,0,0,    400,400,400]
     elif rel_step < 6*n: # Place leg 1 down
         #print("Place leg 1 down")
@@ -62,7 +63,7 @@ def demo_pressures(step):
     elif rel_step < 7*n: # Orient leg 1
         #print("orient leg 1 down")
         d_pressures[0,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        d_pressures[0,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
+        d_pressures[0,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
     elif rel_step < 7*n+1: # Activate suction leg 1, deactivate suction leg 3
         #print("Activate suction leg 1, deactivate suction leg 3")
@@ -173,11 +174,11 @@ def demo_pressures(step):
         #[250,250,250,  250,0,350,    250,250,250,    0,0,0]
     elif rel_step < 22*n: # Place leg 2 down
         #print("Place leg 2 down")
-        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100 
+        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50 
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[1,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[1,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
+        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[150,150,150,  100,350,100,    100,100,100,    350,350,350]
     elif rel_step < 22*n+1: # Activate suction leg 2, deactivate suction leg 3
@@ -186,11 +187,11 @@ def demo_pressures(step):
 
     elif rel_step < 23*n: #Zero pressure position
         #print("Zero pressure position")
-        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
+        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[1,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[1,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[0,0,0,  0,0,0,    0,0,0,    0,0,0]
     return d_pressures
@@ -235,29 +236,31 @@ def demo_suction(step):
 
 # --- Data Collection Loop ---
 
+no_links_list = [5, 6, 7]
+urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
+startingpoints = [0,800,1300,1800]
+startingpressures_dict = {0: 0, 800:210, 1300:230, 1800:250}
 # Multithreading
-def run_episode(episode_idx):
-    no_links_list = [5, 6, 7]
+def run_episode(episode_idx): 
     no_links = np.random.choice(no_links_list)
-    urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
     urdf_path = urdf_dict[no_links]
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
 
     noisy_d_pressures = np.zeros(12)
-    suction_states = np.zeros(4)
-    pressures = np.zeros((4, 3))
-    normalized_pressures = np.zeros(12)
     episode_states = []
     episode_actions = []
-    normalized_gait_length = np.zeros(1)
+
+    # Different starting points:
+    startingpoint = np.random.choice(startingpoints)
+    pressures = np.ones((4, 3)) * startingpressures_dict[startingpoint] + 5
+    normalized_pressures = (pressures / 200 - 1).flatten()
+    suction_states = demo_suction(startingpoint)
 
     for step in range(total_steps):
         base_pos = sim.get_base_position()
         base_quat = sim.get_base_orientation()
         base_vel = sim.get_base_velocity()
         grfs = sim.get_grfs()
-        time_ = sim.get_time()
-        normalized_time = time_ / (5 * gait_length)
 
         state = np.concatenate([
             base_pos,
@@ -265,14 +268,11 @@ def run_episode(episode_idx):
             base_vel,
             normalized_pressures,
             suction_states,
-            grfs,
-            normalized_time,
-            normalized_gait_length
+            grfs
         ]).astype(np.float32)
 
-        d_pressures = demo_pressures(step)
-        suction_states = demo_suction(step)
-        normalized_gait_length = np.zeros(1)
+        d_pressures = demo_pressures(step+startingpoint) * 0.9
+        suction_states = demo_suction(step+startingpoint)
 
         random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4, 3))
         noisy_d_pressures = d_pressures + random_gaussian_noise
@@ -281,7 +281,7 @@ def run_episode(episode_idx):
         suction_states = suction_states.astype(np.float32)
         normalized_d_pressures = noisy_d_pressures / (2 * np.pi)
 
-        action = np.concatenate([normalized_d_pressures.flatten(), suction_states, normalized_gait_length])
+        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
 
         pressures += noisy_d_pressures
         pressures = np.clip(pressures, 0, 400)
@@ -336,7 +336,7 @@ if __name__ == "__main__":
 
     with Pool(processes=os.cpu_count()) as pool:
         with tqdm(total=num_episodes) as pbar:
-            for states_np, actions_np, ep_idx in pool.imap_unordered(run_episode, args):
+            for states_np, actions_np, (ep_idx, _) in pool.imap_unordered(run_episode, args):
                 all_states_buffer.append(states_np)
                 all_actions_buffer.append(actions_np)
                 pbar.update(1)

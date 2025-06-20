@@ -35,7 +35,8 @@ def demo_pressures(step):
         #[0,350,0,  400,400,400,    0,0,0,    400,400,400]
     elif rel_step < 5*n: # Orient leg 1
         #print("orient leg 1 down")
-        d_pressures[0,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
+        d_pressures[0,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[0,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         #[0,350,350,  400,400,400,    0,0,0,    400,400,400]
     elif rel_step < 6*n: # Place leg 1 down
         #print("Place leg 1 down")
@@ -46,7 +47,7 @@ def demo_pressures(step):
     elif rel_step < 7*n: # Orient leg 1
         #print("orient leg 1 down")
         d_pressures[0,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        d_pressures[0,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
+        d_pressures[0,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
     elif rel_step < 7*n+1: # Activate suction leg 1, deactivate suction leg 3
         #print("Activate suction leg 1, deactivate suction leg 3")
@@ -157,11 +158,11 @@ def demo_pressures(step):
         #[250,250,250,  250,0,350,    250,250,250,    0,0,0]
     elif rel_step < 22*n: # Place leg 2 down
         #print("Place leg 2 down")
-        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100 
+        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50 
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[1,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[1,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
+        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[150,150,150,  100,350,100,    100,100,100,    350,350,350]
     elif rel_step < 22*n+1: # Activate suction leg 2, deactivate suction leg 3
@@ -170,11 +171,11 @@ def demo_pressures(step):
 
     elif rel_step < 23*n: #Zero pressure position
         #print("Zero pressure position")
-        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
+        d_pressures[0,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         d_pressures[1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[1,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[1,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         #[0,0,0,  0,0,0,    0,0,0,    0,0,0]
     return d_pressures
