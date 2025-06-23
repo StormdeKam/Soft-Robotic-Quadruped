@@ -20,16 +20,8 @@ class TASQSimulator:
             pass
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setGravity(0, 0, -9.8)
-        p.resetDebugVisualizerCamera(cameraDistance=0.5,
-                                 cameraYaw=90+self.start_yaw*(180/np.pi),
-                                 cameraPitch=-20,
-                                 cameraTargetPosition=[0, 0, 0.2])
-        
-        self._load_environment()        
-        self._initialize_robot()
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -47,7 +39,41 @@ class TASQSimulator:
 
         # Attach handler to logger
         self.logger.addHandler(console_handler)
+
+        #self.reset_simulation()
     
+
+    def reset_simulation(self):
+        # Reset PyBullet simulation (clears all bodies, constraints, etc.)
+        p.resetSimulation(physicsClientId=self.physics_client)
+        p.setGravity(0, 0, -9.8, physicsClientId=self.physics_client)
+        
+        # Reset camera as in constructor
+        p.resetDebugVisualizerCamera(
+            cameraDistance=0.5,
+            cameraYaw=90 + self.start_yaw * (180 / np.pi),
+            cameraPitch=-20,
+            cameraTargetPosition=[0, 0, 0.2],
+            physicsClientId=self.physics_client
+        )
+        
+        # Reload plane and robot
+        self._load_environment()
+        
+        # Reset robot internals, joints, gains, etc.
+        self._initialize_robot()
+
+        # Reset internal state variables
+        self.suction_states = np.array([False, True, True, True])
+        self.pressure_state = np.zeros((4, 3))
+        self.cycle_time = 0
+        self.gait_length = 2300
+        self.log_data.clear()
+        self._current_pressures = None
+        
+        # Reset other counters or flags if you have any
+        # e.g., self.step_count = 0
+
     def _load_environment(self):
         self.plane_id = p.loadURDF("plane.urdf")
         self.start_x = np.random.uniform(-0.2, 0.2)

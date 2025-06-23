@@ -6,33 +6,36 @@ import torch.nn as nn
 
 # --- Define the model ---
 class BCActor(nn.Module):
-    def __init__(self, obs_dim, action_dim):
+    def __init__(self, obs_dim):
         super().__init__()
-        self.fc1 = nn.Linear(obs_dim, 256)
-        self.fc2 = nn.Linear(256, 256)
-        self.fc3 = nn.Linear(256, action_dim)
-        self.net = nn.Sequential(
-            self.fc1,
+        self.shared = nn.Sequential(
+            nn.Linear(obs_dim, 256),
             nn.ReLU(),
-            self.fc2,
-            nn.ReLU(),
-            self.fc3,
+            nn.Linear(256, 256),
+            nn.ReLU()
+        )
+        self.pressure_head = nn.Sequential(
+            nn.Linear(256, 12),
             nn.Tanh()
         )
+        self.suction_head = nn.Linear(256, 4)
 
     def forward(self, x):
-        return self.net(x)
+        x = self.shared(x)
+        pressures = self.pressure_head(x)       # Linear output for MSE
+        suctions = self.suction_head(x)         # Logits for BCEWithLogitsLoss
+        return pressures, suctions
 
 # --- Load model ---
-model = BCActor(obs_dim=42*4, action_dim=16)
-model.load_state_dict(torch.load("rl/models/tasq_bc/tasq_bc_ep100_20250617-105411.pt"))
+model = BCActor(obs_dim=41*4)
+model.load_state_dict(torch.load("rl/models/tasq_bc/2_heads/tasq_bc_ep100_20250620-002326.pt"))
 model.eval()
 
 # --- Load states and sample 25 stacked observations ---
-states = np.load("rl/datasets/demo_states4.npy")
+states = np.load("rl/datasets/random_gait_cycle_start/demo_states_19.npy")
 stack_size = 4
 sample_size = 25
-state_dim = 42
+state_dim = 41
 
 np.random.seed(42)
 max_start = len(states) - stack_size
@@ -44,7 +47,8 @@ stacked_inputs = np.array([states[i:i+stack_size].flatten() for i in indices])  
 inputs = torch.tensor(stacked_inputs, dtype=torch.float32, requires_grad=True)
 
 # --- Forward pass ---
-outputs = model(inputs)  # shape: (25, 16)
+pressures, suctions = model(inputs)
+outputs = torch.cat([pressures, suctions], dim=1)  # shape: (25, 16)
 
 # --- Compute saliency (mean gradient of each output w.r.t each input) ---
 saliency = torch.zeros(outputs.shape[1], inputs.shape[1])  # shape: (16, 168)
@@ -60,8 +64,8 @@ for i in range(outputs.shape[1]):  # loop over output dims
 saliency = saliency.numpy()  # shape: (16, 168)
 
 # --- Create input labels ---
-feature_groups = ["pos", "ori", "vel", "pres", "suct", "grf", "t"]
-group_sizes = [3, 4, 6, 12, 4, 12, 1]
+feature_groups = ["pos", "ori", "vel", "pres", "suct", "grf"]
+group_sizes = [3, 4, 6, 12, 4, 12]
 
 input_labels = []
 for frame in range(4):
@@ -94,4 +98,24 @@ plt.ylabel("Output Neurons (pressures + suctions)")
 plt.xticks(rotation=90, fontsize=6)
 plt.tight_layout()
 plt.show()
+
+# --- Aggregate saliency across frames ---
+saliency = saliency.reshape(16, 4, 41)  # (outputs, frames, features)
+saliency = saliency.mean(axis=1)  # shape: (16, 41)
+
+# --- Update input labels to one per feature ---
+input_labels = []
+for group, size in zip(feature_groups, group_sizes):
+    input_labels += [f"{group}{i+1}" for i in range(size)]
+
+# --- Plot ---
+plt.figure(figsize=(14, 6))
+sns.heatmap(saliency, cmap="coolwarm", xticklabels=input_labels, yticklabels=output_labels)
+plt.title("Saliency Map: Mean ∂Output / ∂Input over Frames (Averaged Across 4 Frames)")
+plt.xlabel("Input Features (frame-averaged)")
+plt.ylabel("Output Neurons (pressures + suctions)")
+plt.xticks(rotation=90, fontsize=6)
+plt.tight_layout()
+plt.show()
+
 

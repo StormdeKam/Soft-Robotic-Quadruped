@@ -1,15 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from stable_baselines3 import SAC
 from stable_baselines3.sac.policies import SACPolicy
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.policies import BasePolicy
 from gym import spaces
-import numpy as np
 
-
-# --- Shared Feature Extractor (optional, or use default MlpExtractor) ---
+# --- Shared Feature Extractor ---
 class SharedMLP(nn.Module):
     def __init__(self, input_dim, hidden_dim=256):
         super().__init__()
@@ -24,78 +20,122 @@ class SharedMLP(nn.Module):
         return self.shared(x)
 
 
-# --- Custom Actor with Multi-Head Output ---
+# --- Multi-Head Actor ---
 class MultiHeadActor(nn.Module):
-    def __init__(self, feature_dim, action_dim):
+    def __init__(self, feature_dim, log_std_min=-20, log_std_max=2):
         super().__init__()
         self.shared = SharedMLP(feature_dim)
-
-        # Continuous pressure deltas (12-d)
-        self.pressure_head = nn.Sequential(
-            nn.Linear(256, 12),
-            nn.Tanh()  # Assume range [-1, 1] for scaling to env
-        )
-
-        # Binary suction actions (4-d)
+        self.mu = nn.Linear(256, 12)
+        self.log_std = nn.Linear(256, 12)
+        self.log_std_min = log_std_min
+        self.log_std_max = log_std_max
         self.suction_head = nn.Sequential(
             nn.Linear(256, 4),
-            nn.Sigmoid()  # Probability output for binary decision
+            nn.Sigmoid()
         )
 
-    def forward(self, x):
-        shared = self.shared(x)
-        pressures = self.pressure_head(shared)
-        suctions = self.suction_head(shared)
-        return torch.cat([pressures, suctions], dim=-1)  # (batch, 16)
-    
-    def load_from_bc(self, bc_weights_path, device="cpu"):
-        """Load weights from a pretrained BC model into the SAC actor."""
-        state_dict = torch.load(bc_weights_path, map_location=device)
+    def forward(self, obs, deterministic=False):
+        x = self.shared(obs)
+        mu = self.mu(x)
+        log_std = self.log_std(x).clamp(self.log_std_min, self.log_std_max)
+        std = torch.exp(log_std)
 
-        own_state = self.state_dict()
-        matched_keys = [k for k in own_state.keys() if k in state_dict and own_state[k].shape == state_dict[k].shape]
-        for k in matched_keys:
-            own_state[k] = state_dict[k]
-        self.load_state_dict(own_state)
-        print(f"[INFO] Loaded BC weights into MultiHeadActor from {bc_weights_path}")
-
-
-
-# --- Custom Policy class to integrate with SB3 ---
-class MultiHeadSACPolicy(SACPolicy):
-    def __init__(self, observation_space, action_space, lr_schedule, **kwargs):
-        super().__init__(observation_space, action_space, lr_schedule, **kwargs)
-
-        input_dim = observation_space.shape[0]
-        action_dim = 16
-
-        self.actor = MultiHeadActor(input_dim, action_dim).to(self.device)
-        self.actor_target = MultiHeadActor(input_dim, action_dim).to(self.device)
-        self.actor_target.load_state_dict(self.actor.state_dict())
-
-        # Critic setup (reuse SB3 MlpCritic)
-        self._build(lr_schedule)
-
-    def _build(self, lr_schedule):
-        # Actor optimizer
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr_schedule(1))
-
-    def _predict(self, observation, deterministic=False):
-        with torch.no_grad():
-            action = self.actor(observation)
         if deterministic:
-            return action
+            pressure = torch.tanh(mu)
         else:
-            # Add Gaussian noise to pressure, sample suction
-            pressures = action[:, :12] + 0.1 * torch.randn_like(action[:, :12])
-            suctions = (action[:, 12:] > 0.5).float()
-            return torch.cat([pressures, suctions], dim=-1)
+            normal = torch.distributions.Normal(mu, std)
+            pressure_raw = normal.rsample()
+            pressure = torch.tanh(pressure_raw)
+
+        suction = self.suction_head(x)
+        action = torch.cat([pressure, suction], dim=-1)
+        return action
+
+    def evaluate(self, obs):
+        x = self.shared(obs)
+        mu = self.mu(x)
+        log_std = self.log_std(x).clamp(self.log_std_min, self.log_std_max)
+        std = torch.exp(log_std)
+
+        normal = torch.distributions.Normal(mu, std)
+        pressure_raw = normal.rsample()
+        pressure = torch.tanh(pressure_raw)
+
+        log_prob = normal.log_prob(pressure_raw) - torch.log(1 - pressure.pow(2) + 1e-6)
+        log_prob = log_prob.sum(dim=1, keepdim=True)
+
+        suction = self.suction_head(x)
+        action = torch.cat([pressure, suction], dim=-1)
+        return action, log_prob
+
+    def load_from_bc(self, path, device="cpu"):
+        state_dict = torch.load(path, map_location=device)
+        own_state = self.state_dict()
+        for k in own_state:
+            if k in state_dict and state_dict[k].shape == own_state[k].shape:
+                own_state[k] = state_dict[k]
+        self.load_state_dict(own_state)
+        print(f"[INFO] Loaded BC weights into MultiHeadActor from {path}")
+
+
+# --- Wrapped Policy for SB3 ---
+class MultiHeadWrappedPolicy(BasePolicy):
+    def __init__(self, observation_space, action_space, actor_class):
+        super().__init__(observation_space, action_space)
+        obs_dim = observation_space.shape[0]
+        self.actor_net = actor_class(obs_dim)
+        self._is_training = True
 
     def forward(self, obs, deterministic=False):
-        return self._predict(obs, deterministic)
+        action = self.actor_net(obs, deterministic=deterministic)
+        return action
+
+    def _predict(self, obs, deterministic=False):
+        with torch.no_grad():
+            x = torch.as_tensor(obs, dtype=torch.float32).to(next(self.parameters()).device)
+            action = self.actor_net(x, deterministic=deterministic)
+            return action
+
+    def predict(self, obs, deterministic=False):
+        action_tensor = self._predict(obs, deterministic)
+        return action_tensor.cpu().numpy()
+
+    def set_training_mode(self, mode: bool):
+        self._is_training = mode
+        self.actor_net.train(mode)
+
+    def parameters(self):
+        return self.actor_net.parameters()
+
+    def to(self, device):
+        self.actor_net.to(device)
+        return self
+
+    def load_from_bc(self, path, device="cpu"):
+        self.actor_net.load_from_bc(path, device=device)
+
+    def action_log_prob(self, obs):
+        x = torch.as_tensor(obs, dtype=torch.float32).to(next(self.parameters()).device)
+        action, log_prob = self.actor_net.evaluate(x)
+        return action, log_prob
 
 
-# --- Custom SAC Class ---
+# --- Custom SAC Policy ---
+class MultiHeadSACPolicy(SACPolicy):
+    def __init__(self, observation_space, action_space, lr_schedule, **kwargs):
+        self.custom_actor_class = MultiHeadActor
+        super().__init__(observation_space, action_space, lr_schedule, **kwargs)
+
+    def make_actor(self, features_extractor=None):
+        return MultiHeadWrappedPolicy(self.observation_space, self.action_space, self.custom_actor_class)
+
+    def _build(self, lr_schedule):
+        super()._build(lr_schedule)
+        self.actor_target = self.make_actor()
+        self.actor_target.load_state_dict(self.actor.state_dict())
+
+
+# --- Custom SAC Wrapper ---
 from stable_baselines3.sac.sac import SAC as BaseSAC
 
 class MultiHeadSAC(BaseSAC):
@@ -112,8 +152,14 @@ if __name__ == "__main__":
     from rl.scripts.tasq_env import TASQEnv
     from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 
+    """
+    obs_tensor = torch.randn(1, 164)
+    actor = MultiHeadActor(feature_dim=164)
+    actor(obs_tensor, deterministic=True)
+    """
+    
     def make_env():
-        return TASQEnv(urdf_path="tasq_rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)
+        return TASQEnv(urdf_path="rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)
 
     env = DummyVecEnv([make_env])
     env = VecFrameStack(env, n_stack=4)
@@ -131,9 +177,10 @@ if __name__ == "__main__":
     )
 
     # Optional: Load pretrained BC weights
-    bc_weights_path = "tasq_rl/models/tasq_bc/no_steady_states/tasq_bc_ep100_20250619-025729.pt"
+    bc_weights_path = "rl/models/tasq_bc/2_heads/tasq_bc_ep100_20250620-002326.pt"
     model.policy.actor.load_from_bc(bc_weights_path, device=model.device)
     model.policy.actor_target.load_state_dict(model.policy.actor.state_dict())
 
-    model.learn(total_timesteps=10_000)
-    model.save("tasq_rl/models/tasq_sac_multihead")
+
+    model.learn(total_timesteps=0)
+    model.save("rl/models/tasq_sac/tasq_sac_multihead")

@@ -14,7 +14,7 @@ class TASQEnv(gym.Env):
         self.step_count = 0
 
         # Initialize pressures and suction states
-        self.pressures = np.zeros(12, dtype=np.float32)
+        self.pressures = np.zeros((4,3), dtype=np.float32)
         self.suction_states = np.zeros(4, dtype=np.uint8)
            
         # Action = 12 pressure deltas in [-1, 1] + 4 suction cup states (binary 0 or 1)
@@ -32,12 +32,13 @@ class TASQEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.sim.disconnect()  # Start clean
-        self.sim = TASQSimulator(self.urdf_path, no_links=self.no_links, gui=self.sim.gui, render_mode=self.sim.render_mode)
+        # Instead of disconnect/recreate sim, just reset sim state:
+        self.sim.reset_simulation()  # you may need to add this method in TASQSimulator
         self.step_count = 0
         self.target = np.random.uniform(-0.3, 0.3, size=2).astype(np.float32)
         obs = self._get_obs()
         return obs, {}
+
 
     def _get_obs(self):
         # Get base state
@@ -46,7 +47,7 @@ class TASQEnv(gym.Env):
         base_vel = self.sim.get_base_velocity()          # shape (6,)
 
         # Pressures (already tracked)
-        pressures = self.pressures                             # shape (12,)
+        pressures = self.pressures.flatten()/200 -1                             # shape (12,)
 
         # Suction cup states (binary)
         suction = self.suction_states.astype(np.float32)       # shape (4,)
@@ -69,21 +70,20 @@ class TASQEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
-        # Split action into pressure deltas and suction states
-        delta_pressures = action[:12]
-        suction_commands = action[12:]
+        d_pressures = (action[:12].reshape(4, 3)) * 2 * np.pi
+        suction_raw = action[12:16]
+        suction_sigmoids = 1/(1 + np.exp(-suction_raw))
 
         # Apply pressure deltas
-        max_delta = 1.0  # Max pressure change per step in mbar
-        self.pressures = np.clip(self.pressures + delta_pressures * max_delta, 0.0, 400.0)
+        self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
 
         # Update suction states based on threshold
-        self.suction_states = (suction_commands > 0.5).astype(np.uint8)
+        self.suction_states = (suction_sigmoids > 0.5).astype(np.uint8)
 
         # Step the simulator with current pressure and suction state
-        pressures_reshaped = self.pressures.reshape((4, 3))
-        self.sim.apply_pressures(pressures_reshaped)
+        self.sim.apply_pressures(self.pressures)
         self.sim.apply_suction(self.suction_states)
+        print(self.pressures, self.suction_states)
         self.sim.step()
 
         # Calculate reward
@@ -104,7 +104,7 @@ class TASQEnv(gym.Env):
         orientation_penalty = np.abs(pitch) + np.abs(roll)
 
         # 4. Smoothness penalty (based on pressure change)
-        smoothness_penalty = np.sum(np.square(delta_pressures))
+        smoothness_penalty = np.sum(np.square(d_pressures))
 
         # --- Weighting factors ---
         w_dist = 1.0
@@ -122,7 +122,7 @@ class TASQEnv(gym.Env):
         )
 
         # Terminate or truncate
-        terminated = distance < 0.05
+        terminated = distance < 0.0005
         truncated = self.step_count >= self.max_steps
 
         self.step_count += 1
