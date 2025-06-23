@@ -69,14 +69,38 @@ class MultiHeadActor(nn.Module):
         return action, log_prob
 
     def load_from_bc(self, path, device="cpu"):
-        state_dict = torch.load(path, map_location=device)
-        own_state = self.state_dict()
-        for k in own_state:
-            if k in state_dict and state_dict[k].shape == own_state[k].shape:
-                own_state[k] = state_dict[k]
-        self.load_state_dict(own_state)
-        print(f"[INFO] Loaded BC weights into MultiHeadActor from {path}")
+        bc_state = torch.load(path, map_location=device)
+        mapped_state = {}
+        
+        # Map keys manually
+        for k, v in bc_state.items():
+            if k.startswith("shared."):
+                mapped_key = "shared." + k  # maps to shared.shared.*
+            elif k.startswith("pressure_head.0."):
+                mapped_key = k.replace("pressure_head.0.", "mu.")
+            elif k.startswith("suction_head."):
+                mapped_key = k.replace("suction_head.", "suction_head.0.")
+            else:
+                continue
+            mapped_state[mapped_key] = v
 
+        own_state = self.state_dict()
+        loaded, skipped = [], []
+        for k in own_state:
+            if k in mapped_state and mapped_state[k].shape == own_state[k].shape:
+                own_state[k] = mapped_state[k]
+                loaded.append(k)
+            else:
+                skipped.append(k)
+
+        self.load_state_dict(own_state)
+        print(f"[INFO] Loaded BC weights from {path}")
+        print(f"[✓] Loaded {len(loaded)} keys:")
+        for k in loaded:
+            print(f"  ✓ {k}")
+        print(f"[!] Skipped {len(skipped)} keys:")
+        for k in skipped:
+            print(f"  ✗ {k}")
 
 # --- Wrapped Policy for SB3 ---
 class MultiHeadWrappedPolicy(BasePolicy):
@@ -184,3 +208,7 @@ if __name__ == "__main__":
 
     model.learn(total_timesteps=0)
     model.save("rl/models/tasq_sac/tasq_sac_multihead")
+
+    bc_weights = torch.load("rl/models/tasq_bc/2_heads/tasq_bc_ep100_20250620-002326.pt")
+    assert torch.allclose(model.policy.actor.actor_net.mu.weight, bc_weights["pressure_head.0.weight"])
+
