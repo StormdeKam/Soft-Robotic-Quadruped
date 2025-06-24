@@ -10,7 +10,7 @@ class TASQEnv(gym.Env):
         self.urdf_path = urdf_path
         self.no_links = no_links
         self.sim = TASQSimulator(self.urdf_path, gui=gui, no_links=self.no_links, render_mode=render_mode)
-        self.max_steps = 1000
+        self.max_steps = 20000
         self.step_count = 0
 
         # Initialize pressures and suction states
@@ -35,7 +35,7 @@ class TASQEnv(gym.Env):
         # Instead of disconnect/recreate sim, just reset sim state:
         self.sim.reset_simulation()  # you may need to add this method in TASQSimulator
         self.step_count = 0
-        self.target = np.random.uniform(-0.3, 0.3, size=2).astype(np.float32)
+        self.target = np.array([0.0, 0.0], dtype=np.float32)        
         obs = self._get_obs()
         return obs, {}
 
@@ -72,18 +72,19 @@ class TASQEnv(gym.Env):
 
         d_pressures = (action[:12].reshape(4, 3)) * 2 * np.pi
         suction_raw = action[12:16]
-        suction_sigmoids = 1/(1 + np.exp(-suction_raw))
+        #suction_sigmoids = 1/(1 + np.exp(-suction_raw))
+        #print(suction_raw, suction_sigmoids)
 
         # Apply pressure deltas
         self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
 
         # Update suction states based on threshold
-        self.suction_states = (suction_sigmoids > 0.5).astype(np.uint8)
+        self.suction_states = (suction_raw > 0.5).astype(np.uint8)
 
         # Step the simulator with current pressure and suction state
         self.sim.apply_pressures(self.pressures)
         self.sim.apply_suction(self.suction_states)
-        print(self.pressures, self.suction_states)
+        #print(self.pressures, self.suction_states)
         self.sim.step()
 
         # Calculate reward
@@ -95,7 +96,7 @@ class TASQEnv(gym.Env):
         
         # 2. Height deviation penalty
         current_height = obs[2]
-        target_height = self.target_height if hasattr(self, 'target_height') else 0.2  # adjust target height
+        target_height = self.target_height if hasattr(self, 'target_height') else 0.12  # adjust target height
         height_penalty = np.abs(current_height - target_height)
 
         # 3. Orientation deviation penalty (assume quaternion in obs[3:7])

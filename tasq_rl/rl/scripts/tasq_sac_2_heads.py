@@ -5,6 +5,7 @@ from stable_baselines3.sac.policies import SACPolicy
 from stable_baselines3.common.policies import BasePolicy
 from gym import spaces
 
+
 # --- Shared Feature Extractor ---
 class SharedMLP(nn.Module):
     def __init__(self, input_dim, hidden_dim=256):
@@ -173,19 +174,21 @@ class MultiHeadSAC(BaseSAC):
 
 # --- Example usage ---
 if __name__ == "__main__":
+    from rl.utils.reward_logger_callback import RewardLoggerCallback
+    from stable_baselines3.common.callbacks import CallbackList
     from rl.scripts.tasq_env import TASQEnv
-    from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
+    from rl.utils.training_progress_callback import TrainingProgressCallback
+    from stable_baselines3.common.vec_env import SubprocVecEnv, VecFrameStack
+    import multiprocessing
 
-    """
-    obs_tensor = torch.randn(1, 164)
-    actor = MultiHeadActor(feature_dim=164)
-    actor(obs_tensor, deterministic=True)
-    """
-    
-    def make_env():
-        return TASQEnv(urdf_path="rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)
+    def make_env(rank):
+        def _init():
+            return TASQEnv(urdf_path="rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)
+        return _init
 
-    env = DummyVecEnv([make_env])
+    num_cpu = multiprocessing.cpu_count()  # or choose a subset, e.g. 8
+
+    env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
     env = VecFrameStack(env, n_stack=4)
 
     model = MultiHeadSAC(
@@ -205,10 +208,15 @@ if __name__ == "__main__":
     model.policy.actor.load_from_bc(bc_weights_path, device=model.device)
     model.policy.actor_target.load_state_dict(model.policy.actor.state_dict())
 
+    # Define how many total timesteps
+    total_timesteps = 5_000_000
+    
+    reward_logger = RewardLoggerCallback(log_interval=10_000, verbose=1)
+    progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=10_000)
 
-    model.learn(total_timesteps=0)
-    model.save("rl/models/tasq_sac/tasq_sac_multihead")
+    callback = CallbackList([reward_logger, progress_callback])
 
-    bc_weights = torch.load("rl/models/tasq_bc/2_heads/tasq_bc_ep100_20250620-002326.pt")
-    assert torch.allclose(model.policy.actor.actor_net.mu.weight, bc_weights["pressure_head.0.weight"])
+    # Start training
+    model.learn(total_timesteps=total_timesteps, callback=callback)
 
+    model.save("rl/models/tasq_sac/tasq_sac_multihead_2")

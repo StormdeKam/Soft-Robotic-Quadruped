@@ -102,7 +102,7 @@ def run_sac(model_path):
 
 
     obs = stacked_env.reset()
-    steps = 1000
+    steps = 3000
     for step in range(steps):
         action, _states = model.predict(obs, deterministic=True)
         #print("action_sac = ", action)
