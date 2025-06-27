@@ -27,67 +27,67 @@ def demo_pressures(step, mode):
         #[190,190,190,  190,190,190,    190,190,190,    190,190,190]
     elif rel_step < 2*n: #Move COM to leg 3 by making leg 3 smaller and adding pressure to chamber 2 of leg 2 and chamber 3 of leg 4
         #print("Moving COM back")
-        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*190
+        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*180
         d_pressures[l2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*210
-        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*190
+        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*180
         d_pressures[l4,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*210
-        #[0,0,0,  400,400,400,    0,0,0,    400,400,400]
+        #[10,10,10,  400,400,400,    10,10,10,    400,400,400]
     elif rel_step < 3*n: # Lift leg 1 
         #print("Lifting leg 1")
         d_pressures[l1,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        #[350,0,0,  400,400,400,    0,0,0,    400,400,400]
+        #[360,10,10,  400,400,400,    10,10,10,    400,400,400]
     elif rel_step < 4*n: # Move leg 1 COM 
         #print("move leg 1 and COM")
         d_pressures[l1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[l1,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        #[0,350,0,  400,400,400,    0,0,0,    400,400,400]
+        #[10,360,10,  400,400,400,    10,10,10,    400,400,400]
     elif rel_step < 5*n: # Orient leg 1
         #print("orient leg 1 down")
         d_pressures[l1,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l1,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        #[0,250,250,  400,400,400,    0,0,0,    400,400,400]
+        #[10,260,260,  400,400,400,    10,10,10,    400,400,400]
     elif rel_step < 6*n: # Place leg 1 down
         #print("Place leg 1 down")
         d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[l3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350        
         d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150            
-        #[0,250,250,  250,250,250,    350,350,350,    250,250,250]
+        #[10,260,260,  250,250,250,    360,360,360,    250,250,250]
     elif rel_step < 7*n: # Orient leg 1
         #print("orient leg 1 down")
         d_pressures[l1,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[l1,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
+        #[260,160,160,  250,250,250,    360,360,360,    250,250,250]
     elif rel_step < 7*n+1: # Activate suction leg 1, deactivate suction leg 3
         #print("Activate suction leg 1, deactivate suction leg 3")
         d_pressures=np.zeros((4,3))
-        #[250,150,150,  250,250,250,    350,350,350,    250,250,250]
+        #[260,160,160,  250,250,250,    360,360,360,    250,250,250]
     elif rel_step < 8*n: #Raise body to neutral position (210)
         #print("Raising COM 2")
-        d_pressures[l1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
-        d_pressures[l1,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*60
+        d_pressures[l1,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50
+        d_pressures[l1,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50
         d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
-        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*140
+        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
         #[210,210,210,  210,210,210,    210,210,210,    210,210,210]
     elif rel_step < 9*n: #Move COM to leg 1 by making leg 1 smaller and adding pressure to chamber 3 of leg 2 and chamber 2 of leg 4
         #print("Moving COM back")
-        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*210
+        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         d_pressures[l2,:2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
         d_pressures[l2,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*140
-        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*210
+        d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
         d_pressures[l4,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
         d_pressures[l4,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*140
         d_pressures[l4,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*40
-        #[0,0,0,  250,250,350,    0,0,0,    250,350,250]
+        #[10,10,10,  250,250,350,    10,10,10,    250,350,250]
     elif rel_step < 10*n: # Lift leg 3
         #print("Lifting leg 3")
         d_pressures[l3,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        #[0,0,0,  250,250,350,    150,0,0,    250,350,250]
+        #[10,10,10,  250,250,350,    160,10,10,    250,350,250]
     elif rel_step < 11*n: # Move leg 3 and COM to front
         d_pressures=np.zeros((4,3))
         d_pressures[l2,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l4,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        #[0,0,0,  250,250,250,    150,0,0,    250,250,250]
+        #[10,10,10,  250,250,250,    160,10,10,    250,250,250]
     elif rel_step < 12*n: # Place leg 3 down
         #print("Place leg 3 down")
         d_pressures[l1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
@@ -95,75 +95,76 @@ def demo_pressures(step, mode):
         #d_pressures[2,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l3,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        #[350,350,350,  150,150,150,    150,350,350,    150,150,150]
+        #[360,360,360,  150,150,150,    160,360,360,    150,150,150]
     elif rel_step < 12*n+1: # Activate suction leg 3, deactivate suction leg 4
         #print("Activate suction leg 3, deactivate suction leg 4")
         d_pressures=np.zeros((4,3))
-        #[350,350,350,  150,150,150,    150,350,350,    150,150,150]
+        #[360,360,360,  150,150,150,    160,360,360,    150,150,150]
     elif rel_step < 13*n: #Raise body to neutral position (230)
         #print("Raising COM")
         d_pressures=np.zeros((4,3))
-        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*120
+        d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*130
         d_pressures[l2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*80
-        d_pressures[l3,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*80
-        d_pressures[l3,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*120
+        d_pressures[l3,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*70
+        d_pressures[l3,1:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*130
         d_pressures[l4,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*80
         #[230,230,230,  230,230,230,    230,230,230,    230,230,230]
     elif rel_step < 14*n: #Move COM to leg 2 and 3 by making leg 2 and 3 smaller and adding pressure to chamber 2 of leg 1 and chamber 3 of leg 3
         #print("Moving COM back")
         d_pressures=np.zeros((4,3))
         d_pressures[l1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*170
-        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*230
+        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*220
         d_pressures[l3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*170
         d_pressures[l4,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*20
-        #[400,400,400,  0,0,0,    400,400,400,    250,250,250]
+        #[400,400,400,  10,10,10,    400,400,400,    250,250,250]
     elif rel_step < 15*n: # Lift leg 4
         #print("Lifting leg 4")
-        d_pressures[l4,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        d_pressures[l4,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        #[400,400,400,  0,0,0,    400,400,400,    0,350,350]
+        d_pressures[l4,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*240
+        d_pressures[l4,1:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*110
+        #[400,400,400,  10,10,10,    400,400,400,    10,360,360]
     elif rel_step < 16*n: # Move leg 4 and COM to front
         #print("move leg 4 to front")
         d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[l4,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150 
         d_pressures[l4,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        #[250,250,250,  0,0,0,    400,400,400,    150,350,0]
+        #[250,250,250,  10,10,10,    400,400,400,    160,360,10]
     elif rel_step < 17*n: # Place leg 4 down
         #print("Place leg 4 down")
         d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
         d_pressures[l4,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*300
         d_pressures[l4,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        #[150,150,150,  350,350,350,    400,400,400,    150,50,250]
+        #[150,150,150,  360,360,360,    400,400,400,    160,60,260]
     elif rel_step < 17*n+1: # Activate suction leg 3, deactivate suction leg 4
         #print("Activate suction leg 3, deactivate suction leg 4")
         d_pressures=np.zeros((4,3))
-        #[150,150,150,  350,350,350,    400,400,400,    150,50,250]
+        #[150,150,150,  360,360,360,    400,400,400,    160,60,260]
     elif rel_step < 18*n: #Raise body to neutral position (#250)
         #print("Raising COM 3")
         d_pressures[l1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*110
         d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        d_pressures[l4,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        d_pressures[l4,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
+        d_pressures[l4,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*90
+        d_pressures[l4,1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*190
+        d_pressures[l4,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*10
         #[250,250,250,  250,250,250,    250,250,250,    250,250,250]
     elif rel_step < 19*n: #Move COM to leg 3 and 4 by making leg 3 and 4 smaller and adding pressure to chamber 1 and 3 of leg 1
         #print("Moving COM back")
         d_pressures[l1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
+        d_pressures[l2,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*240
         d_pressures[l3,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
-        #[400,400,400,  0,0,0,    400,400,400,    0,0,0]
+        d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*240
+        #[400,400,400,  10,10,10,    400,400,400,    10,10,10,]
     elif rel_step < 20*n: # Lift leg 2
         #print("Lifting leg 2")
         d_pressures[l2,0]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[l2,2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        #[400,400,400,  250,0,350,    400,400,400,    0,0,0]
+        #[400,400,400,  260,10,360,    400,400,400,    10,10,10,]
     elif rel_step < 21*n: # Move leg 2 and COM to front
         #print("move leg 2 to front")
         d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        #[250,250,250,  250,0,350,    250,250,250,    0,0,0]
+        #[250,250,250,  260,10,360,    250,250,250,    10,10,10,]
     elif rel_step < 22*n: # Place leg 2 down
         #print("Place leg 2 down")
         d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50 
@@ -172,19 +173,19 @@ def demo_pressures(step, mode):
         d_pressures[l2,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*250
         d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l4,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        #[150,150,150,  100,350,100,    100,100,100,    350,350,350]
+        #[200,200,200,  110,360,110,    150,150,150,    360,360,360]
     elif rel_step < 22*n+1: # Activate suction leg 2, deactivate suction leg 3
         #print("Activate suction leg 2, deactivate suction leg 3")
         d_pressures=np.zeros((4,3))
-
+        #[200,200,200,  110,360,110,    150,150,150,    360,360,360]
     elif rel_step < 23*n: #Zero pressure position
         #print("Zero pressure position")
         d_pressures[l1,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*200
-        d_pressures[l2,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
-        d_pressures[l2,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
-        d_pressures[l2,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[l2,0]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*110
+        d_pressures[l2,1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*360
+        d_pressures[l2,2]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*110
         d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
-        d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*350
+        d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*360
         #[0,0,0,  0,0,0,    0,0,0,    0,0,0]
     return d_pressures
 """ 

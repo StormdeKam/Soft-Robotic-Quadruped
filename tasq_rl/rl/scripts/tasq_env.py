@@ -75,9 +75,6 @@ class TASQEnv(gym.Env):
         #suction_sigmoids = 1/(1 + np.exp(-suction_raw))
         #print(suction_raw, suction_sigmoids)
 
-        # Apply pressure deltas
-        self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
-
         # Update suction states based on threshold
         self.suction_states = (suction_raw > 0.5).astype(np.uint8)
 
@@ -86,6 +83,8 @@ class TASQEnv(gym.Env):
         steps_per_step = int(control_frequency / pybullet_frequency)
 
         for i in range(steps_per_step):
+            # Apply pressure deltas
+            self.pressures = np.clip(self.pressures + d_pressures/steps_per_step, 0.0, 400.0)
             # Step the simulator with current pressure and suction state
             self.sim.apply_pressures(self.pressures)
             self.sim.apply_suction(self.suction_states)

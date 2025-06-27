@@ -2,7 +2,7 @@ import numpy as np
 
 # --- Gait callbacks ---
 n = 10
-gait_length = n*23
+gait_length = n*21
 
 # Dummy callback that sends oscillating pressures for 4 legs (3 per leg)
 def demo_pressures_rot(step, mode):
@@ -118,8 +118,8 @@ def demo_pressures_rot(step, mode):
         #[150,150,150,   85,135,35,   150,150,150,    150,150,150]
     elif rel_step < 16*n: #Raise body to neutral position #250
         d_pressures[l2,p1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*165
-        d_pressures[l2,p2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*105
-        d_pressures[l2,p3]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*205
+        d_pressures[l2,p2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*115
+        d_pressures[l2,p3]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*215
         d_pressures[l1,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100 
         d_pressures[l3:,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         #[250,250,250,  250,250,250,    250,250,250,    250,250,250]
@@ -142,7 +142,7 @@ def demo_pressures_rot(step, mode):
         d_pressures[l4,p3]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150        
         #[150,150,150,  50,50,50,   150,150,150     135,60,210]
     elif rel_step < 20*n: # Place leg 4 down
-        d_pressures[l2,p1]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
+        d_pressures[l2,:]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*100
         d_pressures[l4,p1]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*50
         d_pressures[l4,p2]=(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*75
         d_pressures[l4,p3]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*175

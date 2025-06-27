@@ -12,9 +12,7 @@ from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
 
 
 # --- Parameters ---
-gait_length = 23*10
-num_episodes = 1 #Number of simulation rollouts
-total_steps = 6*gait_length
+num_episodes = 2000 #Number of simulation rollouts
 save_path = "rl/datasets/random_gait_cycle_start"
 os.makedirs(save_path, exist_ok=True)
 
@@ -35,16 +33,19 @@ def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
     gait = np.random.choice([1,2])
     if gait == 1:
+        gait_length = 23*10
         mode = np.random.choice([0,1,2,3])
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
     elif gait == 2:
+        gait_length = 21*10
         mode = np.random.choice([0,1])
         pressure_callback = partial(demo_pressures_rot, mode=mode)
         suction_callback = partial(demo_suction_rot, mode=mode)
 
+    total_steps = 6*gait_length
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
     noisy_d_pressures = np.zeros(12)
@@ -59,47 +60,45 @@ def run_episode(episode_idx):
     suction_states = suction_callback(startingpoint)
 
     for step in range(total_steps):
-        base_pos = sim.get_base_position()
-        base_quat = sim.get_base_orientation()
-        base_vel = sim.get_base_velocity()
-        grfs = sim.get_grfs()
-
-        state = np.concatenate([
-            base_pos,
-            base_quat,
-            base_vel,
-            normalized_pressures,
-            suction_states,
-            grfs
-        ]).astype(np.float32)
-
-        d_pressures = pressure_callback(step+startingpoint) * 0.9
-        suction_states = suction_callback(step+startingpoint)
-
-        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4, 3))
-        noisy_d_pressures = d_pressures + random_gaussian_noise
-        noisy_d_pressures = np.clip(noisy_d_pressures, -2 * np.pi, 2 * np.pi)
-
-        suction_states = suction_states.astype(np.float32)
-        normalized_d_pressures = noisy_d_pressures / (2 * np.pi)
-
-        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
-
-        pressures += noisy_d_pressures
-        pressures = np.clip(pressures, 0, 400)
-        normalized_pressures = (pressures / 200 - 1).flatten()
-
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
-
         for i in range(steps_per_step):
+            base_pos = sim.get_base_position()
+            base_quat = sim.get_base_orientation()
+            base_vel = sim.get_base_velocity()
+            grfs = sim.get_grfs()
+
+            state = np.concatenate([
+                base_pos,
+                base_quat,
+                base_vel,
+                normalized_pressures,
+                suction_states,
+                grfs
+            ]).astype(np.float32)
+
+            d_pressures = pressure_callback(step+startingpoint) * 0.9
+            suction_states = suction_callback(step+startingpoint)
+
+            random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4, 3))
+            noisy_d_pressures = d_pressures + random_gaussian_noise
+            noisy_d_pressures = np.clip(noisy_d_pressures, -2 * np.pi, 2 * np.pi)
+
+            suction_states = suction_states.astype(np.float32)
+            normalized_d_pressures = noisy_d_pressures / (2 * np.pi)
+
+            action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
+
+            pressures += noisy_d_pressures/steps_per_step
+            pressures = np.clip(pressures, 0, 400)
+            normalized_pressures = (pressures / 200 - 1).flatten()
+
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()
-
-        episode_states.append(state)
-        episode_actions.append(action)
+            episode_states.append(state)
+            episode_actions.append(action)
         
         if step == total_steps - 1:
             goal_pos = sim.get_base_position()
