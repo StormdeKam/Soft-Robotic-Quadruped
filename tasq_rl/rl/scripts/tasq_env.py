@@ -81,11 +81,16 @@ class TASQEnv(gym.Env):
         # Update suction states based on threshold
         self.suction_states = (suction_raw > 0.5).astype(np.uint8)
 
-        # Step the simulator with current pressure and suction state
-        self.sim.apply_pressures(self.pressures)
-        self.sim.apply_suction(self.suction_states)
-        #print(self.pressures, self.suction_states)
-        self.sim.step()
+        control_frequency = 1./24.
+        pybullet_frequency = 1./240.
+        steps_per_step = int(control_frequency / pybullet_frequency)
+
+        for i in range(steps_per_step):
+            # Step the simulator with current pressure and suction state
+            self.sim.apply_pressures(self.pressures)
+            self.sim.apply_suction(self.suction_states)
+            #print(self.pressures, self.suction_states)
+            self.sim.step()
 
         # Calculate reward
         obs = self._get_obs()

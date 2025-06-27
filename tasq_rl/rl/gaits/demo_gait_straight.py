@@ -1,7 +1,7 @@
 import numpy as np
 
 # --- Gait callbacks ---
-n = 25
+n = 10
 gait_length = n*23
 
 # Dummy callback that sends oscillating pressures for 4 legs (3 per leg)

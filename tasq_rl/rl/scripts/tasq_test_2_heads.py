@@ -73,9 +73,15 @@ def run_behavior_cloning(model_path, env, device):
         pressures += d_pressures
         pressures = np.clip(pressures, 0, 400)
         #print("action_bc = ", action)
-        env.apply_pressures(pressures)
-        env.apply_suction(suction_states)
-        env.step()
+
+        control_frequency = 1./24.
+        pybullet_frequency = 1./240.
+        steps_per_step = int(control_frequency / pybullet_frequency)
+
+        for i in range(steps_per_step):
+            env.apply_pressures(pressures)
+            env.apply_suction(suction_states)
+            env.step()
 
     env.disconnect()
     print("Behavior cloning run complete.")

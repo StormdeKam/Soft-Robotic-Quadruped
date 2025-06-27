@@ -8,7 +8,7 @@ parser.add_argument("--gait", type=str, choices=["straight", "rotation"], requir
 args = parser.parse_args()
 
 
-gait_length = 25*23
+gait_length = 10*23
 
 
 if args.gait == "straight":

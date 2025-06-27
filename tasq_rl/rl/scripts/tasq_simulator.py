@@ -293,20 +293,19 @@ class TASQSimulator:
     def run(self, steps=2000, pressure_callback=None, suction_callback=None, mode=0):
         pressures = np.zeros((4, 3))
         suction_states = np.array([False, False, False, False])
-        control_frequency = 1./60.
+        control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
 
         for step in range(steps):
+            pressures += pressure_callback(step,mode)
+            suction_states = suction_callback(step,mode)
             for i in range(steps_per_step): 
-                print(pressures)
                 if pressure_callback:
-                    pressures += pressure_callback(step,mode)/steps_per_step
                     self.apply_pressures(pressures)
 
                 if suction_callback:
-                    suction_states = suction_callback(step,mode)
                     self.apply_suction(suction_states)            
                 self.step()
 

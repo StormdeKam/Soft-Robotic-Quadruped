@@ -12,7 +12,7 @@ from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
 
 
 # --- Parameters ---
-gait_length = 2300
+gait_length = 23*10
 num_episodes = 1 #Number of simulation rollouts
 total_steps = 6*gait_length
 save_path = "rl/datasets/random_gait_cycle_start"
@@ -89,15 +89,22 @@ def run_episode(episode_idx):
         pressures = np.clip(pressures, 0, 400)
         normalized_pressures = (pressures / 200 - 1).flatten()
 
+        control_frequency = 1./24.
+        pybullet_frequency = 1./240.
+        steps_per_step = int(control_frequency / pybullet_frequency)
 
-        for i in range(4):
+        for i in range(steps_per_step):
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()
 
         episode_states.append(state)
         episode_actions.append(action)
-
+        
+        if step == total_steps - 1:
+            goal_pos = sim.get_base_position()
+            goal_quat = sim.get_base_orientation()
+            episode_states = [np.concatenate([s, goal_pos, goal_quat]) for s in episode_states]
     sim.disconnect()
 
     episode_states_np = np.array(episode_states, dtype=np.float32)
