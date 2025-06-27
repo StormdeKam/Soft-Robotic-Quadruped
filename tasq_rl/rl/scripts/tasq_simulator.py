@@ -51,8 +51,8 @@ class TASQSimulator:
         # Reset camera as in constructor
         p.resetDebugVisualizerCamera(
             cameraDistance=0.5,
-            cameraYaw=90 + self.start_yaw * (180 / np.pi),
-            cameraPitch=-20,
+            cameraYaw=0 + self.start_yaw * (180 / np.pi),
+            cameraPitch=-30,
             cameraTargetPosition=[0, 0, 0.2],
             physicsClientId=self.physics_client
         )
@@ -66,8 +66,6 @@ class TASQSimulator:
         # Reset internal state variables
         self.suction_states = np.array([False, True, True, True])
         self.pressure_state = np.zeros((4, 3))
-        self.cycle_time = 0
-        self.gait_length = 2300
         self.log_data.clear()
         self._current_pressures = None
         
@@ -76,8 +74,9 @@ class TASQSimulator:
 
     def _load_environment(self):
         self.plane_id = p.loadURDF("plane.urdf")
-        self.start_x = np.random.uniform(-1, 1)
-        self.start_y = np.random.uniform(-1, 1)
+        self.start_x = np.random.uniform(0.1, 0.1)
+        self.start_y = np.random.uniform(0.1, 0.1)
+        self.start_x, self.start_y = 0.0, 0.0
         self.start_pos = [self.start_x, self.start_y, 0.12]
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
@@ -96,8 +95,6 @@ class TASQSimulator:
         self.prismatic_joints = []
         self.suction_states = np.array([False, True, True, True])
         self.pressure_state = np.zeros((4,3))
-        self.gait_length = 2300
-        self.cycle_time = 0
 
         self.num_joints = p.getNumJoints(self.robot_id)
 
@@ -281,50 +278,37 @@ class TASQSimulator:
                         lateralFriction=0.5    # New friction value
                     )
                 #"""
-        """
-        if np.array_equal(suction_states, self.prev_suction_states):
-            self.suction_states = self.prev_suction_states
 
-        else:
-            self.step_count += 1
-            self.suction_states = suction_states
-            self.prev_suction_states = suction_states
-
-        if self.step_count >= 4:
-            self.cycle_time = 0
-            self.step_count = 0
-        """
         #pressue and suction logging
         if self._current_pressures is not None:
             log_row = self._current_pressures + suction_states.tolist()
             self.log_data.append(log_row)
             self._current_pressures = None  # Reset after logging
-    
-    def change_gait_length(self, new_gait_length):
-        self.gait_length = new_gait_length
 
     def step(self):
-        self.cycle_time += 1
-        if self.cycle_time > self.gait_length:
-            self.cycle_time = 0
         p.stepSimulation()
         if self.gui:
             time.sleep(1. / 240.)
                 
-    def run(self, steps=2000, pressure_callback=None, suction_callback=None):
+    def run(self, steps=2000, pressure_callback=None, suction_callback=None, mode=0):
         pressures = np.zeros((4, 3))
         suction_states = np.array([False, False, False, False])
+        control_frequency = 1./60.
+        pybullet_frequency = 1./240.
+        steps_per_step = int(control_frequency / pybullet_frequency)
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
 
-        for step in range(steps):            
-            if pressure_callback:
-                pressures += pressure_callback(step)
-                self.apply_pressures(pressures)
+        for step in range(steps):
+            for i in range(steps_per_step): 
+                print(pressures)
+                if pressure_callback:
+                    pressures += pressure_callback(step,mode)/steps_per_step
+                    self.apply_pressures(pressures)
 
-            if suction_callback:
-                suction_states = suction_callback(step)
-                self.apply_suction(suction_states)            
-            self.step()
+                if suction_callback:
+                    suction_states = suction_callback(step,mode)
+                    self.apply_suction(suction_states)            
+                self.step()
 
     def get_pressure_state(self):
         return self.pressure_state
@@ -332,12 +316,6 @@ class TASQSimulator:
     def get_suction_state(self):
         return self.suction_states
 
-    def get_time(self):
-        return np.array([self.cycle_time])
-    
-    def get_gait_length(self):
-        return self.gait_length
-    
     def get_base_position(self):
         pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         return pos
