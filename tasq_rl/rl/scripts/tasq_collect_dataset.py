@@ -83,10 +83,10 @@ def run_episode(episode_idx):
 
             random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4, 3))
             noisy_d_pressures = d_pressures + random_gaussian_noise
-            noisy_d_pressures = np.clip(noisy_d_pressures, -2 * np.pi, 2 * np.pi)
+            noisy_d_pressures = np.clip(noisy_d_pressures, -20 * np.pi, 20 * np.pi)
 
             suction_states = suction_states.astype(np.float32)
-            normalized_d_pressures = noisy_d_pressures / (2 * np.pi)
+            normalized_d_pressures = noisy_d_pressures / (20 * np.pi)
 
             action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
 

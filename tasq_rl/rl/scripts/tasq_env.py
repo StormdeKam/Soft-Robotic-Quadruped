@@ -70,7 +70,7 @@ class TASQEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
-        d_pressures = (action[:12].reshape(4, 3)) * 2 * np.pi
+        d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
         suction_raw = action[12:16]
         #suction_sigmoids = 1/(1 + np.exp(-suction_raw))
         #print(suction_raw, suction_sigmoids)

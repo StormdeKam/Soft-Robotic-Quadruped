@@ -10,7 +10,7 @@ def npy_to_csv(npy_file, csv_file=None):
     print(f"Shape: {array.shape}")
     print(f"Data type: {array.dtype}")
     print(f"First item (preview): {array[0] if len(array) > 0 else 'Empty'}")
-    """
+    #"""
     # Set default CSV file name if not provided
     if csv_file is None:
         csv_file = os.path.splitext(npy_file)[0] + ".csv"
@@ -25,8 +25,8 @@ def npy_to_csv(npy_file, csv_file=None):
         writer.writerows(array)
 
     print(f"Saved CSV to: {csv_file}")
-    """
+    #"""
 # Example usage
 if __name__ == "__main__":
-    npy_file = "rl/datasets/demo_states7.npy" 
+    npy_file = "rl/datasets/small_datasets/demo_states_0.npy" 
     npy_to_csv(npy_file)
