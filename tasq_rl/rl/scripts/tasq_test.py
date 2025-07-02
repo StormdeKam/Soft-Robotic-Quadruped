@@ -6,7 +6,8 @@ from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_simulator import TASQSimulator  # Adjust path if needed
-from rl.scripts.tasq_sac_2_heads import MultiHeadSAC, MultiHeadSACPolicy, MultiHeadWrappedPolicy, MultiHeadActor
+from tasq_rl.rl.scripts.tasq_sac import MultiHeadSAC, MultiHeadSACPolicy, MultiHeadWrappedPolicy, MultiHeadActor
+import pybullet as p
 
 # --- Behavior Cloning model class (Two-headed architecture) ---
 import torch.nn as nn
@@ -121,21 +122,21 @@ def run_sac(model_path):
 
 def get_env_observation(env, pressures):
     base_pos = np.array(env.get_base_position())
-    base_quat = np.array(env.get_base_orientation())
-    base_vel = np.array(env.get_base_velocity())
+    base_ori = np.array(env.get_base_orientation())
+    base_vel = np.array(env.get_base_velocity_local())
     suction_states = np.array(env.get_suction_state())
-    grfs = np.array(env.get_grfs())
-    goal_pos = np.array(env.get_base_position()) + np.array([0.04, 0, 0])
-    goal_quat = np.array(env.get_base_orientation()) + np.array([0.0, 0.0, 0.0])
+    grfs = np.array(env.get_grfs_local_foot())
+    goal_pos = np.array([0.10,0.0]) #np.array(env.get_base_position()) +,
+    goal_yaw = np.array([np.sin(np.pi/6), np.sin(np.pi/6)]) #np.array(env.get_base_orientation()) + 
     obs = np.concatenate([
         base_pos,
-        base_quat,
+        base_ori,
         base_vel,
         pressures.flatten(),
         suction_states,
         grfs,
         goal_pos,
-        goal_quat
+        goal_yaw
     ]).astype(np.float32)
     return obs
 

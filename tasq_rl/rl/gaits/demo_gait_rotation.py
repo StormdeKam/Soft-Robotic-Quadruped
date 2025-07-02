@@ -9,7 +9,7 @@ def demo_pressures_rot(step, mode):
     l1,l2,l3,l4 = 0,1,2,3
     if mode == 0: #turn clockwise
         p1,p2,p3 = 0,1,2
-    elif mode == 1: #turn anticlockwise
+    elif mode == 1: #turn counterclockwise
         p1,p2,p3 = 0,2,1
 
         

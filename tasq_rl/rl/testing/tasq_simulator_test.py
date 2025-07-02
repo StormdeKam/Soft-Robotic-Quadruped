@@ -19,7 +19,7 @@ elif args.gait == "rotation":
 
 sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
 sim.reset_simulation()
-sim.run(steps=gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=1)
+sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=1)
 sim.disconnect()
 
 

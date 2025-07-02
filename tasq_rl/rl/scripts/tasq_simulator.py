@@ -9,7 +9,7 @@ from rl.converters.converter import pneu2posandgains
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
         self.start_yaw = np.random.uniform(-np.pi, np.pi)
-        #self.start_yaw = 0
+        self.start_yaw = 0
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -77,7 +77,7 @@ class TASQSimulator:
         self.plane_id = p.loadURDF("plane.urdf")
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
-        #self.start_x, self.start_y = 0.0, 0.0
+        self.start_x, self.start_y = 0.0, 0.0
         self.start_pos = [self.start_x, self.start_y, 0.12]
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
@@ -316,21 +316,61 @@ class TASQSimulator:
     def get_suction_state(self):
         return self.suction_states
 
+    def get_rotation_matrix(self):
+        _, ori = p.getBasePositionAndOrientation(self.robot_id)
+        rotation_matrix = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)
+        return rotation_matrix
+    
     def get_base_position(self):
         pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         return pos
     
-    def get_base_orientation(self):
+    def get_base_quaternion(self):
         _, ori = p.getBasePositionAndOrientation(self.robot_id)
         return ori
+
+    def get_base_orientation(self):
+        """
+        Returns: np.array [roll, pitch, sin(yaw), cos(yaw)]
+        """
+        # Get quaternion from PyBullet
+        _, quat = p.getBasePositionAndOrientation(self.robot_id)
+        x, y, z, w = quat
+
+        # Convert to roll, pitch, yaw
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + y * y)
+        roll = np.arctan2(t0, t1)
+
+        t2 = +2.0 * (w * y - z * x)
+        t2 = np.clip(t2, -1.0, 1.0)
+        pitch = np.arcsin(t2)
+
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (y * y + z * z)
+        yaw = np.arctan2(t3, t4)
+
+        # Compute sin and cos of yaw
+        sin_yaw = np.sin(yaw)
+        cos_yaw = np.cos(yaw)
+
+        return np.array([roll, pitch, sin_yaw, cos_yaw], dtype=np.float32)
     
     def get_base_velocity(self):
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
         return np.concatenate([lin_vel, ang_vel])
     
+    def get_base_velocity_local(self):
+        _, ori = p.getBasePositionAndOrientation(self.robot_id)
+        rotation_matrix = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)
+        lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
+        lin_vel_body = np.dot(rotation_matrix.T, np.array(lin_vel))
+        ang_vel_body = np.dot(rotation_matrix.T, np.array(ang_vel))
+        return np.concatenate([lin_vel_body, ang_vel_body])
+    
     def get_grfs(self):
         """
-        Returns a list of 12 values: the x, y, z ground reaction forces for each of the 4 feet.
+        Returns a list of 12 values: the x,y,z ground reaction forces for each of the 4 feet.
         If a foot is not in contact, its forces will be [0, 0, 0].
         """
         grfs = np.zeros((4, 3))  # 4 feet, 3 force components (x, y, z)
@@ -351,6 +391,46 @@ class TASQSimulator:
                 total_force = normal_force + lateral1 + lateral2
                 grfs[i] += total_force  # accumulate in case of multiple contacts
         return grfs.flatten()
+    
+
+    def get_grfs_local_foot(self):
+        """
+        Returns a list of 12 values: the x,y,z ground reaction forces for each of the 4 feet,
+        converted to each foot's local frame.
+
+        If a foot is not in contact, its forces will be [0, 0, 0].
+        """
+        grfs_local = np.zeros((4, 3))  # 4 feet, 3 force components (x, y, z)
+
+        robot_id = self.robot_id
+        foot_link_indices = self.foot_link_indices
+
+        # Query all contact points involving the robot
+        contact_points = p.getContactPoints(bodyA=robot_id)
+
+        for contact in contact_points:
+            link_idx = contact[3]  # linkIndexA
+            if link_idx in foot_link_indices:
+                i = np.where(foot_link_indices == link_idx)[0][0]
+
+                # Get the total contact force in world frame
+                normal_force = contact[9] * np.array(contact[7])
+                lateral1 = contact[10] * np.array(contact[11])
+                lateral2 = contact[12] * np.array(contact[13])
+                total_force_world = normal_force + lateral1 + lateral2
+
+                # Get foot link orientation (world frame)
+                _, foot_quat = p.getLinkState(robot_id, link_idx, computeForwardKinematics=True)[:2]
+
+                # Rotation matrix from foot local to world
+                rot_matrix = np.array(p.getMatrixFromQuaternion(foot_quat)).reshape(3, 3)
+
+                # Rotate world force into foot local frame (inverse rotation)
+                total_force_local = rot_matrix.T @ total_force_world
+
+                grfs_local[i] += total_force_local  # accumulate if multiple contacts
+
+        return grfs_local.flatten()
 
     def disconnect(self):
         # Save log to CSV

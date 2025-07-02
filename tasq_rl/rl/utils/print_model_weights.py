@@ -25,7 +25,7 @@ def load_pt_state_dict(file_path):
 def load_multihead_sac_zip(file_path):
     from rl.scripts.tasq_env import TASQEnv
     from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
-    from rl.scripts.tasq_sac_2_heads import MultiHeadSAC
+    from tasq_rl.rl.scripts.tasq_sac import MultiHeadSAC
 
     def make_env():
         return TASQEnv(urdf_path="rl/urdfs/TASQ_n7.urdf", no_links=7, gui=False)

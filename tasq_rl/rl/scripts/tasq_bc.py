@@ -9,7 +9,7 @@ from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/rich_dataset"
+MODEL_DIR = "rl/models/tasq_bc/goal_directed"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -24,21 +24,13 @@ if torch.cuda.is_available():
     torch.cuda.set_per_process_memory_fraction(0.9)
 
 print("Started behavior cloning training using", DEVICE)
-#"""
+
 # Use exactly like before
 dataset = StackedDataset(
-    "rl/datasets/rich_dataset/demo_states_0_20.npy",
-    "rl/datasets/rich_dataset/demo_actions_0_20.npy",
+    "rl/datasets/goal_directed/demo_states_merged.npy",
+    "rl/datasets/goal_directed/demo_actions_merged.npy",
     N=4
 )
-"""
-# Use exactly like before
-dataset = StackedDataset(
-    "rl/datasets/no_steady_states/demo_states_merged.npy",
-    "rl/datasets/no_steady_states/demo_actions_merged.npy",
-    N=4
-)
-"""
 
 val_size = int(len(dataset) * VAL_SPLIT)
 train_size = len(dataset) - val_size
