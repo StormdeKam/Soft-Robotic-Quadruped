@@ -28,5 +28,5 @@ def npy_to_csv(npy_file, csv_file=None):
     #"""
 # Example usage
 if __name__ == "__main__":
-    npy_file = "rl/datasets/random_gait_cycle_start/demo_states_0.npy" 
+    npy_file = "rl/datasets/goal_directed/demo_states_0.npy" 
     npy_to_csv(npy_file)

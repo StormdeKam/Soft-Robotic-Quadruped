@@ -7,6 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
+from rl.utils.interval_stacker import IntervalStackedDataset
 
 # --- Configuration ---
 MODEL_DIR = "rl/models/tasq_bc/goal_directed"
@@ -24,12 +25,18 @@ if torch.cuda.is_available():
     torch.cuda.set_per_process_memory_fraction(0.9)
 
 print("Started behavior cloning training using", DEVICE)
-
+"""
 # Use exactly like before
 dataset = StackedDataset(
     "rl/datasets/goal_directed/demo_states_merged.npy",
     "rl/datasets/goal_directed/demo_actions_merged.npy",
     N=4
+)
+"""
+# Use exactly like before
+dataset = IntervalStackedDataset(
+    "rl/datasets/goal_directed/demo_states_merged.npy",
+    "rl/datasets/goal_directed/demo_actions_merged.npy",
 )
 
 val_size = int(len(dataset) * VAL_SPLIT)
@@ -68,7 +75,7 @@ class BCActor(nn.Module):
         print(f"Loaded weights from {checkpoint_path}")
         return self
 
-obs_dim = dataset.obs_dim * dataset.N
+obs_dim = dataset.obs_dim * 2 + 5 * 27 # 2 previous full states and 5 partial states from history in intervals
 model = BCActor(obs_dim).to(DEVICE)
 """
 try:

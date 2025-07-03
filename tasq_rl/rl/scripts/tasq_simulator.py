@@ -9,7 +9,7 @@ from rl.converters.converter import pneu2posandgains
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
         self.start_yaw = np.random.uniform(-np.pi, np.pi)
-        self.start_yaw = 0
+        #self.start_yaw = 0
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -22,27 +22,9 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
-
-        # Create a logger
-        self.logger = logging.getLogger("suction_logger")
-        self.logger.setLevel(logging.WARNING)  # Only log WARNING and above
-
-        # Create a console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.WARNING)
-
-        # Create formatter and attach to handler
-        formatter = logging.Formatter('%(levelname)s: %(message)s')
-        console_handler.setFormatter(formatter)
-
-        # Attach handler to logger
-        self.logger.addHandler(console_handler)
-
-        #self.reset_simulation()
-    
 
     def reset_simulation(self):
         # Reset PyBullet simulation (clears all bodies, constraints, etc.)
@@ -50,13 +32,14 @@ class TASQSimulator:
         p.setGravity(0, 0, -9.8, physicsClientId=self.physics_client)
         
         # Reset camera as in constructor
-        p.resetDebugVisualizerCamera(
-            cameraDistance=0.5,
-            cameraYaw=0 + self.start_yaw * (180 / np.pi),
-            cameraPitch=-30,
-            cameraTargetPosition=[0, 0, 0.2],
-            physicsClientId=self.physics_client
-        )
+        if self.gui:
+            p.resetDebugVisualizerCamera(
+                cameraDistance=0.5,
+                cameraYaw=0 + self.start_yaw * (180 / np.pi),
+                cameraPitch=-30,
+                cameraTargetPosition=[0, 0, 0.2],
+                physicsClientId=self.physics_client
+            )
         
         # Reload plane and robot
         self._load_environment()
@@ -77,19 +60,10 @@ class TASQSimulator:
         self.plane_id = p.loadURDF("plane.urdf")
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
-        self.start_x, self.start_y = 0.0, 0.0
+        #self.start_x, self.start_y = 0.0, 0.0
         self.start_pos = [self.start_x, self.start_y, 0.12]
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
-        """
-        print(f"[DEBUG] Robot loaded with ID: {self.robot_id}")
-        num_joints = p.getNumJoints(self.robot_id)
-        print(f"[DEBUG] Number of joints in robot: {num_joints}")
-        
-        for i in range(num_joints):
-            joint_info = p.getJointInfo(self.robot_id, i)
-            print(f"Joint {i}: name={joint_info[1].decode()}, type={joint_info[2]}")
-        """
             
     def _initialize_robot(self):
         self.revolute_joints = []
@@ -115,7 +89,6 @@ class TASQSimulator:
                 self.prismatic_joints.append(joint_index)
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             
-
         self.controlled_joints = self.revolute_joints + self.prismatic_joints
 
         for joint_index in self.controlled_joints:
@@ -395,12 +368,12 @@ class TASQSimulator:
 
     def get_grfs_local_foot(self):
         """
-        Returns a list of 12 values: the x,y,z ground reaction forces for each of the 4 feet,
+        Returns a list of 4 values: the z ground reaction forces for each of the 4 feet,
         converted to each foot's local frame.
 
-        If a foot is not in contact, its forces will be [0, 0, 0].
+        If a foot is not in contact, its force will be 0.
         """
-        grfs_local = np.zeros((4, 3))  # 4 feet, 3 force components (x, y, z)
+        grfs_local = np.zeros(4)  # 4 feet
 
         robot_id = self.robot_id
         foot_link_indices = self.foot_link_indices
@@ -428,7 +401,7 @@ class TASQSimulator:
                 # Rotate world force into foot local frame (inverse rotation)
                 total_force_local = rot_matrix.T @ total_force_world
 
-                grfs_local[i] += total_force_local  # accumulate if multiple contacts
+                grfs_local[i] += total_force_local[2]  # accumulate if multiple contacts
 
         return grfs_local.flatten()
 

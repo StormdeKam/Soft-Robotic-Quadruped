@@ -12,7 +12,7 @@ from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
 import pybullet as p
 
 # --- Parameters ---
-num_episodes = 1000 #Number of simulation rollouts
+num_episodes = 10_000 #Number of simulation rollouts
 save_path = "rl/datasets/goal_directed"
 os.makedirs(save_path, exist_ok=True)
 
@@ -53,20 +53,23 @@ def rotate_world_to_local(base_pos, base_quat, point):
 # Multithreading
 def run_episode(episode_idx): 
     no_links = np.random.choice(no_links_list)
-    gait = np.random.choice([1,2]) # 1 = straight, 2 = turn
-    if gait == 1:
+    gait = np.random.choice([0,1]) # 0 = straight, 1 = turn
+    #gait = 1
+    #no_links = 7
+    if gait == 0:
         gait_length = 23*10
         mode = np.random.choice([0,1,2,3]) # 0 = forward, 1 = left, 2 = backward, 3 = right
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
         total_steps = 3*gait_length
-    elif gait == 2:
+    elif gait == 1:
         gait_length = 21*10
         mode = np.random.choice([0,1]) # 0 = clockwise, 1 = counterclockwise
+        #mode = 1
         pressure_callback = partial(demo_pressures_rot, mode=mode)
         suction_callback = partial(demo_suction_rot, mode=mode)
         total_steps = 2*gait_length
-
+    
     urdf_path = urdf_dict[no_links]
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
@@ -87,53 +90,54 @@ def run_episode(episode_idx):
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
+
+        base_pos = sim.get_base_position() # [x,y,z] (global) (3,)
+        base_ori = sim.get_base_orientation() # [roll, pitch, sin(yaw), cos(yaw)] (local) (4,)
+        base_vel = sim.get_base_velocity_local() # [lin_vel_body, ang_vel_body] (local) (6,)
+        grfs = sim.get_grfs_local_foot() # (local foot) (4,)
+        normalized_pressures = (pressures / 200 - 1).flatten()
+
+        state = np.concatenate([
+            base_pos,
+            base_ori,
+            base_vel,
+            normalized_pressures,
+            suction_states,
+            grfs
+        ]).astype(np.float32)
+
+        d_pressures = pressure_callback(step+startingpoint) #* 0.9
+        suction_states = suction_callback(step+startingpoint)
+
+        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.01, size=(4, 3))
+        noisy_d_pressures = d_pressures + random_gaussian_noise
+        noisy_d_pressures = np.clip(noisy_d_pressures, -20 * np.pi, 20 * np.pi)
+
+        suction_states = suction_states.astype(np.float32)
+        normalized_d_pressures = noisy_d_pressures / (20 * np.pi)
+
+        quaternion = sim.get_base_quaternion()
+        quaternion_states.append(quaternion)
+
+        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
+
         for i in range(steps_per_step):
-            base_pos = sim.get_base_position() # [x,y,z] (global) (3,)
-            base_ori = sim.get_base_orientation() # [roll, pitch, sin(yaw), cos(yaw)] (local) (4,)
-            base_vel = sim.get_base_velocity_local() # [lin_vel_body, ang_vel_body] (local) (6,)
-            grfs = sim.get_grfs_local_foot() # (local foot) (12,)
-
-            state = np.concatenate([
-                base_pos,
-                base_ori,
-                base_vel,
-                normalized_pressures,
-                suction_states,
-                grfs
-            ]).astype(np.float32)
-
-            d_pressures = pressure_callback(step+startingpoint) * 0.9
-            suction_states = suction_callback(step+startingpoint)
-
-            random_gaussian_noise = np.random.normal(loc=0.0, scale=0.001, size=(4, 3))
-            noisy_d_pressures = d_pressures + random_gaussian_noise
-            noisy_d_pressures = np.clip(noisy_d_pressures, -20 * np.pi, 20 * np.pi)
-
-            suction_states = suction_states.astype(np.float32)
-            normalized_d_pressures = noisy_d_pressures / (20 * np.pi)
-
-            action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
-
             pressures += noisy_d_pressures/steps_per_step
             pressures = np.clip(pressures, 0, 400)
-            normalized_pressures = (pressures / 200 - 1).flatten()
             
-            quaternion = sim.get_base_quaternion()
-            quaternion_states.append(quaternion)
-
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()
-            episode_states.append(state)
-            episode_actions.append(action)
-            
+
+        episode_states.append(state)
+        episode_actions.append(action)
         
         if step == total_steps - 1:
             goal_pos = sim.get_base_position()  # global [x,y,z]
-            goal_quat = sim.get_base_orientation()  # [roll, pitch, sin(yaw), cos(yaw)]
+            goal_ori = sim.get_base_orientation()  # [roll, pitch, sin(yaw), cos(yaw)]
 
             # Extract goal yaw angle from sin(yaw), cos(yaw)
-            goal_yaw = np.arctan2(goal_quat[2], goal_quat[3])  # sin_yaw, cos_yaw indices
+            goal_yaw = np.arctan2(goal_ori[2], goal_ori[3])  # sin_yaw, cos_yaw indices
 
             new_episode_states = []
             for i in range(len(episode_states)):
@@ -144,18 +148,17 @@ def run_episode(episode_idx):
 
                 # Compute local goal position (x,y)
                 local_goal_xy = rotate_world_to_local(base_pos[0:2], quaternion_states[i], goal_pos[0:2])
-
+                
                 # Compute relative yaw goal (goal_yaw - base_yaw) normalized
                 delta_yaw = goal_yaw - base_yaw
                 delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi  # wrap to [-pi, pi]
                 sin_delta_yaw = np.sin(delta_yaw)
                 cos_delta_yaw = np.cos(delta_yaw)
-
                 # Append local goal info
-                extended_state = np.concatenate([episode_states[i], local_goal_xy, [sin_delta_yaw, cos_delta_yaw]]) # (45,)
+                extended_state = np.concatenate([episode_states[i], local_goal_xy, [sin_delta_yaw, cos_delta_yaw]]) # (37,)
                 new_episode_states.append(extended_state)
 
-    episode_states = new_episode_states
+    episode_states = new_episode_states 
     sim.disconnect()
 
     episode_states_np = np.array(episode_states, dtype=np.float32)

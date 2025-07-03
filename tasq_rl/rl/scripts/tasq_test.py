@@ -6,11 +6,25 @@ from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_simulator import TASQSimulator  # Adjust path if needed
-from tasq_rl.rl.scripts.tasq_sac import MultiHeadSAC, MultiHeadSACPolicy, MultiHeadWrappedPolicy, MultiHeadActor
+from rl.scripts.tasq_sac import MultiHeadSAC, MultiHeadSACPolicy, MultiHeadWrappedPolicy, MultiHeadActor
 import pybullet as p
 
 # --- Behavior Cloning model class (Two-headed architecture) ---
 import torch.nn as nn
+
+def rotate_world_to_local(base_pos, base_quat, point):
+
+    # Vector from base to point (world frame)
+    vec = np.array([point[0] - base_pos[0], point[1] - base_pos[1], 0.0])
+
+    # Convert quaternion to rotation matrix (3x3)
+    rot_matrix = np.array(p.getMatrixFromQuaternion(base_quat)).reshape(3, 3)
+
+    # Inverse rotation: world -> local
+    local_vec = rot_matrix.T @ vec
+
+    # Return only x and y in local frame
+    return local_vec[0:2]
 
 class TwoHeadBCActor(nn.Module):
     def __init__(self, obs_dim):
@@ -46,10 +60,9 @@ def stack_states(state_buffer, new_state, max_len=4):
 def run_behavior_cloning(model_path, env, device):
     print(f"Loading BC model from {model_path}")
 
-    original_obs_dim = 48
+    original_obs_dim = 37
     action_dim = 16
-    N = 4
-    obs_dim = original_obs_dim * N
+    obs_dim = original_obs_dim * 2 + 5*27 # 2 previous full states and 5 partial states from history in intervals
 
     model = TwoHeadBCActor(obs_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
@@ -58,25 +71,23 @@ def run_behavior_cloning(model_path, env, device):
     state_buffer = []
     suction_states = np.zeros(4)
     pressures = np.zeros((4, 3))
-    steps = 3000
+    steps = 250
 
     for step in range(steps):
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
-        for i in range(steps_per_step):
-            normalized_pressures = pressures / 200 - 1
-            state = get_env_observation(env, normalized_pressures)
-            stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
-            state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
+        normalized_pressures = pressures / 200 - 1
+        state = get_env_observation(env, normalized_pressures)
+        stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
+        state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
+        with torch.no_grad():
+            pred_pressures, pred_suctions = model(state_tensor)
+            action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
+        #print("action_bc = ", action)
+        d_pressures, suction_states = action_to_pressures_and_suction(action)
 
-            with torch.no_grad():
-                pred_pressures, pred_suctions = model(state_tensor)
-                action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
-
-            #print("action_bc = ", action)
-            d_pressures, suction_states = action_to_pressures_and_suction(action)
-       
+        for i in range(steps_per_step):       
             pressures += d_pressures/steps_per_step
             pressures = np.clip(pressures, 0, 400)
             env.apply_pressures(pressures)
@@ -126,8 +137,17 @@ def get_env_observation(env, pressures):
     base_vel = np.array(env.get_base_velocity_local())
     suction_states = np.array(env.get_suction_state())
     grfs = np.array(env.get_grfs_local_foot())
-    goal_pos = np.array([0.10,0.0]) #np.array(env.get_base_position()) +,
-    goal_yaw = np.array([np.sin(np.pi/6), np.sin(np.pi/6)]) #np.array(env.get_base_orientation()) + 
+    base_quat = env.get_base_quaternion()
+    global_goal_pos = np.array([0.8, 0.0])
+    goal_yaw = 0
+    local_goal_pos = rotate_world_to_local(base_pos[0:2], base_quat, global_goal_pos[0:2])
+    base_yaw = np.arctan2(base_ori[2], base_ori[3])
+    delta_yaw = goal_yaw - base_yaw
+    delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi  # wrap to [-pi, pi]
+    sin_delta_yaw = np.sin(delta_yaw)
+    cos_delta_yaw = np.cos(delta_yaw)
+    rel_goal_yaw = [sin_delta_yaw, cos_delta_yaw]
+
     obs = np.concatenate([
         base_pos,
         base_ori,
@@ -135,8 +155,8 @@ def get_env_observation(env, pressures):
         pressures.flatten(),
         suction_states,
         grfs,
-        goal_pos,
-        goal_yaw
+        local_goal_pos,
+        rel_goal_yaw
     ]).astype(np.float32)
     return obs
 
