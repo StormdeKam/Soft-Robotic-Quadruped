@@ -1,100 +1,69 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, freeze_support, Manager
 import numpy as np
 import os
-from rl.scripts.tasq_simulator import TASQSimulator
 import time
 from tqdm import tqdm
-from multiprocessing import freeze_support, Manager
-import re
 from functools import partial
+import re
+
+from rl.scripts.tasq_simulator import TASQSimulator
 from rl.gaits.demo_gait_straight import demo_pressures, demo_suction
 from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
 import pybullet as p
 
 # --- Parameters ---
-num_episodes = 10_000 #Number of simulation rollouts
+num_episodes = 10_000  # Number of simulation rollouts
 save_path = "rl/datasets/goal_directed"
 os.makedirs(save_path, exist_ok=True)
-
-all_states = []
-all_actions = []
-
-save_interval = 25
-
-# --- Data Collection Loop ---
+save_interval = 25  # Episodes per save chunk
 
 no_links_list = [5, 6, 7]
 urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
-#startingpoints = [0,800,1300,1800]
-startingpressures_dict = {0: 0, 800:210, 1300:230, 1800:250}
-
-def quaternion_to_yaw(quat):
-    x, y, z, w = quat
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw = np.arctan2(t3, t4)
-    return yaw
-
+startingpressures_dict = {0: 0, 800: 210, 1300: 230, 1800: 250}
 
 def rotate_world_to_local(base_pos, base_quat, point):
-
-    # Vector from base to point (world frame)
     vec = np.array([point[0] - base_pos[0], point[1] - base_pos[1], 0.0])
-
-    # Convert quaternion to rotation matrix (3x3)
     rot_matrix = np.array(p.getMatrixFromQuaternion(base_quat)).reshape(3, 3)
-
-    # Inverse rotation: world -> local
     local_vec = rot_matrix.T @ vec
-
-    # Return only x and y in local frame
     return local_vec[0:2]
 
-# Multithreading
-def run_episode(episode_idx): 
+def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
-    gait = np.random.choice([0,1]) # 0 = straight, 1 = turn
-    #gait = 1
-    #no_links = 7
+    gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
+
     if gait == 0:
         gait_length = 23*10
-        mode = np.random.choice([0,1,2,3]) # 0 = forward, 1 = left, 2 = backward, 3 = right
+        mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
-        total_steps = 3*gait_length
-    elif gait == 1:
+        total_steps = 3 * gait_length
+    else:
         gait_length = 21*10
-        mode = np.random.choice([0,1]) # 0 = clockwise, 1 = counterclockwise
-        #mode = 1
+        mode = np.random.choice([0,1])  # clockwise, counterclockwise
         pressure_callback = partial(demo_pressures_rot, mode=mode)
         suction_callback = partial(demo_suction_rot, mode=mode)
-        total_steps = 2*gait_length
-    
+        total_steps = 2 * gait_length
+
     urdf_path = urdf_dict[no_links]
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
-    noisy_d_pressures = np.zeros(12)
+    pressures = np.ones((4, 3)) * 5  # start slightly above zero pressure
+    suction_states = suction_callback(0).astype(np.float32)
+
     episode_states = []
     episode_actions = []
-
-    # Different starting points:
-    #startingpoint = np.random.choice(startingpoints)
-    startingpoint = 0
-    pressures = np.ones((4, 3)) * startingpressures_dict[startingpoint] + 5
-    normalized_pressures = (pressures / 200 - 1).flatten()
-    suction_states = suction_callback(startingpoint)
     quaternion_states = []
 
-    for step in range(total_steps):
-        control_frequency = 1./24.
-        pybullet_frequency = 1./240.
-        steps_per_step = int(control_frequency / pybullet_frequency)
+    control_frequency = 1./24.
+    pybullet_frequency = 1./240.
+    steps_per_step = int(control_frequency / pybullet_frequency)
 
-        base_pos = sim.get_base_position() # [x,y,z] (global) (3,)
-        base_ori = sim.get_base_orientation() # [roll, pitch, sin(yaw), cos(yaw)] (local) (4,)
-        base_vel = sim.get_base_velocity_local() # [lin_vel_body, ang_vel_body] (local) (6,)
-        grfs = sim.get_grfs_local_foot() # (local foot) (4,)
+    for step in range(total_steps):
+        base_pos = sim.get_base_position()
+        base_ori = sim.get_base_orientation()
+        base_vel = sim.get_base_velocity_local()
+        grfs = sim.get_grfs_local_foot()
         normalized_pressures = (pressures / 200 - 1).flatten()
 
         state = np.concatenate([
@@ -106,65 +75,52 @@ def run_episode(episode_idx):
             grfs
         ]).astype(np.float32)
 
-        d_pressures = pressure_callback(step+startingpoint) #* 0.9
-        suction_states = suction_callback(step+startingpoint)
+        d_pressures = pressure_callback(step)
+        suction_states = suction_callback(step).astype(np.float32)
 
-        random_gaussian_noise = np.random.normal(loc=0.0, scale=0.01, size=(4, 3))
-        noisy_d_pressures = d_pressures + random_gaussian_noise
-        noisy_d_pressures = np.clip(noisy_d_pressures, -20 * np.pi, 20 * np.pi)
+        noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
+        noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
 
-        suction_states = suction_states.astype(np.float32)
-        normalized_d_pressures = noisy_d_pressures / (20 * np.pi)
+        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), suction_states])
 
-        quaternion = sim.get_base_quaternion()
-        quaternion_states.append(quaternion)
-
-        action = np.concatenate([normalized_d_pressures.flatten(), suction_states])
-
-        for i in range(steps_per_step):
-            pressures += noisy_d_pressures/steps_per_step
+        for _ in range(steps_per_step):
+            pressures += noisy_d_pressures / steps_per_step
             pressures = np.clip(pressures, 0, 400)
-            
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()
 
         episode_states.append(state)
         episode_actions.append(action)
-        
-        if step == total_steps - 1:
-            goal_pos = sim.get_base_position()  # global [x,y,z]
-            goal_ori = sim.get_base_orientation()  # [roll, pitch, sin(yaw), cos(yaw)]
+        quaternion_states.append(sim.get_base_quaternion())
 
-            # Extract goal yaw angle from sin(yaw), cos(yaw)
-            goal_yaw = np.arctan2(goal_ori[2], goal_ori[3])  # sin_yaw, cos_yaw indices
+    # Compute final goal info to augment states
+    goal_pos = sim.get_base_position()
+    goal_ori = sim.get_base_orientation()
+    goal_yaw = np.arctan2(goal_ori[2], goal_ori[3])
 
-            new_episode_states = []
-            for i in range(len(episode_states)):
-                base_pos = episode_states[i][0:3]  # global pos x,y,z
-                # base_ori = s[3:7]  # [roll, pitch, sin(yaw), cos(yaw)] if needed
+    new_episode_states = []
+    for i in range(len(episode_states)):
+        base_pos = episode_states[i][0:3]
+        base_quat = quaternion_states[i]
+        base_yaw = np.arctan2(episode_states[i][5], episode_states[i][6])
 
-                base_yaw = np.arctan2(episode_states[i][5], episode_states[i][6])  # sin(yaw) = s[5], cos(yaw) = s[6]
+        local_goal_xy = rotate_world_to_local(base_pos[0:2], base_quat, goal_pos[0:2])
+        delta_yaw = goal_yaw - base_yaw
+        delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
+        sin_delta_yaw = np.sin(delta_yaw)
+        cos_delta_yaw = np.cos(delta_yaw)
 
-                # Compute local goal position (x,y)
-                local_goal_xy = rotate_world_to_local(base_pos[0:2], quaternion_states[i], goal_pos[0:2])
-                
-                # Compute relative yaw goal (goal_yaw - base_yaw) normalized
-                delta_yaw = goal_yaw - base_yaw
-                delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi  # wrap to [-pi, pi]
-                sin_delta_yaw = np.sin(delta_yaw)
-                cos_delta_yaw = np.cos(delta_yaw)
-                # Append local goal info
-                extended_state = np.concatenate([episode_states[i], local_goal_xy, [sin_delta_yaw, cos_delta_yaw]]) # (37,)
-                new_episode_states.append(extended_state)
+        extended_state = np.concatenate([episode_states[i], local_goal_xy, [sin_delta_yaw, cos_delta_yaw]])
+        new_episode_states.append(extended_state)
 
-    episode_states = new_episode_states 
     sim.disconnect()
 
-    episode_states_np = np.array(episode_states, dtype=np.float32)
+    episode_states_np = np.array(new_episode_states, dtype=np.float32)
     episode_actions_np = np.array(episode_actions, dtype=np.float32)
+    episode_length = len(episode_states_np)
 
-    return episode_states_np, episode_actions_np, episode_idx
+    return episode_states_np, episode_actions_np, episode_length, episode_idx
 
 def load_sorted_files(folder, prefix):
     files = [f for f in os.listdir(folder) if f.startswith(prefix) and f.endswith('.npy')]
@@ -192,18 +148,20 @@ if __name__ == "__main__":
     lock = manager.Lock()
 
     args = [(i, lock) for i in range(num_episodes)]
-    start_time = time.time()
-    #args = list(range(num_episodes))
-    #start_time = time.time()
 
     all_states_buffer = []
     all_actions_buffer = []
+    all_episode_lengths_buffer = []
+
+    start_time = time.time()
 
     with Pool(processes=os.cpu_count()) as pool:
         with tqdm(total=num_episodes) as pbar:
-            for states_np, actions_np, (ep_idx, _) in pool.imap_unordered(run_episode, args):
+            for states_np, actions_np, ep_len, (ep_idx, _) in pool.imap_unordered(run_episode, args):
                 all_states_buffer.append(states_np)
                 all_actions_buffer.append(actions_np)
+                all_episode_lengths_buffer.append(ep_len)
+
                 pbar.update(1)
 
                 elapsed = time.time() - start_time
@@ -214,35 +172,52 @@ if __name__ == "__main__":
                 est_hours = int(est_rem_time // 3600)
                 est_minutes = int((est_rem_time // 60) % 60)
                 print(f"Episode {eps_done}/{num_episodes} complete — est. time remaining: {est_hours}h {est_minutes}m")
+
                 # Save every save_interval episodes
-                if (ep_idx + 1) % save_interval == 0:
-                    chunk_id = (ep_idx + 1) // save_interval - 1
+                if eps_done % save_interval == 0:
+                    chunk_id = (eps_done // save_interval) - 1
+
                     states_concat = np.concatenate(all_states_buffer, axis=0)
                     actions_concat = np.concatenate(all_actions_buffer, axis=0)
+                    episode_lengths_concat = np.array(all_episode_lengths_buffer, dtype=np.int32)
+
                     np.save(os.path.join(save_path, f"demo_states_{chunk_id}.npy"), states_concat)
                     np.save(os.path.join(save_path, f"demo_actions_{chunk_id}.npy"), actions_concat)
-                    print(f"Saved chunk {chunk_id} with {states_concat.shape[0]} samples")
-                    
+                    np.save(os.path.join(save_path, f"demo_episode_lengths_{chunk_id}.npy"), episode_lengths_concat)
 
-                    # Clear buffers
+                    print(f"Saved chunk {chunk_id} with {states_concat.shape[0]} samples and {episode_lengths_concat.shape[0]} episodes")
+
                     all_states_buffer.clear()
                     all_actions_buffer.clear()
+                    all_episode_lengths_buffer.clear()
 
-    # Save remaining data after all episodes are done
+    # Save any remaining episodes after all are done
     if len(all_states_buffer) > 0:
-        chunk_id = (num_episodes // save_interval)
+        chunk_id = num_episodes // save_interval
         states_concat = np.concatenate(all_states_buffer, axis=0)
         actions_concat = np.concatenate(all_actions_buffer, axis=0)
+        episode_lengths_concat = np.array(all_episode_lengths_buffer, dtype=np.int32)
+
         np.save(os.path.join(save_path, f"demo_states_{chunk_id}.npy"), states_concat)
         np.save(os.path.join(save_path, f"demo_actions_{chunk_id}.npy"), actions_concat)
-        print(f"Saved final chunk {chunk_id} with {states_concat.shape[0]} samples")
+        np.save(os.path.join(save_path, f"demo_episode_lengths_{chunk_id}.npy"), episode_lengths_concat)
+
+        print(f"Saved final chunk {chunk_id} with {states_concat.shape[0]} samples and {episode_lengths_concat.shape[0]} episodes")
 
     total_time = time.time() - start_time
     print(f"Completed {num_episodes} episodes in {total_time:.2f}s")
 
     print("Merging all chunked numpy files...")
-
     merge_npy_chunks(save_path, "demo_states", "demo_states_merged.npy")
     merge_npy_chunks(save_path, "demo_actions", "demo_actions_merged.npy")
+
+    # For episode lengths, merging means concatenation of 1D arrays
+    episode_length_files = load_sorted_files(save_path, "demo_episode_lengths")
+    all_lengths = []
+    for f in episode_length_files:
+        all_lengths.append(np.load(f))
+    merged_lengths = np.concatenate(all_lengths, axis=0)
+    np.save(os.path.join(save_path, "demo_episode_lengths_merged.npy"), merged_lengths)
+    print(f"Saved merged episode lengths with shape {merged_lengths.shape}")
 
     print("Merging complete!")

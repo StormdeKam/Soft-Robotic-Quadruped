@@ -60,35 +60,73 @@ def stack_states(state_buffer, new_state, max_len=4):
 def run_behavior_cloning(model_path, env, device):
     print(f"Loading BC model from {model_path}")
 
-    original_obs_dim = 37
-    action_dim = 16
-    obs_dim = original_obs_dim * 2 + 5*27 # 2 previous full states and 5 partial states from history in intervals
+    # Dimensions based on your stacking:
+    #   full_t (37), full_t-1 (37), partial_t40 (27), partial_t80 (27), partial_t120 (27), partial_t160 (27), partial_t200 (27)
+    obs_dim = 37 * 2 + 5 * 27
 
     model = TwoHeadBCActor(obs_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 
-    state_buffer = []
+    # History buffer
+    history_buffer = []
+    max_history_len = 201  # enough to go back to t-200
+
+    # Initialize actuator states
     suction_states = np.zeros(4)
     pressures = np.zeros((4, 3))
-    steps = 250
 
+    # Helper to extract partial state
+    def extract_partial_state(full_obs):
+        # slices based on: pos(3), ori(4), vel(3), press(12), suction(4), grfs(12), goal(2), rel_yaw(2)
+        return np.concatenate([
+            full_obs[0:3],   # base pos
+            full_obs[3:7],   # base ori
+            full_obs[10:22], # pressures (12) + suction (4)
+        ])
+
+    # Main rollout
+    steps = 250
     for step in range(steps):
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
+
         normalized_pressures = pressures / 200 - 1
         state = get_env_observation(env, normalized_pressures)
-        stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
+
+        # --- Build history buffer ---
+        history_buffer.append(state)
+        if len(history_buffer) > max_history_len:
+            history_buffer.pop(0)
+
+        # --- Build stacked state ---
+        full_t = history_buffer[-1]
+        full_tm1 = history_buffer[-2] if len(history_buffer) > 1 else full_t
+
+        partial_t40 = extract_partial_state(history_buffer[-41]) if len(history_buffer) > 40 else extract_partial_state(full_t)
+        partial_t80 = extract_partial_state(history_buffer[-81]) if len(history_buffer) > 80 else extract_partial_state(full_t)
+        partial_t120 = extract_partial_state(history_buffer[-121]) if len(history_buffer) > 120 else extract_partial_state(full_t)
+        partial_t160 = extract_partial_state(history_buffer[-161]) if len(history_buffer) > 160 else extract_partial_state(full_t)
+        partial_t200 = extract_partial_state(history_buffer[-201]) if len(history_buffer) > 200 else extract_partial_state(full_t)
+
+        stacked_state = np.concatenate([
+            full_t, full_tm1,
+            partial_t40, partial_t80, partial_t120, partial_t160, partial_t200
+        ]).astype(np.float32)
+
+        # --- Run through network ---
         state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
         with torch.no_grad():
             pred_pressures, pred_suctions = model(state_tensor)
             action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
-        #print("action_bc = ", action)
+
+        # --- Convert action to actuator targets ---
         d_pressures, suction_states = action_to_pressures_and_suction(action)
 
-        for i in range(steps_per_step):       
-            pressures += d_pressures/steps_per_step
+        # --- Simulate steps ---
+        for i in range(steps_per_step):
+            pressures += d_pressures / steps_per_step
             pressures = np.clip(pressures, 0, 400)
             env.apply_pressures(pressures)
             env.apply_suction(suction_states)

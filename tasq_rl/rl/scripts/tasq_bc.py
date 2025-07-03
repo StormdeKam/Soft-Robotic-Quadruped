@@ -37,6 +37,7 @@ dataset = StackedDataset(
 dataset = IntervalStackedDataset(
     "rl/datasets/goal_directed/demo_states_merged.npy",
     "rl/datasets/goal_directed/demo_actions_merged.npy",
+    "rl/datasets/goal_directed/demo_episode_lengths_merged.npy"
 )
 
 val_size = int(len(dataset) * VAL_SPLIT)
