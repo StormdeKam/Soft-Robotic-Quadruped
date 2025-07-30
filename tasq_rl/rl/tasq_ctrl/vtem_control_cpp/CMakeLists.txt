@@ -3,11 +3,20 @@ project(vtem_control_cpp)
 
 set(CMAKE_AUTOMOC ON)
 
+#---------------------------------------------------------
+# Ensure Position Independent Code is used
+#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+#---------------------------------------------------------
+
 # to we want to build with ROS?
 option(BUILD_WITH_ROS2 "Do you want to build the package with ROS2 dependencies?" true)
 
 # set cmake module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+#--------------------------------------------------------------------------------
+#set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/qt5/" ${CMAKE_PREFIX_PATH})
+#--------------------------------------------------------------------------------
 
 # include directories
 include_directories(include/vtem_control_cpp)
@@ -31,9 +40,16 @@ if(BUILD_WITH_ROS2)
   find_package(ament_cmake REQUIRED)
   find_package(rclcpp REQUIRED)
   find_package(pneumatic_actuation_msgs REQUIRED) 
-  find_package(std_msgs REQUIRED)  
-  find_package(Qt5 REQUIRED Widgets)
+  find_package(std_msgs REQUIRED) 
+  find_package(Qt5 REQUIRED Widgets) 
+  #-------------------------------------------------
+  #find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
+  #-------------------------------------------------
 endif()
+
+#----------------------------------------------------------------------
+#include_directories(${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS})
+#----------------------------------------------------------------------
 
 find_package (Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIRS})
@@ -88,18 +104,42 @@ ament_target_dependencies(vtem_control_node rclcpp std_msgs)
 target_link_libraries(vtem_control_node ${MODBUS_LIBRARIES} )
 
 add_executable(valve_control_gui scripts/valve_control_gui.cpp src/ValveControlWindow.cpp)
-qt5_wrap_cpp(MOC_FILES include/vtem_control_cpp/ValveControlWindow.hpp)
-target_sources(valve_control_gui PRIVATE ${MOC_FILES})
-target_include_directories(valve_control_gui PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+qt5_wrap_cpp(MOC_FILES_VC include/vtem_control_cpp/ValveControlWindow.hpp)
+target_sources(valve_control_gui PRIVATE ${MOC_FILES_VC})
+target_include_directories(valve_control_gui PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>$<INSTALL_INTERFACE:include>)
 target_link_libraries(valve_control_gui ${MODBUS_LIBRARIES} Qt5::Widgets)
 ament_target_dependencies(valve_control_gui rclcpp std_msgs)
+
+#---------------------------- CHANGES FOR GaitLoaderWindow --------------------------------------
+# New GaitLoaderWindow executable (added this section for gait_loader_gui)
+add_executable(gait_loader_gui scripts/gait_loader_gui.cpp src/GaitLoaderWindow.cpp)
+qt5_wrap_cpp(MOC_FILES_GLW include/vtem_control_cpp/GaitLoaderWindow.hpp)  # MOC processing for GaitLoaderWindow
+target_sources(gait_loader_gui PRIVATE ${MOC_FILES_GLW})   # Including MOC files for GaitLoaderWindow
+target_include_directories(gait_loader_gui PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>$<INSTALL_INTERFACE:include>)
+target_link_libraries(gait_loader_gui ${MODBUS_LIBRARIES} Qt5::Widgets)
+ament_target_dependencies(gait_loader_gui rclcpp std_msgs)   # ROS2 dependencies
+#-----------------------------------------------------------------------------------------------
+
+
+#----------------------------------------------------------------------------------
+#add_executable(gait_planner_gui scripts/gait_planner_gui.cpp src/GaitPlanner.cpp src/qcustomplot.cpp )
+#qt5_wrap_cpp(MOC_FILES_GP include/vtem_control_cpp/GaitPlanner.hpp)
+#target_sources(gait_planner_gui PRIVATE ${MOC_FILES_GP})
+#target_include_directories(gait_planner_gui PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/#include>$<INSTALL_INTERFACE:include>)
+#target_link_libraries(gait_planner_gui ${MODBUS_LIBRARIES} Qt5::Core Qt5::Widgets qcustomplot) #
+#ament_target_dependencies(gait_planner_gui rclcpp std_msgs)
+#----------------------------------------------------------------------------------
 
 
 # add libraries
 add_library(VtemControl SHARED src/VtemControl.cpp)
 target_include_directories(VtemControl PRIVATE)
 target_link_libraries(VtemControl -pthread ${MODBUS_LIBRARIES})
+
+#----------------------------------------------
+
+#----------------------------------------------
+
 
 if(BUILD_WITH_ROS2)
   # Install Cpp executables
@@ -132,6 +172,11 @@ install(TARGETS twelve_valve_test DESTINATION lib/${PROJECT_NAME})
 install(TARGETS manual_control DESTINATION lib/${PROJECT_NAME})
 install(TARGETS vtem_control_node DESTINATION lib/${PROJECT_NAME})
 install(TARGETS valve_control_gui DESTINATION lib/${PROJECT_NAME})
+#----------------------------------------------------------------------------------
+#install(TARGETS gait_planner_gui DESTINATION lib/${PROJECT_NAME})
+#----------------------------------------------------------------------------------
+install(TARGETS gait_loader_gui DESTINATION lib/${PROJECT_NAME})
+
 
 if(BUILD_WITH_ROS2 AND BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
