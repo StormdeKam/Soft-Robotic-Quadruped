@@ -74,16 +74,17 @@ def run_behavior_cloning(model_path, env, device):
 
     # Initialize actuator states
     suction_states = np.zeros(4)
-    pressures = np.zeros((4, 3))
+    pressures = np.ones((4, 3)) * 5
 
     # Helper to extract partial state
     def extract_partial_state(full_obs):
-        # slices based on: pos(3), ori(4), vel(3), press(12), suction(4), grfs(12), goal(2), rel_yaw(2)
+        # slices based on: pos(3), ori(4), vel(6), press(12), suction(4), grfs(4), goal(2), rel_yaw(2)
         return np.concatenate([
             full_obs[0:3],   # base pos
             full_obs[3:7],   # base ori
-            full_obs[10:22], # pressures (12) + suction (4)
-        ])
+            full_obs[13:29], # pressures (12) + suction (4)
+            full_obs[33:37]  # goal state (4) (pos_x, pos_y, sin(d_yaw), cos(d_yaw))
+        ]) 
 
     # Main rollout
     steps = 250
@@ -120,7 +121,7 @@ def run_behavior_cloning(model_path, env, device):
         with torch.no_grad():
             pred_pressures, pred_suctions = model(state_tensor)
             action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
-
+        
         # --- Convert action to actuator targets ---
         d_pressures, suction_states = action_to_pressures_and_suction(action)
 
@@ -131,6 +132,7 @@ def run_behavior_cloning(model_path, env, device):
             env.apply_pressures(pressures)
             env.apply_suction(suction_states)
             env.step()
+        print("d = ", d_pressures)
 
     env.disconnect()
     print("Behavior cloning run complete.")
@@ -176,8 +178,8 @@ def get_env_observation(env, pressures):
     suction_states = np.array(env.get_suction_state())
     grfs = np.array(env.get_grfs_local_foot())
     base_quat = env.get_base_quaternion()
-    global_goal_pos = np.array([0.8, 0.0])
-    goal_yaw = 0
+    global_goal_pos = np.array([0.3, 0.0]) #set the global goal pos
+    goal_yaw = 0 # set the global goal yaw
     local_goal_pos = rotate_world_to_local(base_pos[0:2], base_quat, global_goal_pos[0:2])
     base_yaw = np.arctan2(base_ori[2], base_ori[3])
     delta_yaw = goal_yaw - base_yaw

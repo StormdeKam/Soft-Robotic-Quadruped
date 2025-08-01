@@ -28,8 +28,8 @@ class IntervalStackedDataset(Dataset):
         self.partial_idx = np.r_[
             0:3,    # base pos
             3:7,    # base orn
-            13:25,  # pressures (example!)
-            25:29,  # suctions (example!)
+            13:25,  # pressures
+            25:29,  # suctions
             33:37   # goal_pos and orn
         ]
 
@@ -48,7 +48,7 @@ class IntervalStackedDataset(Dataset):
         return ep_start, ep_len
 
     def __getitem__(self, idx):
-        real_idx = idx + self.max_offset  # offset for history window
+        real_idx = idx #+ self.max_offset  # offset for history window
         
         ep_start, ep_len = self._find_episode_start(real_idx)
 

@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-from rl.utils.dataset_stacker import StackedDataset
-from rl.utils.interval_stacker import IntervalStackedDataset
+from torch.utils.data import DataLoader, Subset
+from sklearn.model_selection import train_test_split
+from rl.utils.interval_stacker import IntervalStackedDataset  # Your custom class
 
 # --- Configuration ---
 MODEL_DIR = "rl/models/tasq_bc/goal_directed"
@@ -21,30 +21,56 @@ EPOCHS = 200
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if torch.cuda.is_available():
-    torch.cuda.set_per_process_memory_fraction(0.9)
 
 print("Started behavior cloning training using", DEVICE)
-"""
-# Use exactly like before
-dataset = StackedDataset(
-    "rl/datasets/goal_directed/demo_states_merged.npy",
-    "rl/datasets/goal_directed/demo_actions_merged.npy",
-    N=4
-)
-"""
-# Use exactly like before
-dataset = IntervalStackedDataset(
-    "rl/datasets/goal_directed/demo_states_merged.npy",
-    "rl/datasets/goal_directed/demo_actions_merged.npy",
-    "rl/datasets/goal_directed/demo_episode_lengths_merged.npy"
+
+# --- Load episode lengths and split episodes ---
+episode_lengths = np.load("rl/datasets/goal_directed/demo_episode_lengths_merged.npy")
+episode_indices = np.arange(len(episode_lengths))
+
+train_episodes, val_episodes = train_test_split(
+    episode_indices, test_size=VAL_SPLIT, random_state=42
 )
 
+# Compute dataset indices corresponding to each episode (accounting for max_offset inside dataset)
+train_indices = []
+val_indices = []
+current_idx = 0
+max_offset = 200  # must match max offset used inside IntervalStackedDataset
+
+for ep_idx, length in enumerate(episode_lengths):
+    valid_start = current_idx            # include from episode start
+    valid_end = current_idx + length - max_offset  # exclude last max_offset samples only
+    indices = list(range(valid_start, valid_end))
+
+    if ep_idx in train_episodes:
+        train_indices.extend(indices)
+    else:
+        val_indices.extend(indices)
+    current_idx += length
+
+print(f"Train samples: {len(train_indices)}, Validation samples: {len(val_indices)}")
+
+# --- Create the dataset and subsets ---
+dataset = IntervalStackedDataset(
+    state_path="rl/datasets/goal_directed/demo_states_merged.npy",
+    action_path="rl/datasets/goal_directed/demo_actions_merged.npy",
+    episode_lengths_path="rl/datasets/goal_directed/demo_episode_lengths_merged.npy",
+    intervals=[40, 80, 120, 160, 200],
+    use_mmap=False  # or True if RAM is limited
+)
 val_size = int(len(dataset) * VAL_SPLIT)
 train_size = len(dataset) - val_size
-train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
+
+train_dataset = Subset(dataset, train_indices)
+val_dataset = Subset(dataset, val_indices)
+
+train_loader = DataLoader(
+    train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4
+)
+val_loader = DataLoader(
+    val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4
+)
 
 # --- Model with two heads ---
 class BCActor(nn.Module):
