@@ -28,6 +28,7 @@ class IntervalStackedDataset(Dataset):
         self.partial_idx = np.r_[
             0:3,    # base pos
             3:7,    # base orn
+            7:13,   # vel
             13:25,  # pressures
             25:29,  # suctions
             33:37   # goal_pos and orn

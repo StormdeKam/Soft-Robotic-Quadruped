@@ -61,8 +61,8 @@ def run_behavior_cloning(model_path, env, device):
     print(f"Loading BC model from {model_path}")
 
     # Dimensions based on your stacking:
-    #   full_t (37), full_t-1 (37), partial_t40 (27), partial_t80 (27), partial_t120 (27), partial_t160 (27), partial_t200 (27)
-    obs_dim = 37 * 2 + 5 * 27
+    #   full_t (37), full_t-1 (37), partial_t40 (33), partial_t80 (33), partial_t120 (33), partial_t160 (33), partial_t200 (33)
+    obs_dim = 37 * 2 + 5 * 33
 
     model = TwoHeadBCActor(obs_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
@@ -82,6 +82,7 @@ def run_behavior_cloning(model_path, env, device):
         return np.concatenate([
             full_obs[0:3],   # base pos
             full_obs[3:7],   # base ori
+            full_obs[7:13],  # base vel
             full_obs[13:29], # pressures (12) + suction (4)
             full_obs[33:37]  # goal state (4) (pos_x, pos_y, sin(d_yaw), cos(d_yaw))
         ]) 
@@ -132,7 +133,7 @@ def run_behavior_cloning(model_path, env, device):
             env.apply_pressures(pressures)
             env.apply_suction(suction_states)
             env.step()
-        print("d = ", d_pressures)
+        print("d = ", suction_states)
 
     env.disconnect()
     print("Behavior cloning run complete.")
@@ -178,8 +179,8 @@ def get_env_observation(env, pressures):
     suction_states = np.array(env.get_suction_state())
     grfs = np.array(env.get_grfs_local_foot())
     base_quat = env.get_base_quaternion()
-    global_goal_pos = np.array([0.3, 0.0]) #set the global goal pos
-    goal_yaw = 0 # set the global goal yaw
+    global_goal_pos = np.array([0.0, 0.0]) #set the global goal pos
+    goal_yaw = 60 # set the global goal yaw
     local_goal_pos = rotate_world_to_local(base_pos[0:2], base_quat, global_goal_pos[0:2])
     base_yaw = np.arctan2(base_ori[2], base_ori[3])
     delta_yaw = goal_yaw - base_yaw

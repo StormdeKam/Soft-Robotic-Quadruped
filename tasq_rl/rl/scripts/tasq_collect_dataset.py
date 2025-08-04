@@ -19,7 +19,6 @@ save_interval = 25  # Episodes per save chunk
 
 no_links_list = [5, 6, 7]
 urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
-startingpressures_dict = {0: 0, 800: 210, 1300: 230, 1800: 250}
 
 def rotate_world_to_local(base_pos, base_quat, point):
     vec = np.array([point[0] - base_pos[0], point[1] - base_pos[1], 0.0])

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from rl.utils.interval_stacker import IntervalStackedDataset  # Your custom class
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/goal_directed"
+MODEL_DIR = "rl/models/tasq_bc/goal_directed_4_8"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -102,7 +102,7 @@ class BCActor(nn.Module):
         print(f"Loaded weights from {checkpoint_path}")
         return self
 
-obs_dim = dataset.obs_dim * 2 + 5 * 27 # 2 previous full states and 5 partial states from history in intervals
+obs_dim = dataset.obs_dim * 2 + 5 * 33 # 2 previous full states and 5 partial states from history in intervals
 model = BCActor(obs_dim).to(DEVICE)
 """
 try:
@@ -191,8 +191,8 @@ for epoch in range(1, EPOCHS + 1):
     current_lr = optimizer.param_groups[0]['lr']
 
     print(f"[Epoch {epoch}/{EPOCHS}] "
-          f"Train: total={avg_train_loss:.6f}, pressures={avg_train_loss_pressures:.6f}, suctions={avg_train_loss_suctions:.6f} | "
-          f"Val: total={avg_val_loss:.6f}, pressures={avg_val_loss_pressures:.6f}, suctions={avg_val_loss_suctions:.6f} | "
+          f"Train: total={avg_train_loss:.12f}, pressures={avg_train_loss_pressures:.12f}, suctions={avg_train_loss_suctions:.12f} | "
+          f"Val: total={avg_val_loss:.12f}, pressures={avg_val_loss_pressures:.12f}, suctions={avg_val_loss_suctions:.12f} | "
           f"LR: {current_lr:.2e} | ETA: {rem_hours}h {rem_mins}m")
 
     # --- Always log to file (even if no checkpoint is saved) ---
@@ -203,6 +203,6 @@ for epoch in range(1, EPOCHS + 1):
         torch.save(model.state_dict(), model_path)
 
     with open(LOG_FILE, "a") as f:
-        f.write(f"{epoch},{avg_train_loss:.6f},{avg_train_loss_pressures:.6f},{avg_train_loss_suctions:.6f},"
-                f"{avg_val_loss:.6f},{avg_val_loss_pressures:.6f},{avg_val_loss_suctions:.6f},{model_path}\n")
+        f.write(f"{epoch},{avg_train_loss:.12f},{avg_train_loss_pressures:.12f},{avg_train_loss_suctions:.12f},"
+                f"{avg_val_loss:.12f},{avg_val_loss_pressures:.12f},{avg_val_loss_suctions:.12f},{model_path}\n")
 
