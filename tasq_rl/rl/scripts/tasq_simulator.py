@@ -85,6 +85,7 @@ class TASQSimulator:
             joint_type = joint_info[2]
             if joint_type == p.JOINT_REVOLUTE:
                 self.revolute_joints.append(joint_index)
+                #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             elif joint_type == p.JOINT_PRISMATIC and joint_name not in excluded_names:
                 self.prismatic_joints.append(joint_index)
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
