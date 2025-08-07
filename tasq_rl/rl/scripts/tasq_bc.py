@@ -36,11 +36,11 @@ train_episodes, val_episodes = train_test_split(
 train_indices = []
 val_indices = []
 current_idx = 0
-max_offset = 200  # must match max offset used inside IntervalStackedDataset
+#max_offset = 200  # must match max offset used inside IntervalStackedDataset
 
 for ep_idx, length in enumerate(episode_lengths):
     valid_start = current_idx            # include from episode start
-    valid_end = current_idx + length - max_offset  # exclude last max_offset samples only
+    valid_end = current_idx + length #- max_offset  # exclude last max_offset samples only
     indices = list(range(valid_start, valid_end))
 
     if ep_idx in train_episodes:
