@@ -9,7 +9,7 @@ from rl.converters.converter import pneu2posandgains
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
         self.start_yaw = np.random.uniform(-np.pi, np.pi)
-        #self.start_yaw = 0
+        self.start_yaw = 0
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -60,7 +60,7 @@ class TASQSimulator:
         self.plane_id = p.loadURDF("plane.urdf")
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
-        #self.start_x, self.start_y = 0.0, 0.0
+        self.start_x, self.start_y = 0.0, 0.0
         self.start_pos = [self.start_x, self.start_y, 0.12]
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
@@ -82,9 +82,12 @@ class TASQSimulator:
         for joint_index in range(self.num_joints):
             joint_info = p.getJointInfo(self.robot_id, joint_index)
             joint_name = joint_info[1].decode()
+            if "_ry" in joint_name:
+                p.resetJointState(bodyUniqueId=self.robot_id, jointIndex=joint_index, targetValue=0.15)
             joint_type = joint_info[2]
             if joint_type == p.JOINT_REVOLUTE:
                 self.revolute_joints.append(joint_index)
+                #p.resetJointState(self.robot_id, joint_index, targetValue)
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             elif joint_type == p.JOINT_PRISMATIC and joint_name not in excluded_names:
                 self.prismatic_joints.append(joint_index)

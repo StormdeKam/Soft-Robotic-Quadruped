@@ -12,7 +12,7 @@ gait_length = 10*23
 
 
 if args.gait == "straight":
-    from rl.gaits.demo_gait_straight import demo_pressures, demo_suction
+    from rl.gaits.demo_gait_straight_v2 import demo_pressures, demo_suction
 elif args.gait == "rotation":
     from rl.gaits.demo_gait_rotation import demo_pressures_rot as demo_pressures
     from rl.gaits.demo_gait_rotation import demo_suction_rot as demo_suction
