@@ -8,18 +8,23 @@ parser.add_argument("--gait", type=str, choices=["straight", "rotation"], requir
 args = parser.parse_args()
 
 
-gait_length = 10*23
+gait_length = 10*5
 
 
 if args.gait == "straight":
-    from rl.gaits.demo_gait_straight_v2 import demo_pressures, demo_suction
+    from rl.gaits.demo_gait_straight_bezier import DemoGaitStraight
+    demogait = DemoGaitStraight()
+    demogait.gait()
+    demo_pressures = demogait.demo_pressures
+    demo_suction = demogait.demo_suction
+    demogait.plot()
 elif args.gait == "rotation":
     from rl.gaits.demo_gait_rotation import demo_pressures_rot as demo_pressures
     from rl.gaits.demo_gait_rotation import demo_suction_rot as demo_suction
 
-sim = TASQSimulator("rl/urdfs/TASQ_n6.urdf", gui=True, no_links=6)
+sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
 sim.reset_simulation()
-sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction)
 sim.disconnect()
 
 

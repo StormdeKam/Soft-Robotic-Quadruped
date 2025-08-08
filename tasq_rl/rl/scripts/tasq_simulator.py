@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -35,7 +35,7 @@ class TASQSimulator:
         if self.gui:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
-                cameraYaw=0 + self.start_yaw * (180 / np.pi),
+                cameraYaw=0 + self.start_yaw * (180 / np.pi) +180/np.pi,
                 cameraPitch=-30,
                 cameraTargetPosition=[0, 0, 0.2],
                 physicsClientId=self.physics_client
@@ -268,8 +268,8 @@ class TASQSimulator:
         if self.gui:
             time.sleep(1. / 240.)
                 
-    def run(self, steps=2000, pressure_callback=None, suction_callback=None, mode=0):
-        pressures = np.zeros((4, 3))
+    def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
+        pressures = np.ones((4, 3))*10
         suction_states = np.array([False, False, False, False])
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
@@ -277,10 +277,10 @@ class TASQSimulator:
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
 
         for step in range(steps):
-            suction_states = suction_callback(step,mode)
+            suction_states = suction_callback(step)
             for i in range(steps_per_step): 
                 if pressure_callback:
-                    pressures += pressure_callback(step,mode)/steps_per_step
+                    pressures += pressure_callback(step)/steps_per_step
                     self.apply_pressures(pressures)
 
                 if suction_callback:
