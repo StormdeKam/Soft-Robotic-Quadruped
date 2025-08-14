@@ -3,20 +3,20 @@
 <robot
   name="urdfv3">
   <link
-    name="base_linkv2">
+    name="base_link_v3">
     <inertial>
       <origin
-        xyz="-9.6283E-07 5.5479E-11 0.022962"
+        xyz="0 0 0.01"
         rpy="0 0 0" />
       <mass
-        value="0.25" />
+        value="0.13748" />
       <inertia
-        ixx="0.0004997"
-        ixy="-3.4689E-14"
-        ixz="-1.3111E-09"
-        iyy="0.00049969"
-        iyz="3.0563E-12"
-        izz="0.00088484" />
+        ixx="0.00015743"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.00015743"
+        iyz="0.0"
+        izz="0.00020322" />
     </inertial>
     <visual>
       <origin
@@ -24,7 +24,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_linkv2.STL" />
+          filename="./urdfv3/meshes/base_link_v3.STL" />
       </geometry>
       <material
         name="PLA">
@@ -38,7 +38,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_linkv2.STL" />
+          filename="./urdfv3/meshes/base_link_v3.STL" />
       </geometry>
     </collision>
   </link>
@@ -86,10 +86,10 @@
     name="j1_0"
     type="fixed">
     <origin
-      xyz="0 -0.13101 0.044543"
-      rpy="0 -0.69813 -1.5708" />
+      xyz="0.09 0 -0.0126"
+      rpy="0 0 0" />
     <parent
-      link="base_linkv2" />
+      link="base_link_v3" />
     <child
       link="l1_1" />
     <axis
@@ -1821,10 +1821,10 @@
     name="j2_0"
     type="fixed">
     <origin
-      xyz="0.13101 0 0.044543"
-      rpy="0 -0.6981 0" />
+      xyz="0 -0.09 -0.0126"
+      rpy="0 0 -1.5707963" />
     <parent
-      link="base_linkv2" />
+      link="base_link_v3" />
     <child
       link="l2_1" />
     <axis
@@ -3556,10 +3556,10 @@
     name="j3_0"
     type="fixed">
     <origin
-      xyz="0 0.13101 0.044543"
-      rpy="0 -0.6981 1.5708" />
+      xyz="-0.09 0 -0.0126"
+      rpy="0 0 -3.14159265" />
     <parent
-      link="base_linkv2" />
+      link="base_link_v3" />
     <child
       link="l3_1" />
     <axis
@@ -5291,10 +5291,10 @@
     name="j4_0"
     type="fixed">
     <origin
-      xyz="-0.131007454634447 0 0.0445431404951325"
-      rpy="0 -0.6981 3.1416" />
+      xyz="0 0.09 -0.0126"
+      rpy="0 0 1.5707963" />
     <parent
-      link="base_linkv2" />
+      link="base_link_v3" />
     <child
       link="l4_1" />
     <axis

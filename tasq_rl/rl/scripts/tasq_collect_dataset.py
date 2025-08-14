@@ -12,8 +12,8 @@ from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
 import pybullet as p
 
 # --- Parameters ---
-num_episodes = 10_000  # Number of simulation rollouts
-save_path = "rl/datasets/goal_directed"
+num_episodes = 2_000  # Number of simulation rollouts
+save_path = "rl/datasets/minimal_viable"
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -29,13 +29,15 @@ def rotate_world_to_local(base_pos, base_quat, point):
 def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
     gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
-
+    gait = 0
     if gait == 0:
         gait_length = 23*10
         mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
+        mode = 0
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
-        total_steps = 3 * gait_length
+        gait_cycles = np.random.choice([2,3,4,5])
+        total_steps = gait_cycles * gait_length
     else:
         gait_length = 21*10
         mode = np.random.choice([0,1])  # clockwise, counterclockwise
@@ -47,7 +49,7 @@ def run_episode(episode_idx):
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
-    pressures = np.ones((4, 3)) * 5  # start slightly above zero pressure
+    pressures = np.ones((4, 3)) * 10  # start slightly above zero pressure
     suction_states = suction_callback(0).astype(np.float32)
 
     episode_states = []

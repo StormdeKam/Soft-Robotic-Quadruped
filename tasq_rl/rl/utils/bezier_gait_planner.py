@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from scipy.interpolate import make_interp_spline
 
 class BezierGaitPlanner:
@@ -31,39 +31,51 @@ class BezierGaitPlanner:
         return results
 
     def get_gradients_at_time(self, n, dt=1/24):
-        """
-        Computes the gradient of each channel at a specific step n using finite difference:
-        (evaluate(t + dt) - evaluate(t)) / dt
-
-        Args:
-            n (int): Step at which to compute the gradient.
-            dt (float): Small timestep to use for numerical differentiation.
-
-        Returns:
-            gradient (np.ndarray): Array of gradients for each channel at time t.
-        """
-        t = n*dt
+        t = n * dt
         p1 = self.evaluate(t)
         p2 = self.evaluate(t + dt)
         gradient = p2 - p1
         return gradient
 
-    def plot(self, duration=1.0, dt=0.1):
+    def plot(self, duration=1.0, dt=0.01):
+        import plotly.graph_objects as go
+
         time = np.arange(0, duration, dt)
         signals = np.array([self.evaluate(t) for t in time])
 
-        plt.figure(figsize=(12, 8))
+        fig = go.Figure()
+
         for i in range(self.num_channels):
-            plt.plot(time, signals[:, i], label=f'Channel {i}')
-            # Also show key points
+            # Plot spline curve
+            fig.add_trace(go.Scatter(
+                x=time,
+                y=signals[:, i],
+                mode='lines',
+                name=f'Channel {i}',
+                line=dict(width=2)
+            ))
+
+            # Plot control points
             pts = self.points[i]
             if pts:
                 pt_times, pt_vals = zip(*pts)
-                plt.plot(pt_times, pt_vals, 'o', label=f'Points {i}')
-        plt.xlabel("Time (s)")
-        plt.ylabel("Value")
-        plt.title("Bezier Gait Planner")
-        plt.grid(True)
-        plt.legend(ncol=2)
-        plt.tight_layout()
-        plt.show()
+                fig.add_trace(go.Scatter(
+                    x=pt_times,
+                    y=pt_vals,
+                    mode='markers',
+                    name=f'Points {i}',
+                    marker=dict(size=8, symbol='circle-open')
+                ))
+
+        fig.update_layout(
+            title="Bezier Gait Planner (Interactive)",
+            xaxis_title="Time (s)",
+            yaxis_title="Value",
+            legend_title="Legend",
+            hovermode="x unified",
+            template="plotly_white",
+            width=1000,
+            height=600
+        )
+
+        fig.show()

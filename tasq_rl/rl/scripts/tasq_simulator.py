@@ -82,8 +82,8 @@ class TASQSimulator:
         for joint_index in range(self.num_joints):
             joint_info = p.getJointInfo(self.robot_id, joint_index)
             joint_name = joint_info[1].decode()
-            if "_ry" in joint_name:
-                p.resetJointState(bodyUniqueId=self.robot_id, jointIndex=joint_index, targetValue=0.15)
+            #if "_ry" in joint_name:
+                #p.resetJointState(bodyUniqueId=self.robot_id, jointIndex=joint_index, targetValue=0.15)
             joint_type = joint_info[2]
             if joint_type == p.JOINT_REVOLUTE:
                 self.revolute_joints.append(joint_index)
@@ -277,10 +277,10 @@ class TASQSimulator:
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
 
         for step in range(steps):
-            suction_states = suction_callback(step)
+            suction_states = suction_callback(step, mode)
             for i in range(steps_per_step): 
                 if pressure_callback:
-                    pressures += pressure_callback(step)/steps_per_step
+                    pressures += pressure_callback(step,mode)/steps_per_step
                     self.apply_pressures(pressures)
 
                 if suction_callback:
