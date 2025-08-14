@@ -37,6 +37,9 @@ namespace vtem_control {
 
         bool activate_pressure_regulation(int slot_idx = -1);
         bool deactivate_pressure_regulation(int slot_idx = -1);
+        
+        bool activate_valve_opening_regulation(int slot_idx = -1);
+        void set_single_valve_opening(const int valve_idx, const int opening_percent);
 
         int get_single_pressure(int valve_idx);
 

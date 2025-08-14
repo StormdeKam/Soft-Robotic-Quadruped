@@ -294,6 +294,57 @@ bool vtem_control::VtemControl::deactivate_pressure_regulation(int slot_idx) {
     }
 }
 
+bool vtem_control::VtemControl::activate_valve_opening_regulation(int slot_idx) {
+    int des_valve_mode = 2;      // MA02: valve opening regulation
+    int des_app_control = 2;     // activate both valves
+    int des_valve_state = 2;     // running
+    float timeout = 20;          // [s]
+    float sampling_rate = 100;   // [Hz]
+
+    if (slot_idx == -1) {
+        for (auto slot = 0; slot < num_slots_; slot++) {
+            set_single_motion_app(slot, des_valve_mode, des_app_control);
+        }
+
+        int actual_valve_mode, valve_state;
+        int i = 0;
+        bool config_mismatch = true;
+        while (config_mismatch) {
+            if (i / sampling_rate > timeout) {
+                return false;
+            }
+            config_mismatch = false;
+            for (auto slot = 0; slot < num_slots_; slot++) {
+                get_single_motion_app(slot, actual_valve_mode, valve_state);
+                if (actual_valve_mode != des_valve_mode || valve_state != des_valve_state) {
+                    config_mismatch = true;
+                    break;
+                }
+            }
+            if (config_mismatch) {
+                i += 1;
+                std::this_thread::sleep_for(std::chrono::milliseconds(int(1/sampling_rate*1000)));
+            }
+        }
+        return true;
+    } else {
+        set_single_motion_app(slot_idx, des_valve_mode, des_app_control);
+
+        int actual_valve_mode, valve_state;
+        int i = 0;
+        get_single_motion_app(slot_idx, actual_valve_mode, valve_state);
+        while (actual_valve_mode != des_valve_mode || valve_state != des_valve_state) {
+            if (i / sampling_rate > timeout) {
+                return false;
+            }
+            get_single_motion_app(slot_idx, actual_valve_mode, valve_state);
+            i += 1;
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(1/sampling_rate*1000)));
+        }
+        return true;
+    }
+}
+
 bool vtem_control::VtemControl::ensure_connection() const {
     if (!connected_) {
         throw std::runtime_error("Operation requires a connection.");
@@ -390,5 +441,28 @@ void vtem_control::VtemControl::set_all_pressures(const std::vector<int> &pressu
 
     for (auto valve_idx = 0; valve_idx < num_valves_; valve_idx++) {
         set_single_pressure(valve_idx, pressures[valve_idx]);
+    }
+}
+
+void vtem_control::VtemControl::set_single_valve_opening(const int valve_idx, const int opening_percent) {
+    ensure_connection();
+
+    // Clamp opening_percent to [-100, 100]
+    int percent = std::max(-100, std::min(100, opening_percent));
+
+    // Map -100%...0...100% to 0...8192...16384
+    int opening_value = static_cast<int>(std::round((percent + 100) * 8192.0 / 100.0));
+
+    int slot_idx = get_slot_idx_from_valve_idx(valve_idx);
+    int slot_remain = valve_idx - 2 * slot_idx; // 0 or 1
+
+    // Ensure valve opening regulation app is active and running
+    ensure_motion_app(slot_idx, 2, 2);
+
+    // Write to the correct register
+    const auto addr = address_output_start + cpx_output_offset + 3 * slot_idx + 1 + slot_remain;
+
+    if (modbus_write_register(ctx_, addr, opening_value) == -1) {
+        throw std::runtime_error("Failed to write valve opening to CPX modbus register.");
     }
 }

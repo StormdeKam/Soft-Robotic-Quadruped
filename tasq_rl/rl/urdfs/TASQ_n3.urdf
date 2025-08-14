@@ -6,7 +6,7 @@
     name="base_linkv2">
     <inertial>
       <origin
-        xyz="-9.6283E-07 5.5479E-11 0.022962"
+        xyz="0 0 0"
         rpy="0 0 0" />
       <mass
         value="0.25" />
