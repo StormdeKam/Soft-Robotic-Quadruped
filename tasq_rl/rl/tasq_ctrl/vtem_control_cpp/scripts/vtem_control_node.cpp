@@ -66,27 +66,24 @@ public:
 
 private:
     void onPressureReceived(const std_msgs::msg::Int32::SharedPtr msg, int valveIdx) {
-        unsigned int newPressure = msg->data;
+        int value = msg->data;
 
-        // Enforce per-valve-group safety limits
-        unsigned int maxAllowedPressure = (valveIdx < 12) ? 400 : 3000;
-        if (newPressure > maxAllowedPressure) {
-            RCLCPP_WARN(this->get_logger(),
-                        "Valve %d: Pressure %d mBar exceeds safety limit (%d mBar). Ignoring.",
-                        valveIdx, newPressure, maxAllowedPressure);
-            return;
-        }
+        if (valveIdx < 12) {
+            // Pressure regulation for valves 0-11
+            unsigned int maxAllowedPressure = 400;
+            if (value > maxAllowedPressure) {
+                RCLCPP_WARN(this->get_logger(),
+                            "Valve %d: Pressure %d mBar exceeds safety limit (%d mBar). Ignoring.",
+                            valveIdx, value, maxAllowedPressure);
+                return;
+            }
+            if (value < 0) {
+                RCLCPP_WARN(this->get_logger(), "Pressure must be non-negative. Ignoring.");
+                return;
+            }
+            RCLCPP_INFO(this->get_logger(), "Received pressure for valve: %d", valveIdx);
 
-        if (newPressure < 0) {
-            RCLCPP_WARN(this->get_logger(), "Pressure must be non-negative. Ignoring.");
-            return;
-        }
-
-        RCLCPP_INFO(this->get_logger(), "Received pressure for valve: %d", valveIdx);
-
-        {
             std::lock_guard<std::mutex> lock(dataMutex_);
-
             if (valvePressureMap_.find(valveIdx) == valvePressureMap_.end()) {
                 RCLCPP_INFO(this->get_logger(), "Valve %d not active, activating pressure regulation", valveIdx);
                 unsigned int slotIdx = vtemControl_.get_slot_idx_from_valve_idx(valveIdx);
@@ -95,9 +92,24 @@ private:
                     return;
                 }
             }
+            vtemControl_.set_single_pressure(valveIdx, value);
+            valvePressureMap_[valveIdx] = value;
+        } else {
+            // Opening regulation for valves 12-15
+            int opening_percent = std::max(-100, std::min(100, value));
+            RCLCPP_INFO(this->get_logger(), "Received opening for valve: %d -> %d%%", valveIdx, opening_percent);
 
-            vtemControl_.set_single_pressure(valveIdx, newPressure);
-            valvePressureMap_[valveIdx] = newPressure;
+            std::lock_guard<std::mutex> lock(dataMutex_);
+            if (valvePressureMap_.find(valveIdx) == valvePressureMap_.end()) {
+                RCLCPP_INFO(this->get_logger(), "Valve %d not active, activating opening regulation", valveIdx);
+                unsigned int slotIdx = vtemControl_.get_slot_idx_from_valve_idx(valveIdx);
+                if (!vtemControl_.activate_valve_opening_regulation(slotIdx)) {
+                    RCLCPP_ERROR(this->get_logger(), "Failed to activate opening regulation for valve %d.", valveIdx);
+                    return;
+                }
+            }
+            vtemControl_.set_single_valve_opening(valveIdx, opening_percent);
+            valvePressureMap_[valveIdx] = opening_percent;
         }
     }
 
