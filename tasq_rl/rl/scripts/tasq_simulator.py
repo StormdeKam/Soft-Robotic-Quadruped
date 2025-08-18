@@ -9,7 +9,7 @@ from rl.converters.converter import pneu2posandgains
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
         self.start_yaw = np.random.uniform(-np.pi, np.pi)
-        self.start_yaw = 0
+        self.start_yaw = np.pi/4
         self.no_links = no_links
         self.urdf_path = urdf_path
         self.gui = gui
@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -35,8 +35,8 @@ class TASQSimulator:
         if self.gui:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
-                cameraYaw=0 + self.start_yaw * (180 / np.pi) +180/np.pi,
-                cameraPitch=-30,
+                cameraYaw= 180,#self.start_yaw + 0.25*np.pi,  # Adjust yaw for better view
+                cameraPitch=10, #-30,
                 cameraTargetPosition=[0, 0, 0.2],
                 physicsClientId=self.physics_client
             )
@@ -48,8 +48,8 @@ class TASQSimulator:
         self._initialize_robot()
 
         # Reset internal state variables
-        self.suction_states = np.array([False, True, True, True])
-        self.pressure_state = np.zeros((4, 3))
+        #self.suction_states = np.array([False, True, True, True])
+        #self.pressure_state = np.zeros((4, 3))
         self.log_data.clear()
         self._current_pressures = None
         
@@ -61,7 +61,7 @@ class TASQSimulator:
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
         self.start_x, self.start_y = 0.0, 0.0
-        self.start_pos = [self.start_x, self.start_y, 0.12]
+        self.start_pos = [self.start_x, self.start_y, 0.16]
         self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
             
@@ -69,9 +69,13 @@ class TASQSimulator:
         self.revolute_joints = []
         self.prismatic_joints = []
         self.suction_states = np.array([False, True, True, True])
-        self.pressure_state = np.zeros((4,3))
+        self.pressure_state = np.ones((4,3)) *10 
 
         self.num_joints = p.getNumJoints(self.robot_id)
+        # Domain randomization:
+        self._randomize_link_masses(mass_range=(0.8, 1.2))  # for example, ±20% mass
+        self.joint_randomizer_values = np.random.normal(1, 0.01, size=(6,))
+        self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
 
         self.position_gain = 1.0
         self.velocity_gain = 0.5
@@ -112,6 +116,25 @@ class TASQSimulator:
             cup_link_idx = leg_idx*(self.no_links*4+2) + self.no_links*4 +1
             self.foot_link_indices[leg_idx] = cup_link_idx  # list of 4 ints
 
+    def _randomize_link_masses(self, mass_range=(0.8, 1.2)):
+        """
+        Randomly scales the mass of each link for domain randomization.
+        mass_range: tuple (min_scale, max_scale) to multiply the original link mass.
+        """
+        # Get the base mass first
+        info = p.getDynamicsInfo(self.robot_id, -1)
+        base_mass = info[0]  # mass is always the first element
+
+        base_scale = np.random.normal(*mass_range)
+        p.changeDynamics(self.robot_id, -1, mass=base_mass * base_scale)
+
+        for joint_index in range(self.num_joints):
+            # Each link is associated with joint_index
+            info = p.getDynamicsInfo(self.robot_id, joint_index)
+            mass = info[0]  # mass is always the first element
+
+            scale = np.random.uniform(*mass_range)
+            p.changeDynamics(self.robot_id, joint_index, mass=mass * scale)
 
     def apply_pressures(self, pressures):
         self.pressure_state = pressures
@@ -139,8 +162,16 @@ class TASQSimulator:
                 pos_gain_x, vel_gain_x, \
                 pos_gain_y, vel_gain_y, \
                 pos_gain_z, vel_gain_z = pneu2posandgains(leg_pressures, self.no_links)
-                #if leg_index==2:
-                    #print("gain x = ",pos_gain_x, "gain y =", pos_gain_y, "gain z = ", pos_gain_z)            
+                
+                target_pos_x *= self.joint_randomizer_values[0]
+                target_pos_y *= self.joint_randomizer_values[0]
+                target_pos_z *= self.joint_randomizer_values[1]
+                pos_gain_x *= self.joint_randomizer_values[2]
+                vel_gain_x *= self.joint_randomizer_values[3]
+                pos_gain_y *= self.joint_randomizer_values[2]
+                vel_gain_y *= self.joint_randomizer_values[3]
+                pos_gain_z *= self.joint_randomizer_values[4]
+                vel_gain_z *= self.joint_randomizer_values[5]          
             else:
                 self.logger.warning(f"Pressure in leg  {leg_index +1} exceeding max_pressure of {max_pressure} mBar")
 
@@ -190,7 +221,7 @@ class TASQSimulator:
     def apply_suction(self, suction_states, force_magnitude=3):
         self.suction_states = suction_states
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
-        suction_target_pos = -0.005
+        suction_target_pos = 0.005
         suction_pos_gain = 0.8
         suction_vel_gain = 0.5
         no_suction_pos_gain = 0.5
@@ -214,7 +245,7 @@ class TASQSimulator:
                 distance = sum(d ** 2 for d in direction) ** 0.5
                 if distance > 0 and distance < 0.03 and angle_error > angle_threshold:
                     #"""Apply an attracting force from bodyB:linkB to self.robot_id:cup_link_idx."""
-                    force = [0,0,-force_magnitude]  
+                    force = [0,0,-force_magnitude * self.suction_randomization]  
                     p.applyExternalForce(
                         objectUniqueId=self.robot_id,
                         linkIndex=cup_link_idx,
@@ -226,7 +257,7 @@ class TASQSimulator:
                     p.changeDynamics(
                         bodyUniqueId=self.robot_id,
                         linkIndex=cup_link_idx+1,             # Use -1 for base link
-                        lateralFriction=5       # New friction value
+                        lateralFriction=50       # New friction value
                     )
                     #Change the suction cup target_position
                 #"""
@@ -253,7 +284,7 @@ class TASQSimulator:
                     p.changeDynamics(
                         bodyUniqueId=self.robot_id,
                         linkIndex=cup_link_idx,             # Use -1 for base link
-                        lateralFriction=0.5    # New friction value
+                        lateralFriction=10   # New friction value
                     )
                 #"""
 
@@ -275,9 +306,13 @@ class TASQSimulator:
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
-
+        start_time = time.time()
+        
         for step in range(steps):
+            #print(pressures)
+            #self.get_grfs_local_foot()
             suction_states = suction_callback(step, mode)
+            #print(suction_states)          
             for i in range(steps_per_step): 
                 if pressure_callback:
                     pressures += pressure_callback(step,mode)/steps_per_step
@@ -286,6 +321,11 @@ class TASQSimulator:
                 if suction_callback:
                     self.apply_suction(suction_states)            
                 self.step()
+        end_time = time.time()
+        time_difference = end_time - start_time
+        print(f"Simulation ran for {steps} steps in {time_difference:.2f} seconds.")
+        real_control_freq = 1/(time_difference/steps)
+        print(f"Real control frequency: {real_control_freq:.2f} Hz")
 
     def get_pressure_state(self):
         return self.pressure_state
@@ -406,6 +446,7 @@ class TASQSimulator:
                 total_force_local = rot_matrix.T @ total_force_world
 
                 grfs_local[i] += total_force_local[2]  # accumulate if multiple contacts
+        #print(grfs_local)
 
         return grfs_local.flatten()
 

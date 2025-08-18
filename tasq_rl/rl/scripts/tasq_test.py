@@ -133,7 +133,7 @@ def run_behavior_cloning(model_path, env, device):
             env.apply_pressures(pressures)
             env.apply_suction(suction_states)
             env.step()
-        print("d = ", suction_states)
+        #print("d = ", suction_states)
 
     env.disconnect()
     print("Behavior cloning run complete.")
@@ -179,8 +179,8 @@ def get_env_observation(env, pressures):
     suction_states = np.array(env.get_suction_state())
     grfs = np.array(env.get_grfs_local_foot())
     base_quat = env.get_base_quaternion()
-    global_goal_pos = np.array([0.0, 0.0]) #set the global goal pos
-    goal_yaw = 60 # set the global goal yaw
+    global_goal_pos = np.array([0.30, 0.0]) #set the global goal pos
+    goal_yaw = 0 # set the global goal yaw
     local_goal_pos = rotate_world_to_local(base_pos[0:2], base_quat, global_goal_pos[0:2])
     base_yaw = np.arctan2(base_ori[2], base_ori[3])
     delta_yaw = goal_yaw - base_yaw

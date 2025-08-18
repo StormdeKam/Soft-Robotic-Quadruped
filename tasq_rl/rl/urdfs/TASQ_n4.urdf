@@ -3,20 +3,20 @@
 <robot
   name="urdfv3">
   <link
-    name="base_link">
+    name="base_link_v3">
     <inertial>
       <origin
-        xyz="-1.3924E-06 1.7287E-08 0.022244"
+        xyz="0 0 0.01"
         rpy="0 0 0" />
       <mass
-        value="0.16244" />
+        value="0.13748" />
       <inertia
-        ixx="0.00059409"
-        ixy="-1.7928E-10"
-        ixz="-3.4405E-09"
-        iyy="0.0005941"
-        iyz="3.8719E-11"
-        izz="0.0010669" />
+        ixx="0.00015743"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="0.00015743"
+        iyz="0.0"
+        izz="0.00020322" />
     </inertial>
     <visual>
       <origin
@@ -24,10 +24,10 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_link.STL" />
+          filename="./urdfv3/meshes/base_link_v3.STL" />
       </geometry>
       <material
-        name="TPU">
+        name="PLA">
         <color
           rgba="0.21961 0.47843 1 1" />
       </material>
@@ -38,7 +38,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_link.STL" />
+          filename="./urdfv3/meshes/base_link_v3.STL" />
       </geometry>
     </collision>
   </link>
@@ -86,8 +86,8 @@
     name="j1_0"
     type="fixed">
     <origin
-      xyz="0 -0.1288 0.035097"
-      rpy="0 -0.2618 -1.5708" />
+      xyz="0.09 0 -0.0126"
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child
@@ -1125,8 +1125,8 @@
     name="j2_0"
     type="fixed">
     <origin
-      xyz="0.1288 0 0.035097"
-      rpy="0 -0.2618 0" />
+      xyz="0 -0.09 -0.0126"
+      rpy="0 0 -1.5707963" />
     <parent
       link="base_link" />
     <child
@@ -2164,8 +2164,8 @@
     name="j3_0"
     type="fixed">
     <origin
-      xyz="0 0.1288 0.035097"
-      rpy="0 -0.2618 1.5708" />
+      xyz="-0.09 0 -0.0126"
+      rpy="0 0 -3.14159265" />
     <parent
       link="base_link" />
     <child
@@ -3203,8 +3203,8 @@
     name="j4_0"
     type="fixed">
     <origin
-      xyz="-0.1288 0 0.035097"
-      rpy="0 -0.2618 3.1416" />
+      xyz="0 0.09 -0.0126"
+      rpy="0 0 1.5707963" />
     <parent
       link="base_link" />
     <child

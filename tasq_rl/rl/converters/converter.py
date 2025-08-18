@@ -4,73 +4,58 @@ deg2rad = np.pi/180 #conversion factor from degrees to rad
 theta = np.pi/6 # positioning angle for hall sensors in rad
 hs_radius = 0.0065 # positioning radius for hall sensors in m
 
-k1 = 0.00003 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-kp__th_1 = 0.01# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-kp__dz_1 = 0.05# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-c1 = 2 # constant to map torque to change in position gain for revolute joints
-c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-c3 = 2 # constant to map force to change in position gain for prismatic joints
-c4 = 1 # constant to map force to change in velocity gain for prismatic joints
-
 def pneu2posandgains(pressures, no_links):
+    k1 = 0.00003 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+    k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+    kp__th_1 = 0.03# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+    kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+    kp__dz_1 = 0.08# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+    kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+    c1 = 2 # constant to map torque to change in position gain for revolute joints
+    c2 = 1 # constant to map torque to change in velocity gain for revolute joints
+    c3 = 2 # constant to map force to change in position gain for prismatic joints
+    c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+
     if no_links == 3:
-        k1 = 0.00003/3 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-        k2 = 0.0000001/3 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-        kp__th_1 = 0.01/3# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-        kd__th_1 = 0.2/3# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-        kp__dz_1 = 0.05/3# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-        kd__dz_1 = 0.2/3# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-        c1 = 2 # constant to map torque to change in position gain for revolute joints
-        c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-        c3 = 2 # constant to map force to change in position gain for prismatic joints
-        c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+        k1 = k1/3 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+        k2 = k2/3 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+        kp__th_1 = kp__th_1/3# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+        kd__th_1 = kd__th_1/3# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+        kp__dz_1 = kp__dz_1/3# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+        kd__dz_1 = kd__dz_1/3# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+
     if no_links == 4:
-        k1 = 0.00003/2.5 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-        k2 = 0.0000001/2.5 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-        kp__th_1 = 0.01/2.5# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-        kd__th_1 = 0.2/2.5# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-        kp__dz_1 = 0.05/2.5# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-        kd__dz_1 = 0.2/2.5# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-        c1 = 2 # constant to map torque to change in position gain for revolute joints
-        c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-        c3 = 2 # constant to map force to change in position gain for prismatic joints
-        c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+        k1 = k1/2.5 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+        k2 = k2/2.5 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+        kp__th_1 = kp__th_1/2.5# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+        kd__th_1 = kd__th_1/2.5# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+        kp__dz_1 = kp__dz_1/2.5# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+        kd__dz_1 = kd__dz_1/2.5# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+
     if no_links == 5:
-        k1 = 0.00003/2 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-        k2 = 0.0000001/2 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-        kp__th_1 = 0.01/2# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-        kd__th_1 = 0.2/2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-        kp__dz_1 = 0.05/2# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-        kd__dz_1 = 0.2/2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-        c1 = 2 # constant to map torque to change in position gain for revolute joints
-        c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-        c3 = 2 # constant to map force to change in position gain for prismatic joints
-        c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+        k1 = k1/2 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+        k2 = k2/2 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+        kp__th_1 = kp__th_1/2# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+        kd__th_1 = kd__th_1/2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+        kp__dz_1 = kp__dz_1/2# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+        kd__dz_1 = kd__dz_1/2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+
     if no_links == 6:
-        k1 = 0.00003/1.5 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-        k2 = 0.0000001/1.5 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-        kp__th_1 = 0.01/1.5# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-        kd__th_1 = 0.2/1.5# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-        kp__dz_1 = 0.05/1.5# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-        kd__dz_1 = 0.2/1.5# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-        c1 = 2 # constant to map torque to change in position gain for revolute joints
-        c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-        c3 = 2 # constant to map force to change in position gain for prismatic joints
-        c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+        k1 = k1/1.5 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+        k2 = k2/1.5 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+        kp__th_1 = kp__th_1/1.5# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+        kd__th_1 = kd__th_1/1.5# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+        kp__dz_1 = kp__dz_1/1.5# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+        kd__dz_1 = kd__dz_1/1.5# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+    """
     if no_links == 7:
-        k1 = 0.00003 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-        k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-        kp__th_1 = 0.01# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
-        kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-        kp__dz_1 = 0.05# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
-        kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
-        c1 = 2 # constant to map torque to change in position gain for revolute joints
-        c2 = 1 # constant to map torque to change in velocity gain for revolute joints
-        c3 = 2 # constant to map force to change in position gain for prismatic joints
-        c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+        k1 = k1 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+        k2 = k2 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+        kp__th_1 = kp__th_1# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+        kd__th_1 = kd__th_1# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+        kp__dz_1 = kp__dz_1# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+        kd__dz_1 = kd__dz_1# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+    """
 
     pressure1, pressure2, pressure3 = pressures
     # Base vectors
@@ -89,17 +74,20 @@ def pneu2posandgains(pressures, no_links):
     T = k1*(np.cross(p1,v1) + np.cross(p2,v2) + np.cross(p3,v3)) *no_links
     F = k2*(p1 + p2 + p3) *no_links
     # Feedback gains 
-    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links
-    kd_thx_n = (kd__th_1 + np.abs(T[0]) * c2) * no_links
-    kp_thy_n = (kp__th_1 + np.abs(T[1]) * c1) * no_links
-    kd_thy_n = (kd__th_1 + np.abs(T[1]) * c2) * no_links
-    kp_dz_n = (kp__dz_1 + F[2] * c3) * no_links
-    kd_dz_n = (kd__dz_1 + F[2] * c4) * no_links
+    random_noise_gains = np.random.normal(1, 0.01, size=(4,))
+    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links * random_noise_gains[0]
+    kd_thx_n = (kd__th_1 + np.abs(T[0]) * c2) * no_links * random_noise_gains[1]
+    kp_thy_n = (kp__th_1 + np.abs(T[1]) * c1) * no_links * random_noise_gains[0]
+    kd_thy_n = (kd__th_1 + np.abs(T[1]) * c2) * no_links * random_noise_gains[1]
+    kp_dz_n = (kp__dz_1 + F[2] * c3) * no_links * random_noise_gains[2]
+    kd_dz_n = (kd__dz_1 + F[2] * c4) * no_links * random_noise_gains[3]
     # Target angles and position
-    thx = T[0]/(kp_thx_n * deg2rad)
-    thy = T[1]/(kp_thy_n * deg2rad)
-    dz = -F[2]/kp_dz_n
+    random_noise_pos = np.random.normal(1, 0.01, size=(3,))
+    thx = T[0]/(kp_thx_n * deg2rad) * random_noise_pos[0]
+    thy = T[1]/(kp_thy_n * deg2rad) * random_noise_pos[1]
+    dz = -F[2]/kp_dz_n * random_noise_pos[2]
 
+    
     """
     print("\n=== Computed Target Joint Positions ===")
     print(f"{'Axis':<5} | {'Target Pos':>12}")

@@ -25,9 +25,9 @@ if args.gait == "straight_bezier":
 
 elif args.gait == "straightv3":
     from rl.gaits.demo_gait_straight_v3 import gait_pressures, gait_suction
-    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
+    sim = TASQSimulator("rl/urdfs/TASQ_n5.urdf", gui=True, no_links=5)
     sim.reset_simulation()
-    sim.run(steps=4*gait_length, pressure_callback=gait_pressures, suction_callback=gait_suction, mode=0)
+    sim.run(steps=10*gait_length, pressure_callback=gait_pressures, suction_callback=gait_suction, mode=0)
     
 elif args.gait == "straight":
     from rl.gaits.demo_gait_straight import demo_pressures, demo_suction

@@ -7,8 +7,9 @@ from functools import partial
 import re
 
 from rl.scripts.tasq_simulator import TASQSimulator
-from rl.gaits.demo_gait_straight import demo_pressures, demo_suction
-from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
+#from rl.gaits.demo_gait_straight import demo_pressures, demo_suction
+#from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
+from rl.gaits.demo_gait_straight_v3 import gait_pressures, gait_suction
 import pybullet as p
 
 # --- Parameters ---
@@ -28,23 +29,24 @@ def rotate_world_to_local(base_pos, base_quat, point):
 
 def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
-    gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
+    #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 23*10
-        mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
+        gait_length = 420
+        #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
-        pressure_callback = partial(demo_pressures, mode=mode)
-        suction_callback = partial(demo_suction, mode=mode)
+        pressure_callback = partial(gait_pressures, mode=mode)
+        suction_callback = partial(gait_suction, mode=mode)
         gait_cycles = np.random.choice([2,3,4,5])
         total_steps = gait_cycles * gait_length
+    """
     else:
         gait_length = 21*10
         mode = np.random.choice([0,1])  # clockwise, counterclockwise
         pressure_callback = partial(demo_pressures_rot, mode=mode)
         suction_callback = partial(demo_suction_rot, mode=mode)
         total_steps = 2 * gait_length
-
+    """
     urdf_path = urdf_dict[no_links]
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()

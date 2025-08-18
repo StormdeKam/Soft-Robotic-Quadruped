@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from rl.utils.interval_stacker import IntervalStackedDataset  # Your custom class
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/goal_directed_4_8"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -25,7 +25,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Started behavior cloning training using", DEVICE)
 
 # --- Load episode lengths and split episodes ---
-episode_lengths = np.load("rl/datasets/goal_directed/demo_episode_lengths_merged.npy")
+episode_lengths = np.load("rl/datasets/minimal_viable/demo_episode_lengths_merged.npy")
 episode_indices = np.arange(len(episode_lengths))
 
 train_episodes, val_episodes = train_test_split(
@@ -53,9 +53,9 @@ print(f"Train samples: {len(train_indices)}, Validation samples: {len(val_indice
 
 # --- Create the dataset and subsets ---
 dataset = IntervalStackedDataset(
-    state_path="rl/datasets/goal_directed/demo_states_merged.npy",
-    action_path="rl/datasets/goal_directed/demo_actions_merged.npy",
-    episode_lengths_path="rl/datasets/goal_directed/demo_episode_lengths_merged.npy",
+    state_path="rl/datasets/minimal_viable/demo_states_merged.npy",
+    action_path="rl/datasets/minimal_viable/demo_actions_merged.npy",
+    episode_lengths_path="rl/datasets/minimal_viable/demo_episode_lengths_merged.npy",
     intervals=[40, 80, 120, 160, 200],
     use_mmap=False  # or True if RAM is limited
 )
