@@ -4,73 +4,39 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-from torch.utils.data import DataLoader, Subset
-from sklearn.model_selection import train_test_split
-from rl.utils.interval_stacker import IntervalStackedDataset  # Your custom class
+from rl.utils.dataset_stacker import StackedDataset
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable"
+MODEL_DIR = "rl/models/tasq_bc/goal_directed"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
-EPOCHS = 200
+EPOCHS = 100
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    torch.cuda.set_per_process_memory_fraction(0.9)
 
 print("Started behavior cloning training using", DEVICE)
 
-# --- Load episode lengths and split episodes ---
-episode_lengths = np.load("rl/datasets/minimal_viable/demo_episode_lengths_merged.npy")
-episode_indices = np.arange(len(episode_lengths))
-
-train_episodes, val_episodes = train_test_split(
-    episode_indices, test_size=VAL_SPLIT, random_state=42
+# Use exactly like before
+dataset = StackedDataset(
+    "rl/datasets/goal_directed/demo_states_merged.npy",
+    "rl/datasets/goal_directed/demo_actions_merged.npy",
+    N=4
 )
 
-# Compute dataset indices corresponding to each episode (accounting for max_offset inside dataset)
-train_indices = []
-val_indices = []
-current_idx = 0
-#max_offset = 200  # must match max offset used inside IntervalStackedDataset
-
-for ep_idx, length in enumerate(episode_lengths):
-    valid_start = current_idx            # include from episode start
-    valid_end = current_idx + length #- max_offset  # exclude last max_offset samples only
-    indices = list(range(valid_start, valid_end))
-
-    if ep_idx in train_episodes:
-        train_indices.extend(indices)
-    else:
-        val_indices.extend(indices)
-    current_idx += length
-
-print(f"Train samples: {len(train_indices)}, Validation samples: {len(val_indices)}")
-
-# --- Create the dataset and subsets ---
-dataset = IntervalStackedDataset(
-    state_path="rl/datasets/minimal_viable/demo_states_merged.npy",
-    action_path="rl/datasets/minimal_viable/demo_actions_merged.npy",
-    episode_lengths_path="rl/datasets/minimal_viable/demo_episode_lengths_merged.npy",
-    intervals=[40, 80, 120, 160, 200],
-    use_mmap=False  # or True if RAM is limited
-)
 val_size = int(len(dataset) * VAL_SPLIT)
 train_size = len(dataset) - val_size
-
-train_dataset = Subset(dataset, train_indices)
-val_dataset = Subset(dataset, val_indices)
-
-train_loader = DataLoader(
-    train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4
-)
-val_loader = DataLoader(
-    val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4
-)
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
 
 # --- Model with two heads ---
 class BCActor(nn.Module):
@@ -102,7 +68,7 @@ class BCActor(nn.Module):
         print(f"Loaded weights from {checkpoint_path}")
         return self
 
-obs_dim = dataset.obs_dim * 2 + 5 * 33 # 2 previous full states and 5 partial states from history in intervals
+obs_dim = dataset.obs_dim * dataset.N
 model = BCActor(obs_dim).to(DEVICE)
 """
 try:
@@ -191,8 +157,8 @@ for epoch in range(1, EPOCHS + 1):
     current_lr = optimizer.param_groups[0]['lr']
 
     print(f"[Epoch {epoch}/{EPOCHS}] "
-          f"Train: total={avg_train_loss:.12f}, pressures={avg_train_loss_pressures:.12f}, suctions={avg_train_loss_suctions:.12f} | "
-          f"Val: total={avg_val_loss:.12f}, pressures={avg_val_loss_pressures:.12f}, suctions={avg_val_loss_suctions:.12f} | "
+          f"Train: total={avg_train_loss:.6f}, pressures={avg_train_loss_pressures:.6f}, suctions={avg_train_loss_suctions:.6f} | "
+          f"Val: total={avg_val_loss:.6f}, pressures={avg_val_loss_pressures:.6f}, suctions={avg_val_loss_suctions:.6f} | "
           f"LR: {current_lr:.2e} | ETA: {rem_hours}h {rem_mins}m")
 
     # --- Always log to file (even if no checkpoint is saved) ---
@@ -203,6 +169,6 @@ for epoch in range(1, EPOCHS + 1):
         torch.save(model.state_dict(), model_path)
 
     with open(LOG_FILE, "a") as f:
-        f.write(f"{epoch},{avg_train_loss:.12f},{avg_train_loss_pressures:.12f},{avg_train_loss_suctions:.12f},"
-                f"{avg_val_loss:.12f},{avg_val_loss_pressures:.12f},{avg_val_loss_suctions:.12f},{model_path}\n")
+        f.write(f"{epoch},{avg_train_loss:.6f},{avg_train_loss_pressures:.6f},{avg_train_loss_suctions:.6f},"
+                f"{avg_val_loss:.6f},{avg_val_loss_pressures:.6f},{avg_val_loss_suctions:.6f},{model_path}\n")
 
