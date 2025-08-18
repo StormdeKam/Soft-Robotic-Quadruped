@@ -21,7 +21,7 @@ if args.gait == "straight_bezier":
     demogait.plot()
     sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     sim.reset_simulation()
-    sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction)
+    sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
 
 elif args.gait == "straightv3":
     from rl.gaits.demo_gait_straight_v3 import gait_pressures, gait_suction
