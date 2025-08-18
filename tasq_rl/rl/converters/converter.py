@@ -7,9 +7,9 @@ hs_radius = 0.0065 # positioning radius for hall sensors in m
 def pneu2posandgains(pressures, no_links):
     k1 = 0.00003 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
     k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-    kp__th_1 = 0.03# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+    kp__th_1 = 0.02# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
     kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-    kp__dz_1 = 0.08# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+    kp__dz_1 = 0.06# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
     kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
     c1 = 2 # constant to map torque to change in position gain for revolute joints
     c2 = 1 # constant to map torque to change in velocity gain for revolute joints

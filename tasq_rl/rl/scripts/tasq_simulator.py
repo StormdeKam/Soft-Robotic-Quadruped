@@ -36,7 +36,7 @@ class TASQSimulator:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
                 cameraYaw= 180,#self.start_yaw + 0.25*np.pi,  # Adjust yaw for better view
-                cameraPitch=10, #-30,
+                cameraPitch=-10,
                 cameraTargetPosition=[0, 0, 0.2],
                 physicsClientId=self.physics_client
             )
@@ -68,7 +68,7 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
-        self.suction_states = np.array([False, True, True, True])
+        self.suction_states = np.zeros(4)  # Initialize suction states
         self.pressure_state = np.ones((4,3)) *10 
 
         self.num_joints = p.getNumJoints(self.robot_id)
@@ -198,95 +198,84 @@ class TASQSimulator:
             # Apply to this leg's prismatic joints
             total_pos_z = 0
             total_target_pos_z = 0
+            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
             for j in range(prismatics_per_leg):
-                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]                
-                total_pos_z += p.getJointState(self.robot_id, joint_index)[0]
-                total_target_pos_z += target_pos_z
-                p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=joint_index,
-                    controlMode=p.POSITION_CONTROL,
-                    targetPosition=target_pos_z,
-                    positionGain=pos_gain_z,
-                    velocityGain=vel_gain_z,
-                    force=self.max_force
-                )
-                #print(f"[PRISMATIC] Joint {joint_index} -> Target: {target_pos_z:.3f}, PG: {pos_gain_z:.2f}, VG: {vel_gain_z:.2f}")
-            if leg_index==1:
-                1
-                #print("total pos z = ", total_pos_z, "total target_pos_z =", total_target_pos_z)
+                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
+                if joint_index not in cup_link_idx:                
+                    total_pos_z += p.getJointState(self.robot_id, joint_index)[0]
+                    total_target_pos_z += target_pos_z
+                
+                    p.setJointMotorControl2(
+                        bodyIndex=self.robot_id,
+                        jointIndex=joint_index,
+                        controlMode=p.POSITION_CONTROL,
+                        targetPosition=target_pos_z,
+                        positionGain=pos_gain_z,
+                        velocityGain=vel_gain_z,
+                        force=self.max_force
+                    )
 
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
-    def apply_suction(self, suction_states, force_magnitude=3):
+    def apply_suction(self, suction_states, force_magnitude=5):
         self.suction_states = suction_states
+        #print(suction_states)
         angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
-        suction_target_pos = 0.005
         suction_pos_gain = 0.8
-        suction_vel_gain = 0.5
-        no_suction_pos_gain = 0.5
-        no_suction_vel_gain = 0.5
-        for leg in range(4):
-            suction_state = suction_states[leg]
-            if suction_state:                
-                cup_link_idx = leg*(self.no_links*4+2) + self.no_links*4                
-                                
-                # Get positions
-                pos_cup, orient_cup = p.getLinkState(self.robot_id, cup_link_idx)[0:2]
-                pos_plane = p.getBasePositionAndOrientation(self.plane_id)[0]
+        suction_vel_gain = 0.2
 
-                # Orientation constraint
-                rot_matrix = p.getMatrixFromQuaternion(orient_cup)
-                z_axis = rot_matrix[6:9]
-                angle_error = sum(z_axis[i] * [0, 0, 1][i] for i in range(3))  # Dot product with world Z
-                                
-                # Compute direction and apply force
-                direction = [0,0,pos_plane[2] - pos_cup[2]]
-                distance = sum(d ** 2 for d in direction) ** 0.5
-                if distance > 0 and distance < 0.03 and angle_error > angle_threshold:
-                    #"""Apply an attracting force from bodyB:linkB to self.robot_id:cup_link_idx."""
-                    force = [0,0,-force_magnitude * self.suction_randomization]  
-                    p.applyExternalForce(
-                        objectUniqueId=self.robot_id,
-                        linkIndex=cup_link_idx,
-                        forceObj=force,
-                        posObj=pos_cup,
-                        flags=p.WORLD_FRAME
-                    )
-                    # Change the friction force between the suction cup and the ground plane
-                    p.changeDynamics(
-                        bodyUniqueId=self.robot_id,
-                        linkIndex=cup_link_idx+1,             # Use -1 for base link
-                        lateralFriction=50       # New friction value
-                    )
-                    #Change the suction cup target_position
-                #"""
-                    p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=cup_link_idx+1,
-                    controlMode=p.POSITION_CONTROL,
-                    targetPosition=suction_target_pos,
-                    positionGain=suction_pos_gain,
-                    velocityGain=suction_vel_gain,
-                    force=self.max_force                    
-                    )
-                    
-                else:
-                    p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=cup_link_idx+1,
-                    controlMode=p.POSITION_CONTROL,
-                    targetPosition=0,
-                    positionGain=no_suction_pos_gain,
-                    velocityGain=no_suction_vel_gain,
-                    force=self.max_force
+        for leg in range(4):
+            suction_state = suction_states[leg]              
+            cup_link_idx = leg*(self.no_links*4+2) + self.no_links*4 + 1  
+
+            p.setJointMotorControl2(
+                        bodyIndex=self.robot_id,
+                        jointIndex=cup_link_idx,
+                        controlMode=p.POSITION_CONTROL,
+                        targetPosition=0,
+                        positionGain=suction_pos_gain,
+                        velocityGain=suction_vel_gain,
+                        force=force_magnitude
+                    )  
+                            
+            # Get positions
+            pos_cup, orient_cup = p.getLinkState(self.robot_id, cup_link_idx)[0:2]
+            pos_plane = p.getBasePositionAndOrientation(self.plane_id)[0]
+
+            # Orientation constraint
+            rot_matrix = p.getMatrixFromQuaternion(orient_cup)
+            z_axis = rot_matrix[6:9]
+            angle_error = sum(z_axis[i] * [0, 0, 1][i] for i in range(3))  # Dot product with world Z
+                            
+            # Compute direction and apply force
+            direction = [0,0,pos_plane[2] - pos_cup[2]]
+            distance = sum(d ** 2 for d in direction) ** 0.5
+            if distance > 0 and distance < 0.03 and angle_error > angle_threshold:
+                #"""Apply an attracting force from bodyB:linkB to self.robot_id:cup_link_idx."""
+                force = [0,0,-force_magnitude * (suction_state/100) * self.suction_randomization]  
+                p.applyExternalForce(
+                    objectUniqueId=self.robot_id,
+                    linkIndex=cup_link_idx-1,
+                    forceObj=force,
+                    posObj=pos_cup,
+                    flags=p.WORLD_FRAME
                 )
-                    p.changeDynamics(
-                        bodyUniqueId=self.robot_id,
-                        linkIndex=cup_link_idx,             # Use -1 for base link
-                        lateralFriction=10   # New friction value
-                    )
-                #"""
+                # Change the friction force between the suction cup and the ground plane
+                
+                p.changeDynamics(
+                    bodyUniqueId=self.robot_id,
+                    linkIndex=cup_link_idx+1,             # Use -1 for base link
+                    lateralFriction=suction_state       # New friction value
+                )
+            else:
+                # If suction cup is not in contact, set friction to 10
+                p.changeDynamics(
+                    bodyUniqueId=self.robot_id,
+                    linkIndex=cup_link_idx+1,             # Use -1 for base link
+                    lateralFriction=suction_state +10      # New friction value
+                )
+                
+            #"""
 
         #pressue and suction logging
         if self._current_pressures is not None:
@@ -301,7 +290,7 @@ class TASQSimulator:
                 
     def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
         pressures = np.ones((4, 3))*10
-        suction_states = np.array([False, False, False, False])
+        suction_states = np.zeros(4)
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)

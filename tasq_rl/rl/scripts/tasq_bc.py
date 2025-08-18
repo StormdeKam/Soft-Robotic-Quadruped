@@ -7,6 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from rl.utils.dataset_stacker import StackedDataset
+from rl.models.actor import BCActor
 
 # --- Configuration ---
 MODEL_DIR = "rl/models/tasq_bc/goal_directed"
@@ -38,35 +39,7 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
 
-# --- Model with two heads ---
-class BCActor(nn.Module):
-    def __init__(self, obs_dim):
-        super().__init__()
-        self.shared = nn.Sequential(
-            nn.Linear(obs_dim, 256),
-            nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU()
-        )
-        self.pressure_head = nn.Sequential(
-            nn.Linear(256, 12),
-            nn.Tanh()
-        )
-        self.suction_head = nn.Linear(256, 4)
 
-    def forward(self, x):
-        x = self.shared(x)
-        pressures = self.pressure_head(x)       # Linear output for MSE
-        suctions = self.suction_head(x)         # Logits for BCEWithLogitsLoss
-        return pressures, suctions
-
-    def initialize_weights_from_checkpoint(self, checkpoint_path, device="cpu"):
-        state_dict = torch.load(checkpoint_path, map_location=device)
-        self.load_state_dict(state_dict)
-        self.to(device)
-        self.eval()
-        print(f"Loaded weights from {checkpoint_path}")
-        return self
 
 obs_dim = dataset.obs_dim * dataset.N
 model = BCActor(obs_dim).to(DEVICE)
@@ -78,7 +51,6 @@ except Exception as e:
 """
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 mse_loss = nn.MSELoss()
-bce_loss = nn.BCEWithLogitsLoss()
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6)
 
 # --- Logging ---
@@ -106,7 +78,7 @@ for epoch in range(1, EPOCHS + 1):
         optimizer.zero_grad()
         pred_pressures, pred_suctions = model(batch_states)
         loss_pressures = mse_loss(pred_pressures, target_pressures)
-        loss_suctions = bce_loss(pred_suctions, target_suctions)
+        loss_suctions = mse_loss(pred_suctions, target_suctions)
         loss = loss_pressures + loss_suctions
         loss.backward()
         optimizer.step()
@@ -135,7 +107,7 @@ for epoch in range(1, EPOCHS + 1):
             pred_pressures, pred_suctions = model(val_states)
 
             val_loss_pressures = mse_loss(pred_pressures, target_pressures)
-            val_loss_suctions = bce_loss(pred_suctions, target_suctions)
+            val_loss_suctions = mse_loss(pred_suctions, target_suctions)
             val_loss = val_loss_pressures + val_loss_suctions
 
             total_val_loss += val_loss.item() * val_states.size(0)

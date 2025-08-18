@@ -30,6 +30,24 @@ class BezierGaitPlanner:
                 results[i] = spline(t)
         return results
 
+    def get_gradients_at_time(self, n, dt=1/24):
+        """
+        Computes the gradient of each channel at a specific step n using finite difference:
+        (evaluate(t + dt) - evaluate(t)) / dt
+
+        Args:
+            n (int): Step at which to compute the gradient.
+            dt (float): Small timestep to use for numerical differentiation.
+
+        Returns:
+            gradient (np.ndarray): Array of gradients for each channel at time t.
+        """
+        t = n*dt
+        p1 = self.evaluate(t)
+        p2 = self.evaluate(t + dt)
+        gradient = p2 - p1
+        return gradient
+    
     def plot(self, duration=1.0, dt=0.01):
         time = np.arange(0, duration, dt)
         signals = np.array([self.evaluate(t) for t in time])

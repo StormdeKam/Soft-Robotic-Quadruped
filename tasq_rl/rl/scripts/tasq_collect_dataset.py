@@ -5,12 +5,14 @@ import time
 from tqdm import tqdm
 from functools import partial
 import re
+import pybullet as p
 
 from rl.scripts.tasq_simulator import TASQSimulator
-#from rl.gaits.demo_gait_straight import demo_pressures, demo_suction
-#from rl.gaits.demo_gait_rotation import demo_pressures_rot, demo_suction_rot
-from rl.gaits.demo_gait_straight_v3 import gait_pressures, gait_suction
-import pybullet as p
+from rl.gaits.demo_gait_straight_bezier import DemoGaitStraight
+demogait = DemoGaitStraight()
+demo_pressures = demogait.demo_pressures
+demo_suction = demogait.demo_suction
+
 
 # --- Parameters ---
 num_episodes = 2_000  # Number of simulation rollouts
@@ -32,12 +34,12 @@ def run_episode(episode_idx):
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 420
+        gait_length = 140
         #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
-        pressure_callback = partial(gait_pressures, mode=mode)
-        suction_callback = partial(gait_suction, mode=mode)
-        gait_cycles = np.random.choice([2,3,4,5])
+        pressure_callback = partial(demo_pressures, mode=mode)
+        suction_callback = partial(demo_suction, mode=mode)
+        gait_cycles = np.random.choice([1,2,3,4,5,7,8])
         total_steps = gait_cycles * gait_length
     """
     else:
@@ -67,20 +69,23 @@ def run_episode(episode_idx):
         base_ori = sim.get_base_orientation()
         base_vel = sim.get_base_velocity_local()
         grfs = sim.get_grfs_local_foot()
+        normalized_grfs = grfs / 10
         normalized_pressures = (pressures / 200 - 1).flatten()
+        normalized_suction = suction_states/50 -1
 
         state = np.concatenate([
             base_pos,
             base_ori,
             base_vel,
             normalized_pressures,
-            suction_states,
-            grfs
+            normalized_suction,
+            normalized_grfs
         ]).astype(np.float32)
 
         d_pressures = pressure_callback(step)
         suction_states = suction_callback(step).astype(np.float32)
-
+        suction_states = np.clip(suction_states, 0, 100)
+        normalized_suction = suction_states / 50 - 1
         noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
         noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
 
