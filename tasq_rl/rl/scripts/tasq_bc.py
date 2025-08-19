@@ -10,7 +10,7 @@ from rl.utils.dataset_stacker import StackedDataset
 from rl.models.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/goal_directed"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -28,8 +28,8 @@ print("Started behavior cloning training using", DEVICE)
 
 # Use exactly like before
 dataset = StackedDataset(
-    "rl/datasets/goal_directed/demo_states_merged.npy",
-    "rl/datasets/goal_directed/demo_actions_merged.npy",
+    "rl/datasets/minimal_viable/demo_states_merged.npy",
+    "rl/datasets/minimal_viable/demo_actions_merged.npy",
     N=4
 )
 
@@ -38,8 +38,6 @@ train_size = len(dataset) - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
-
-
 
 obs_dim = dataset.obs_dim * dataset.N
 model = BCActor(obs_dim).to(DEVICE)
@@ -129,8 +127,8 @@ for epoch in range(1, EPOCHS + 1):
     current_lr = optimizer.param_groups[0]['lr']
 
     print(f"[Epoch {epoch}/{EPOCHS}] "
-          f"Train: total={avg_train_loss:.6f}, pressures={avg_train_loss_pressures:.6f}, suctions={avg_train_loss_suctions:.6f} | "
-          f"Val: total={avg_val_loss:.6f}, pressures={avg_val_loss_pressures:.6f}, suctions={avg_val_loss_suctions:.6f} | "
+          f"Train: total={avg_train_loss:.12f}, pressures={avg_train_loss_pressures:.12f}, suctions={avg_train_loss_suctions:.12f} | "
+          f"Val: total={avg_val_loss:.12f}, pressures={avg_val_loss_pressures:.12f}, suctions={avg_val_loss_suctions:.12f} | "
           f"LR: {current_lr:.2e} | ETA: {rem_hours}h {rem_mins}m")
 
     # --- Always log to file (even if no checkpoint is saved) ---
@@ -141,6 +139,6 @@ for epoch in range(1, EPOCHS + 1):
         torch.save(model.state_dict(), model_path)
 
     with open(LOG_FILE, "a") as f:
-        f.write(f"{epoch},{avg_train_loss:.6f},{avg_train_loss_pressures:.6f},{avg_train_loss_suctions:.6f},"
-                f"{avg_val_loss:.6f},{avg_val_loss_pressures:.6f},{avg_val_loss_suctions:.6f},{model_path}\n")
+        f.write(f"{epoch},{avg_train_loss:.12f},{avg_train_loss_pressures:.12f},{avg_train_loss_suctions:.12f},"
+                f"{avg_val_loss:.12f},{avg_val_loss_pressures:.12f},{avg_val_loss_suctions:.12f},{model_path}\n")
 

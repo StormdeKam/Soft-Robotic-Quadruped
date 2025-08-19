@@ -89,7 +89,7 @@ def run_episode(episode_idx):
         noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
         noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
 
-        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), suction_states])
+        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), normalized_suction])
 
         for _ in range(steps_per_step):
             pressures += noisy_d_pressures / steps_per_step
