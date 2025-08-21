@@ -13,7 +13,15 @@ import pybullet as p
 # --- Behavior Cloning model class (Two-headed architecture) ---
 import torch.nn as nn
 
-
+# Observed state indices (skipping base_pos and base_vel)
+OBSERVED_INDICES = np.r_[
+    3:7,    # base orientation
+    10:13,  # base_angular_velocity
+    13:25,  # pressures
+    25:29,  # suctions
+    29:33,  # grfs
+    33:37   # goal_pos and orientation
+]
 
 def stack_states(state_buffer, new_state, max_len=4):
     if len(state_buffer) >= max_len:
@@ -27,7 +35,7 @@ def stack_states(state_buffer, new_state, max_len=4):
 def run_behavior_cloning(model_path, env, device):
     print(f"Loading BC model from {model_path}")
 
-    original_obs_dim = 37
+    original_obs_dim = len(OBSERVED_INDICES)
     action_dim = 16
     N = 4
     obs_dim = original_obs_dim * N
@@ -39,7 +47,7 @@ def run_behavior_cloning(model_path, env, device):
     state_buffer = []
     suction_states = np.zeros(4)
     pressures = np.zeros((4, 3))
-    steps = 3000
+    steps = 140
 
     for step in range(steps):
         control_frequency = 1./24.
@@ -57,7 +65,7 @@ def run_behavior_cloning(model_path, env, device):
 
             #print("action_bc = ", action)
             d_pressures, suction_states = action_to_pressures_and_suction(action)
-       
+            print(pressures, suction_states)
             pressures += d_pressures/steps_per_step
             pressures = np.clip(pressures, 0, 400)
             env.apply_pressures(pressures)
@@ -102,6 +110,7 @@ def run_sac(model_path):
     print("SAC run complete.")
 
 def get_env_observation(env, pressures):
+    # Full observation
     base_pos = np.array(env.get_base_position())
     base_ori = np.array(env.get_base_orientation())
     base_vel = np.array(env.get_base_velocity_local())
@@ -109,9 +118,10 @@ def get_env_observation(env, pressures):
     normalized_suction = suction_states / 50 - 1
     grfs = np.array(env.get_grfs_local_foot())
     normalized_grfs = grfs / 10
-    goal_pos = np.array([0.10,0.0]) #np.array(env.get_base_position()) +,
-    goal_yaw = np.array([np.sin(np.pi/4), np.sin(np.pi/4)]) #np.array(env.get_base_orientation()) + 
-    obs = np.concatenate([
+    goal_pos = np.array([0.10, 0.0])
+    goal_yaw = np.array([np.sin(0), np.sin(0)])
+
+    full_obs = np.concatenate([
         base_pos,
         base_ori,
         base_vel,
@@ -121,13 +131,16 @@ def get_env_observation(env, pressures):
         goal_pos,
         goal_yaw
     ]).astype(np.float32)
+
+    # Only keep observed indices (skip pos & linear velocity)
+    obs = full_obs[OBSERVED_INDICES]
     return obs
+
 
 def action_to_pressures_and_suction(action):
     d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
     suction_raw = action[12:16]
-    suction_states = suction_raw
-    #suction_states = np.clip((suction_raw +1)*50, 0, 100)  # Scale to [0, 100]
+    suction_states = np.clip((suction_raw +1)*50, 0, 100)  # Scale to [0, 100]
     return d_pressures, suction_states
 
 if __name__ == "__main__":

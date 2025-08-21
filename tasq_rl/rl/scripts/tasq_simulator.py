@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -36,8 +36,8 @@ class TASQSimulator:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
                 cameraYaw= 180,#self.start_yaw + 0.25*np.pi,  # Adjust yaw for better view
-                cameraPitch=-10,
-                cameraTargetPosition=[0, 0, 0.2],
+                cameraPitch=-5,
+                cameraTargetPosition=[0, 0, 0.1],
                 physicsClientId=self.physics_client
             )
         

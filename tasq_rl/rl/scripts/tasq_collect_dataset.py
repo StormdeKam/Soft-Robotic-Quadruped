@@ -10,13 +10,14 @@ import pybullet as p
 from rl.scripts.tasq_simulator import TASQSimulator
 from rl.gaits.demo_gait_straight_bezier import DemoGaitStraight
 demogait = DemoGaitStraight()
+demogait.gait()
 demo_pressures = demogait.demo_pressures
 demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 2_000  # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable"
+num_episodes = 1#2000 # Number of simulation rollouts
+save_path = "rl/datasets/old/garbage"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -55,7 +56,6 @@ def run_episode(episode_idx):
 
     pressures = np.ones((4, 3)) * 10  # start slightly above zero pressure
     suction_states = suction_callback(0).astype(np.float32)
-
     episode_states = []
     episode_actions = []
     quaternion_states = []
@@ -72,6 +72,7 @@ def run_episode(episode_idx):
         normalized_grfs = grfs / 10
         normalized_pressures = (pressures / 200 - 1).flatten()
         normalized_suction = suction_states/50 -1
+        print(normalized_pressures[0:3])
 
         state = np.concatenate([
             base_pos,
@@ -97,7 +98,6 @@ def run_episode(episode_idx):
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()
-
         episode_states.append(state)
         episode_actions.append(action)
         quaternion_states.append(sim.get_base_quaternion())

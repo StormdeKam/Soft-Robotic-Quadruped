@@ -1,4 +1,4 @@
-from rl.utils.bezier_gait_planner import BezierGaitPlanner
+from rl.utils.gait_planning.bezier_gait_planner import BezierGaitPlanner
 import numpy as np
 
 class DemoGaitStraight:

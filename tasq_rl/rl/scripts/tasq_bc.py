@@ -6,7 +6,7 @@ import torch.optim as optim
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-from rl.utils.dataset_stacker import StackedDataset
+from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.actor import BCActor
 
 # --- Configuration ---
@@ -26,11 +26,20 @@ if torch.cuda.is_available():
 
 print("Started behavior cloning training using", DEVICE)
 
-# Use exactly like before
+OBSERVED_INDICES = np.r_[
+    3:7,    # base orientation
+    10:13,  # base_angular_velocity
+    13:25,  # pressures
+    25:29,  # suctions
+    29:33,  # grfs
+    33:37   # goal_pos and orientation
+]
+
 dataset = StackedDataset(
     "rl/datasets/minimal_viable/demo_states_merged.npy",
     "rl/datasets/minimal_viable/demo_actions_merged.npy",
-    N=4
+    N=4,
+    observed_indices=OBSERVED_INDICES
 )
 
 val_size = int(len(dataset) * VAL_SPLIT)
@@ -39,7 +48,7 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
 
-obs_dim = dataset.obs_dim * dataset.N
+obs_dim = len(OBSERVED_INDICES) * dataset.N
 model = BCActor(obs_dim).to(DEVICE)
 """
 try:
