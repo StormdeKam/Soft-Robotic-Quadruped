@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -36,7 +36,7 @@ class TASQSimulator:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
                 cameraYaw= 180,#self.start_yaw + 0.25*np.pi,  # Adjust yaw for better view
-                cameraPitch=-5,
+                cameraPitch=-1,
                 cameraTargetPosition=[0, 0, 0.1],
                 physicsClientId=self.physics_client
             )
@@ -68,7 +68,7 @@ class TASQSimulator:
     def _initialize_robot(self):
         self.revolute_joints = []
         self.prismatic_joints = []
-        self.suction_states = np.zeros(4)  # Initialize suction states
+        self.suction_states = np.array([0,100,100,100],dtype=np.float64)  # Initialize suction states
         self.pressure_state = np.ones((4,3)) *10 
 
         self.num_joints = p.getNumJoints(self.robot_id)
@@ -82,13 +82,23 @@ class TASQSimulator:
         self.max_force = 500
 
         excluded_names = {"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
-
+        
         for joint_index in range(self.num_joints):
             joint_info = p.getJointInfo(self.robot_id, joint_index)
             joint_name = joint_info[1].decode()
             #if "_ry" in joint_name:
                 #p.resetJointState(bodyUniqueId=self.robot_id, jointIndex=joint_index, targetValue=0.15)
             joint_type = joint_info[2]
+            if joint_type == p.JOINT_SPHERICAL:
+                p.setJointMotorControlMultiDof(
+                bodyUniqueId=self.robot_id,
+                jointIndex=joint_index,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=[0, 0, 0, 1],   # quaternion (w, x, y, z)
+                positionGain=0.01,                  # proportional gain (same on all axes)
+                velocityGain=1.4,                   # damping gain (same on all axes)
+                force=[0.04,0.04,0.04]             # torque limits per axis
+                )
             if joint_type == p.JOINT_REVOLUTE:
                 self.revolute_joints.append(joint_index)
                 #p.resetJointState(self.robot_id, joint_index, targetValue)
@@ -175,10 +185,11 @@ class TASQSimulator:
             else:
                 self.logger.warning(f"Pressure in leg  {leg_index +1} exceeding max_pressure of {max_pressure} mBar")
 
+                #print(f"Leg {leg_index}, Joint {joint_index}: {joint_name}")
             # Apply to this leg's revolute joints
-            for j in range(revolutes_per_leg):
+            for j in range(revolutes_per_leg-2):  # Last 2 revolute joints are for the suction cup
                 joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
-                
+
                 # Alternate X and Y for revolute joints
                 if j % 2 == 0:
                     target, pg, vg = target_pos_x, pos_gain_x, vel_gain_x
@@ -217,71 +228,87 @@ class TASQSimulator:
 
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
-    def apply_suction(self, suction_states, force_magnitude=5):
+    def apply_suction(self, suction_states, force_magnitude=3.0):
+        """
+        Simulate suction cups as prismatic actuators + contact/friction modifiers.
+        suction_states: array-like of [0..100], suction % for each leg.
+        """
         self.suction_states = suction_states
-        #print(suction_states)
-        angle_threshold = math.cos(math.radians(30))  # Cup must be within 15° of vertical
-        suction_pos_gain = 0.8
-        suction_vel_gain = 0.2
+        angle_threshold = math.cos(math.radians(15))   # must be within 15° of vertical
+        suction_pos_gain = 0.2                        # softer than default 0.1
+        suction_vel_gain = 1.0                        # keep damping ~1
+        suction_extension = 0.005                     # max prismatic stroke (5 mm)
 
         for leg in range(4):
-            suction_state = suction_states[leg]              
-            cup_link_idx = leg*(self.no_links*4+2) + self.no_links*4 + 1  
-
+            suction_state = suction_states[leg]
+            cup_joint_idx = leg * (self.no_links * 4 + 2) + self.no_links * 4 + 1  
+ 
+            target_extension = -(suction_state / 100.0) * suction_extension
             p.setJointMotorControl2(
-                        bodyIndex=self.robot_id,
-                        jointIndex=cup_link_idx,
-                        controlMode=p.POSITION_CONTROL,
-                        targetPosition=0,
-                        positionGain=suction_pos_gain,
-                        velocityGain=suction_vel_gain,
-                        force=force_magnitude
-                    )  
-                            
-            # Get positions
-            pos_cup, orient_cup = p.getLinkState(self.robot_id, cup_link_idx)[0:2]
+                bodyIndex=self.robot_id,
+                jointIndex=cup_joint_idx,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=target_extension,
+                positionGain=suction_pos_gain,
+                velocityGain=suction_vel_gain,
+                force=self.max_force
+            )
+
+            # --- 2) Orientation & contact check ---
+            pos_cup, orient_cup = p.getLinkState(self.robot_id, cup_joint_idx)[0:2]
             pos_plane = p.getBasePositionAndOrientation(self.plane_id)[0]
 
-            # Orientation constraint
+            # get z-axis of suction cup
             rot_matrix = p.getMatrixFromQuaternion(orient_cup)
-            z_axis = rot_matrix[6:9]
-            angle_error = sum(z_axis[i] * [0, 0, 1][i] for i in range(3))  # Dot product with world Z
-                            
-            # Compute direction and apply force
-            direction = [0,0,pos_plane[2] - pos_cup[2]]
-            distance = sum(d ** 2 for d in direction) ** 0.5
-            if distance > 0 and distance < 0.03 and angle_error > angle_threshold:
-                #"""Apply an attracting force from bodyB:linkB to self.robot_id:cup_link_idx."""
-                force = [0,0,-force_magnitude * (suction_state/100) * self.suction_randomization]  
+            z_axis = rot_matrix[6:9]  
+            alignment = sum(z_axis[i] * [0, 0, 1][i] for i in range(3))  
+
+            # distance to plane
+            dz = pos_plane[2] - pos_cup[2]
+            distance = abs(dz)
+
+            engaged = (
+                distance < 0.02             # within 2 cm
+                and alignment > angle_threshold  # close to vertical
+                and suction_state > 10      # nonzero suction
+            )
+
+            # --- 3) Apply suction if engaged ---
+            if engaged:
+                # attract cup toward plane
+                force = [0, 0, -force_magnitude * (suction_state/100.0) * self.suction_randomization]
                 p.applyExternalForce(
                     objectUniqueId=self.robot_id,
-                    linkIndex=cup_link_idx-1,
+                    linkIndex=cup_joint_idx - 1,
                     forceObj=force,
                     posObj=pos_cup,
                     flags=p.WORLD_FRAME
                 )
-                # Change the friction force between the suction cup and the ground plane
-                
+
+                # lock cup with very high friction
                 p.changeDynamics(
                     bodyUniqueId=self.robot_id,
-                    linkIndex=cup_link_idx+1,             # Use -1 for base link
-                    lateralFriction=suction_state       # New friction value
+                    linkIndex=cup_joint_idx + 1,
+                    lateralFriction=5.0 + 0.1 * suction_state,
+                    rollingFriction=0.01,
+                    spinningFriction=0.01
                 )
             else:
-                # If suction cup is not in contact, set friction to 10
+                # not engaged → friction back to normal
                 p.changeDynamics(
                     bodyUniqueId=self.robot_id,
-                    linkIndex=cup_link_idx+1,             # Use -1 for base link
-                    lateralFriction=suction_state +10      # New friction value
+                    linkIndex=cup_joint_idx + 1,
+                    lateralFriction=0.8,
+                    rollingFriction=0.0,
+                    spinningFriction=0.0
                 )
-                
-            #"""
 
-        #pressue and suction logging
+        # --- 4) Logging pressures + suction ---
         if self._current_pressures is not None:
             log_row = self._current_pressures + suction_states.tolist()
             self.log_data.append(log_row)
-            self._current_pressures = None  # Reset after logging
+            self._current_pressures = None
+
 
     def step(self):
         p.stepSimulation()
@@ -290,7 +317,7 @@ class TASQSimulator:
                 
     def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
         pressures = np.ones((4, 3))*10
-        suction_states = np.zeros(4)
+        suction_states = np.array([0,100,100,100],dtype=np.float64)  # Initialize suction states
         control_frequency = 1./24.
         pybullet_frequency = 1./240.
         steps_per_step = int(control_frequency / pybullet_frequency)
@@ -300,7 +327,8 @@ class TASQSimulator:
         for step in range(steps):
             #print(pressures)
             #self.get_grfs_local_foot()
-            suction_states = suction_callback(step, mode)
+            prev_suction_states = self.suction_states.copy()
+            #print(pressures)
             #print(suction_states)          
             for i in range(steps_per_step): 
                 if pressure_callback:
@@ -308,6 +336,7 @@ class TASQSimulator:
                     self.apply_pressures(pressures)
 
                 if suction_callback:
+                    suction_states += (suction_callback(step, mode) - prev_suction_states)/steps_per_step
                     self.apply_suction(suction_states)            
                 self.step()
         end_time = time.time()

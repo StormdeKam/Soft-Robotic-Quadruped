@@ -16,7 +16,7 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 1#2000 # Number of simulation rollouts
+num_episodes = 1 # Number of simulation rollouts
 save_path = "rl/datasets/old/garbage"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
@@ -31,11 +31,11 @@ def rotate_world_to_local(base_pos, base_quat, point):
     return local_vec[0:2]
 
 def run_episode(episode_idx):
-    no_links = np.random.choice(no_links_list)
+    no_links = 5#np.random.choice(no_links_list)
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 140
+        gait_length = 700
         #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
         pressure_callback = partial(demo_pressures, mode=mode)
@@ -51,7 +51,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4, 3)) * 10  # start slightly above zero pressure
@@ -72,7 +72,6 @@ def run_episode(episode_idx):
         normalized_grfs = grfs / 10
         normalized_pressures = (pressures / 200 - 1).flatten()
         normalized_suction = suction_states/50 -1
-        print(normalized_pressures[0:3])
 
         state = np.concatenate([
             base_pos,
@@ -84,8 +83,7 @@ def run_episode(episode_idx):
         ]).astype(np.float32)
 
         d_pressures = pressure_callback(step)
-        suction_states = suction_callback(step).astype(np.float32)
-        suction_states = np.clip(suction_states, 0, 100)
+        prev_suction_states = suction_states.copy()
         normalized_suction = suction_states / 50 - 1
         noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
         noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
@@ -95,6 +93,8 @@ def run_episode(episode_idx):
         for _ in range(steps_per_step):
             pressures += noisy_d_pressures / steps_per_step
             pressures = np.clip(pressures, 0, 400)
+            suction_states += (suction_callback(step) - prev_suction_states)/steps_per_step
+            suction_states = np.clip(suction_states, 0, 100)
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)
             sim.step()

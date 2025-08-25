@@ -43,11 +43,11 @@ def plot_pressures_and_suctions(filepath):
     # --- Plot suction states ---
     plt.figure(figsize=(10, 4))
     for i in range(4):
-        plt.step(timesteps, suctions[:, i], label=f'Suction {i+1}', where='post')
+        plt.plot(timesteps, suctions[:, i], label=f'Suction {i+1}')
     plt.title("Suction Cup States Over Time")
     plt.xlabel("Timestep")
-    plt.ylabel("Suction State (0 or 1)")
-    plt.ylim(-0.1, 1.1)
+    plt.ylabel("Suction State")
+    plt.ylim(-10, 110)
     plt.legend()
     plt.grid(True)
     plt.tight_layout()

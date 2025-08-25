@@ -23,7 +23,7 @@ for i, ep_len in enumerate(episode_lengths):
     x = ep_states[:, 0]  # base_pos_x
     y = ep_states[:, 1]  # base_pos_y
 
-    plt.plot(x, y, alpha=0.4, linewidth=1)
+    plt.plot(x, y, alpha=0.4, linewidth=1, color='blue')
 
     start_idx = end_idx
 

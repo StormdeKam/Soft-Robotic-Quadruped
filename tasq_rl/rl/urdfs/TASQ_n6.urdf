@@ -84,7 +84,7 @@
   </link>
   <joint
     name="j1_0"
-    type="fixed">
+    type="spherical">
     <origin
       xyz="0.09 0 -0.0126"
       rpy="0 0 0" />
@@ -1538,7 +1538,7 @@
     <child
       link="s1b" />
     <axis
-      xyz="0 0 1" />
+      xyz="0 0 -1" />
     <limit
       lower="-0.005"
       upper="0.005"
@@ -1587,7 +1587,7 @@
   </link>
   <joint
     name="j2_0"
-    type="fixed">
+    type="spherical">
     <origin
       xyz="0 -0.09 -0.0126"
       rpy="0 0 -1.5707963" />
@@ -3090,7 +3090,7 @@
   </link>
   <joint
     name="j3_0"
-    type="fixed">
+    type="spherical">
     <origin
       xyz="-0.09 0 -0.0126"
       rpy="0 0 -3.14159265" />
@@ -4593,7 +4593,7 @@
   </link>
   <joint
     name="j4_0"
-    type="fixed">
+    type="spherical">
     <origin
       xyz="0 0.09 -0.0126"
       rpy="0 0 1.5707963" />
@@ -6047,7 +6047,7 @@
     <child
       link="s4b" />
     <axis
-      xyz="0 0 1" />
+      xyz="0 0 -1" />
     <limit
       lower="-0.005"
       upper="0.005"

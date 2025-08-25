@@ -4,7 +4,7 @@ import numpy as np
 class DemoGaitStraight:
     def __init__(self):
         self.num_channels = 16
-        self.speed_increase = 10  # Speed increase factor
+        self.speed_increase = 2  # Speed increase factor
         self.gait_length = 1400/self.speed_increase #steps
         self.dt = 1/120 #s
         self.planner = BezierGaitPlanner(self.num_channels)
@@ -32,27 +32,27 @@ class DemoGaitStraight:
         #self.sine([13,14,15], 0, 50, 0, 5, -np.pi/2, np.pi, 20)
         self.flat_line([13,14,15], 0, 295, 100)
 
-        self.sine([12], 0, 50, 295, 10, -np.pi/2, np.pi, 20)
-        self.sine([13], 100, -50, 295, 10, -np.pi/2, np.pi, 20)
+        self.sine([12], 0, 50, 295, 10, -np.pi/2, np.pi, 40)
+        self.sine([13], 100, -50, 295, 10, -np.pi/2, np.pi, 40)
         self.flat_line([14,15],295,10,100)
         self.flat_line([13],305,290,0)
         self.flat_line([12,14,15], 305, 290, 100)
 
-        self.sine([13], 0, 50, 595, 10, -np.pi/2, np.pi, 20)
-        self.sine([14], 100, -50, 595, 10, -np.pi/2, np.pi, 20)
-        self.flat_line([12,15],595,10,100)
-        self.flat_line([14],605,290,0)
-        self.flat_line([12,13,15], 605, 290, 100)
+        self.sine([13], 0, 50, 595, 10, -np.pi/2, np.pi, 40)
+        self.sine([15], 100, -50, 595, 10, -np.pi/2, np.pi, 40)
+        self.flat_line([12,14],595,10,100)
+        self.flat_line([15],605,290,0)
+        self.flat_line([12,13,14], 605, 290, 100)
 
-        self.sine([14], 0, 50, 895, 10, -np.pi/2, np.pi, 20)
-        self.sine([15], 100, -50, 895, 10, -np.pi/2, np.pi, 20)
+        self.sine([15], 0, 50, 895, 10, -np.pi/2, np.pi, 40)
+        self.sine([14], 100, -50, 895, 10, -np.pi/2, np.pi, 40)
         self.flat_line([12,13],895,10,100)
-        self.flat_line([15],905,290,0)
-        self.flat_line([12,13,14], 905, 290, 100)        
+        self.flat_line([14],905,290,0)
+        self.flat_line([12,13,15], 905, 290, 100)        
 
-        self.sine([15], 0, 50, 1195, 10, -np.pi/2, np.pi, 20)
-        self.sine([12], 100, -50,1195, 10, -np.pi/2, np.pi, 20)
-        self.flat_line([13,14],1195,10,100)
+        self.sine([14], 0, 50, 1195, 10, -np.pi/2, np.pi, 40)
+        self.sine([12], 100, -50,1195, 10, -np.pi/2, np.pi, 40)
+        self.flat_line([13,15],1195,10,100)
         self.flat_line([12],1205,195,0)
         self.flat_line([13,14,15], 1205, 195, 100)
         #"""
@@ -85,8 +85,8 @@ class DemoGaitStraight:
         #t=400 [395,395,395,  15,15,15,  395,395,395,  15,15,15]
         self.flat_line([3,9,10,11], 400, 100, 15)
         self.flat_line([0,1,2,6,7,8], 400, 100, 395)
-        self.sine([4], 10, 300/2, 400, 100, -np.pi/2, np.pi, 20)
-        self.sine([5], 10, 80/2, 400, 100, -np.pi/2, np.pi, 20)
+        self.sine([4], 10, 305/2, 400, 100, -np.pi/2, np.pi, 20)
+        self.sine([5], 10, 85/2, 400, 100, -np.pi/2, np.pi, 20)
 
         #t=500 [395,395,395,  15,315,95,  395,395,395,  15,15,15]
         self.sine([0,1,2,6,7,8], 395, -375/2, 500, 100, -np.pi/2, np.pi, 20)
@@ -138,11 +138,11 @@ class DemoGaitStraight:
         self.sine([0,1,2,8], 398, -384/2, 1200, 100, -np.pi/2, np.pi, 20)
         self.sine([3,4,5,9,10,11], 12, 378/2, 1200, 100, -np.pi/2, np.pi, 20)
         self.sine([6], 12, 2/2, 1200, 100, -np.pi/2, np.pi, 20)
-        self.sine([7], 112, 102/2, 1200, 100, -np.pi/2, np.pi, 20)
+        self.sine([7], 112, -98/2, 1200, 100, -np.pi/2, np.pi, 20)
 
         #t=1300 [14,14,14,  390,390,390,  14,14,14, 390,390,390]
         self.sine([0,1,2,6,7,8], 14, -4/2, 1300, 100, -np.pi/2, np.pi, 20)
-        self.sine([3,4,5,9,10,11], 390, -386/2, 1300, 100, -np.pi/2, np.pi, 20)
+        self.sine([3,4,5,9,10,11], 390, -380/2, 1300, 100, -np.pi/2, np.pi, 20)
 
         #t=1400/t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
         #"""
