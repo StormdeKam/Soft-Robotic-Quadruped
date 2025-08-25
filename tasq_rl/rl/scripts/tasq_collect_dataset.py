@@ -16,8 +16,8 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 1 # Number of simulation rollouts
-save_path = "rl/datasets/old/garbage"  # Path to save the dataset
+num_episodes = 500 # Number of simulation rollouts
+save_path = "rl/datasets/minimal_viable"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -31,7 +31,7 @@ def rotate_world_to_local(base_pos, base_quat, point):
     return local_vec[0:2]
 
 def run_episode(episode_idx):
-    no_links = 5#np.random.choice(no_links_list)
+    no_links = np.random.choice(no_links_list)
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
@@ -51,7 +51,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4, 3)) * 10  # start slightly above zero pressure

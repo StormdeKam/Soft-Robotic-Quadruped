@@ -77,8 +77,8 @@ class TASQSimulator:
         self.joint_randomizer_values = np.random.normal(1, 0.01, size=(6,))
         self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
 
-        self.position_gain = 1.0
-        self.velocity_gain = 0.5
+        self.position_gain = 0.8
+        self.velocity_gain = 0.4
         self.max_force = 500
 
         excluded_names = {"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
@@ -235,7 +235,7 @@ class TASQSimulator:
         """
         self.suction_states = suction_states
         angle_threshold = math.cos(math.radians(15))   # must be within 15° of vertical
-        suction_pos_gain = 0.2                        # softer than default 0.1
+        suction_pos_gain = 0.5                        # softer than default 0.1
         suction_vel_gain = 1.0                        # keep damping ~1
         suction_extension = 0.005                     # max prismatic stroke (5 mm)
 
