@@ -45,29 +45,29 @@ def run_behavior_cloning(model_path, env, device):
     model.eval()
 
     state_buffer = []
-    suction_states = np.zeros(4)
-    pressures = np.zeros((4, 3))
-    steps = 140
+    suction_states = np.array([0, 100, 100, 100], dtype=np.float32)  # Initial suction states
+    pressures = np.ones((4, 3))*10
+    steps = 700
+
+    control_frequency = 1./24.
+    pybullet_frequency = 1./240.
+    steps_per_step = int(control_frequency / pybullet_frequency)
 
     for step in range(steps):
-        control_frequency = 1./24.
-        pybullet_frequency = 1./240.
-        steps_per_step = int(control_frequency / pybullet_frequency)
+        state = get_env_observation(env)
+        stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
+        state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
+
+        with torch.no_grad():
+            pred_pressures, pred_suctions = model(state_tensor)
+            action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
+        d_pressures, d_suctions = action_to_pressures_and_suction(action)
         for i in range(steps_per_step):
-            normalized_pressures = pressures / 200 - 1
-            state = get_env_observation(env, normalized_pressures)
-            stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
-            state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
-
-            with torch.no_grad():
-                pred_pressures, pred_suctions = model(state_tensor)
-                action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
-
-            #print("action_bc = ", action)
-            d_pressures, suction_states = action_to_pressures_and_suction(action)
-            print(pressures, suction_states)
+            
             pressures += d_pressures/steps_per_step
             pressures = np.clip(pressures, 0, 400)
+            suction_states += d_suctions/steps_per_step
+            suction_states = np.clip(suction_states, 0, 100)
             env.apply_pressures(pressures)
             env.apply_suction(suction_states)
             env.step()
@@ -109,11 +109,13 @@ def run_sac(model_path):
     stacked_env.close()
     print("SAC run complete.")
 
-def get_env_observation(env, pressures):
+def get_env_observation(env):
     # Full observation
     base_pos = np.array(env.get_base_position())
     base_ori = np.array(env.get_base_orientation())
     base_vel = np.array(env.get_base_velocity_local())
+    pressures = np.array(env.get_pressures())
+    normalized_pressures = (pressures / 200 - 1).flatten()
     suction_states = np.array(env.get_suction_state())
     normalized_suction = suction_states / 50 - 1
     grfs = np.array(env.get_grfs_local_foot())
@@ -125,7 +127,7 @@ def get_env_observation(env, pressures):
         base_pos,
         base_ori,
         base_vel,
-        pressures.flatten(),
+        pressures,
         normalized_suction,
         normalized_grfs,
         goal_pos,
@@ -139,9 +141,8 @@ def get_env_observation(env, pressures):
 
 def action_to_pressures_and_suction(action):
     d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
-    suction_raw = action[12:16]
-    suction_states = np.clip((suction_raw +1)*50, 0, 100)  # Scale to [0, 100]
-    return d_pressures, suction_states
+    d_suctions = action[12:16] *20
+    return d_pressures, d_suctions
 
 if __name__ == "__main__":
     import argparse

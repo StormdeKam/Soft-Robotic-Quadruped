@@ -17,7 +17,7 @@ demo_suction = demogait.demo_suction
 
 # --- Parameters ---
 num_episodes = 500 # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable"  # Path to save the dataset
+save_path = "rl/datasets/old/garbage"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -54,8 +54,8 @@ def run_episode(episode_idx):
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
-    pressures = np.ones((4, 3)) * 10  # start slightly above zero pressure
-    suction_states = suction_callback(0).astype(np.float32)
+    pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
+    suction_states = np.array([0,100,100,100], dtype=np.float32) # Initial suction states
     episode_states = []
     episode_actions = []
     quaternion_states = []
@@ -83,17 +83,18 @@ def run_episode(episode_idx):
         ]).astype(np.float32)
 
         d_pressures = pressure_callback(step)
-        prev_suction_states = suction_states.copy()
-        normalized_suction = suction_states / 50 - 1
+        d_suctions = suction_callback(step)
+        noisy_d_suctions = d_suctions + np.random.normal(0, 0.01, size=(4,))
+        noisy_d_suctions = np.clip(noisy_d_suctions, -20, 20)
         noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
         noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
 
-        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), normalized_suction])
+        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), (noisy_d_suctions / 20)]).astype(np.float32)
 
         for _ in range(steps_per_step):
             pressures += noisy_d_pressures / steps_per_step
             pressures = np.clip(pressures, 0, 400)
-            suction_states += (suction_callback(step) - prev_suction_states)/steps_per_step
+            suction_states += noisy_d_suctions / steps_per_step
             suction_states = np.clip(suction_states, 0, 100)
             sim.apply_pressures(pressures)
             sim.apply_suction(suction_states)

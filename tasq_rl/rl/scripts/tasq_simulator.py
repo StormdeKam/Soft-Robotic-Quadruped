@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -78,7 +78,7 @@ class TASQSimulator:
         self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
 
         self.position_gain = 0.8
-        self.velocity_gain = 0.4
+        self.velocity_gain = 1.0
         self.max_force = 500
 
         excluded_names = {"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
@@ -187,7 +187,7 @@ class TASQSimulator:
 
                 #print(f"Leg {leg_index}, Joint {joint_index}: {joint_name}")
             # Apply to this leg's revolute joints
-            for j in range(revolutes_per_leg-2):  # Last 2 revolute joints are for the suction cup
+            for j in range(revolutes_per_leg-2):  
                 joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
 
                 # Alternate X and Y for revolute joints
@@ -229,6 +229,7 @@ class TASQSimulator:
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
     def apply_suction(self, suction_states, force_magnitude=3.0):
+        #print(suction_states>50)
         """
         Simulate suction cups as prismatic actuators + contact/friction modifiers.
         suction_states: array-like of [0..100], suction % for each leg.
@@ -327,7 +328,7 @@ class TASQSimulator:
         for step in range(steps):
             #print(pressures)
             #self.get_grfs_local_foot()
-            prev_suction_states = self.suction_states.copy()
+            #prev_suction_states = self.suction_states.copy()
             #print(pressures)
             #print(suction_states)          
             for i in range(steps_per_step): 
@@ -336,7 +337,7 @@ class TASQSimulator:
                     self.apply_pressures(pressures)
 
                 if suction_callback:
-                    suction_states += (suction_callback(step, mode) - prev_suction_states)/steps_per_step
+                    suction_states += suction_callback(step, mode)/steps_per_step
                     self.apply_suction(suction_states)            
                 self.step()
         end_time = time.time()

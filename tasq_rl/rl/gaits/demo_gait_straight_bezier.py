@@ -28,33 +28,33 @@ class DemoGaitStraight:
     def gait(self):
         #"""
         #suctions:
-        self.flat_line([12],0,295,0)
+        self.flat_line([12],0,290,0)
         #self.sine([13,14,15], 0, 50, 0, 5, -np.pi/2, np.pi, 20)
-        self.flat_line([13,14,15], 0, 295, 100)
+        self.flat_line([13,14,15], 0, 290, 100)
 
-        self.sine([12], 0, 50, 295, 10, -np.pi/2, np.pi, 40)
-        self.sine([13], 100, -50, 295, 10, -np.pi/2, np.pi, 40)
-        self.flat_line([14,15],295,10,100)
-        self.flat_line([13],305,290,0)
-        self.flat_line([12,14,15], 305, 290, 100)
+        self.sine([12], 0, 50, 290, 20, -np.pi/2, np.pi, 40)
+        self.sine([13], 100, -50, 290, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([14,15],290,20,100)
+        self.flat_line([13],310,280,0)
+        self.flat_line([12,14,15], 310, 280, 100)
 
-        self.sine([13], 0, 50, 595, 10, -np.pi/2, np.pi, 40)
-        self.sine([15], 100, -50, 595, 10, -np.pi/2, np.pi, 40)
-        self.flat_line([12,14],595,10,100)
-        self.flat_line([15],605,290,0)
-        self.flat_line([12,13,14], 605, 290, 100)
+        self.sine([13], 0, 50, 590, 20, -np.pi/2, np.pi, 40)
+        self.sine([15], 100, -50, 590, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([12,14],590, 20,100)
+        self.flat_line([15],610,280,0)
+        self.flat_line([12,13,14], 610, 280, 100)
 
-        self.sine([15], 0, 50, 895, 10, -np.pi/2, np.pi, 40)
-        self.sine([14], 100, -50, 895, 10, -np.pi/2, np.pi, 40)
-        self.flat_line([12,13],895,10,100)
-        self.flat_line([14],905,290,0)
-        self.flat_line([12,13,15], 905, 290, 100)        
+        self.sine([15], 0, 50, 890, 20, -np.pi/2, np.pi, 40)
+        self.sine([14], 100, -50, 890, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([12,13],890,20,100)
+        self.flat_line([14],910,280,0)
+        self.flat_line([12,13,15], 910, 280, 100)        
 
-        self.sine([14], 0, 50, 1195, 10, -np.pi/2, np.pi, 40)
-        self.sine([12], 100, -50,1195, 10, -np.pi/2, np.pi, 40)
-        self.flat_line([13,15],1195,10,100)
-        self.flat_line([12],1205,195,0)
-        self.flat_line([13,14,15], 1205, 195, 100)
+        self.sine([14], 0, 50, 1190, 20, -np.pi/2, np.pi, 40)
+        self.sine([12], 100, -50,1190, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([13,15],1190,20,100)
+        self.flat_line([12],1210,190,0)
+        self.flat_line([13,14,15], 1210, 190, 100)
         #"""
         #pressures:   
         
@@ -157,8 +157,8 @@ class DemoGaitStraight:
     def demo_suction(self, step, mode=0):
         gait_cycle = step // self.gait_length
         rel_step = step % self.gait_length
-        suction_states = self.planner.evaluate(rel_step * self.speed_increase*self.dt)[12:16]
-        return suction_states.astype(np.float32)
+        d_suctions = self.planner.get_gradients_at_time(rel_step, self.speed_increase*self.dt)[12:16]
+        return d_suctions.astype(np.float32)
 
     def plot(self):
         # Plot the full curves
