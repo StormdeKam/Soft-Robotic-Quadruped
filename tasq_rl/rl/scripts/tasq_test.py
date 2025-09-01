@@ -62,6 +62,7 @@ def run_behavior_cloning(model_path, env, device):
             pred_pressures, pred_suctions = model(state_tensor)
             action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
         d_pressures, d_suctions = action_to_pressures_and_suction(action)
+        print(d_pressures, d_suctions)
         for i in range(steps_per_step):
             
             pressures += d_pressures/steps_per_step
@@ -114,7 +115,7 @@ def get_env_observation(env):
     base_pos = np.array(env.get_base_position())
     base_ori = np.array(env.get_base_orientation())
     base_vel = np.array(env.get_base_velocity_local())
-    pressures = np.array(env.get_pressures())
+    pressures = np.array(env.get_pressure_state()).flatten()
     normalized_pressures = (pressures / 200 - 1).flatten()
     suction_states = np.array(env.get_suction_state())
     normalized_suction = suction_states / 50 - 1
@@ -127,7 +128,7 @@ def get_env_observation(env):
         base_pos,
         base_ori,
         base_vel,
-        pressures,
+        normalized_pressures,
         normalized_suction,
         normalized_grfs,
         goal_pos,

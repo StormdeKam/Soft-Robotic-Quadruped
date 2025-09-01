@@ -8,7 +8,7 @@ from rl.converters.converter import pneu2posandgains
 
 class TASQSimulator:
     def __init__(self, urdf_path, gui=False, no_links=0, render_mode=None):
-        self.start_yaw = np.random.uniform(-np.pi, np.pi)
+        #self.start_yaw = np.random.uniform(-np.pi, np.pi)
         self.start_yaw = np.pi/4
         self.no_links = no_links
         self.urdf_path = urdf_path
@@ -22,7 +22,7 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
 
@@ -475,7 +475,7 @@ class TASQSimulator:
             if self.log_data:
                 import csv
                 header = [f"p_{i}" for i in range(12)] + [f"suction_{i}" for i in range(4)]
-                with open("rl/log/tasq_log.csv", "w", newline="") as f:
+                with open("rl/log/tasq_log_true.csv", "w", newline="") as f:
                     writer = csv.writer(f)
                     writer.writerow(header)
                     writer.writerows(self.log_data)

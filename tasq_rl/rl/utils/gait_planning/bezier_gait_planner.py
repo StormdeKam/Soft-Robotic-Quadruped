@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
+import csv
 
 class BezierGaitPlanner:
     def __init__(self, num_channels):
@@ -34,13 +35,6 @@ class BezierGaitPlanner:
         """
         Computes the gradient of each channel at a specific step n using finite difference:
         (evaluate(t + dt) - evaluate(t)) / dt
-
-        Args:
-            n (int): Step at which to compute the gradient.
-            dt (float): Small timestep to use for numerical differentiation.
-
-        Returns:
-            gradient (np.ndarray): Array of gradients for each channel at time t.
         """
         t = n*dt
         p1 = self.evaluate(t)
@@ -67,3 +61,25 @@ class BezierGaitPlanner:
         plt.legend(ncol=2)
         plt.tight_layout()
         plt.show()
+
+    def save_to_csv(self, filename="gait_data.csv", duration=1.0, dt=0.01):
+        """
+        Save the pressure/suction values for each channel over time into a CSV file.
+
+        Args:
+            filename (str): Output CSV file name
+            duration (float): Total duration to simulate
+            dt (float): Sampling timestep
+        """
+        time = np.arange(0, duration, dt)
+        signals = np.array([self.evaluate(t) for t in time])
+
+        header = ["time"] + [f"channel_{i}" for i in range(self.num_channels)]
+
+        with open(filename, mode="w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            for t, row in zip(time, signals):
+                writer.writerow([t] + row.tolist())
+
+        print(f"Saved gait data to {filename}")

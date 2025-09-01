@@ -16,7 +16,7 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 500 # Number of simulation rollouts
+num_episodes = 1 # Number of simulation rollouts
 save_path = "rl/datasets/minimal_viable2"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
@@ -51,7 +51,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures

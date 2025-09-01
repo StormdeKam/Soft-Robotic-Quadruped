@@ -27,8 +27,8 @@ class TASQEnv(gym.Env):
         self.obs_buffer = deque(maxlen=frame_stack)
         
         # Initialize pressures and suction states
-        self.pressures = np.zeros((4,3), dtype=np.float32)
-        self.suction_states = np.zeros(4, dtype=np.float32)
+        self.pressures = np.ones((4,3)*10, dtype=np.float32)
+        self.suction_states = np.arrary(([0,100,100,100]), dtype=np.float32)
            
         # Observation space: Stacked observations
         self.obs_dim = len(self._get_state())
@@ -42,8 +42,7 @@ class TASQEnv(gym.Env):
             low=-1.0, high=1.0, shape=(self.action_dim,), dtype=np.float32
         )
 
-        # Keep last suction values for reward shaping
-        self.last_suctions = np.zeros(4, dtype=np.float32)
+
 
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32) # Target position for the robot (used in reward calculation)
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32) # Target orientation for the robot (used in reward calculation)
@@ -101,7 +100,7 @@ class TASQEnv(gym.Env):
         assert self.action_space.contains(action), "Invalid action"
 
         d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
-        self.suction_states = (action[12:16]+1) * 50  # Scale to [0, 100]
+        d_suctions = (action[12:16]) * 20  
 
         obs = self._get_obs()
         self.obs_buffer.append(obs)
@@ -114,7 +113,7 @@ class TASQEnv(gym.Env):
         for i in range(steps_per_step):
             # Apply pressure deltas
             self.pressures = np.clip(self.pressures + d_pressures/steps_per_step, 0.0, 400.0)
-            self.suction_states = np.clip(self.suction_states, 0, 100)
+            self.suction_states = np.clip(self.suction_states + d_suctions/steps_per_step, 0, 100)
             # Step the simulator with current pressure and suction state
             self.sim.apply_pressures(self.pressures)
             self.sim.apply_suction(self.suction_states)
@@ -142,7 +141,7 @@ class TASQEnv(gym.Env):
         pressure_smoothness_penalty = np.sum(np.square(d_pressures))
 
         # 4. Smoothness penalty (based on suction change)
-        suction_smoothness_penalty = np.sum(np.square(np.abs(self.suction_states - self.last_suctions)))
+        suction_smoothness_penalty = np.sum(np.square(np.abs(d_suctions)))
 
         # --- Weighting factors ---
         w_dist = 1.0

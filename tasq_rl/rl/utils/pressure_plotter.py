@@ -56,4 +56,4 @@ def plot_pressures_and_suctions(filepath):
 
 # --- Call the function with your CSV file ---
 if __name__ == "__main__":
-    plot_pressures_and_suctions("rl/log/tasq_log.csv")
+    plot_pressures_and_suctions("rl/log/tasq_log_true.csv")
