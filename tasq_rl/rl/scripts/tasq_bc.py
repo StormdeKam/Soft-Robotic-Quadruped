@@ -10,14 +10,14 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V2"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
-EPOCHS = 100
+EPOCHS = 150
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -46,16 +46,19 @@ def merge_npy_safely(folder, prefix, output_name, min_index=0, max_index=float('
 
 # Usage
 if __name__ == "__main__":
-    dataset_folder = "rl/datasets/random_gait_cycle_start"
+    dataset_folder = "rl/datasets/minimal_viable"
 
     # Merge states
-    merge_npy_safely(dataset_folder, "demo_states", "demo_states_0_20.npy", min_index=0, max_index=20)
-    merge_npy_safely(dataset_folder, "demo_states", "demo_states_21_40.npy", min_index=21, max_index=40)
-    merge_npy_safely(dataset_folder, "demo_states", "demo_states_41_60.npy", min_index=41, max_index=60)
-    merge_npy_safely(dataset_folder, "demo_states", "demo_states_61_79.npy", min_index=61, max_index=79)
+    merge_npy_safely(dataset_folder, "demo_states", "demo_states_merged.npy", min_index=0, max_index=20)
+    #merge_npy_safely(dataset_folder, "demo_states", "demo_states_21_40.npy", min_index=21, max_index=40)
+    #merge_npy_safely(dataset_folder, "demo_states", "demo_states_41_60.npy", min_index=41, max_index=60)
+    #merge_npy_safely(dataset_folder, "demo_states", "demo_states_61_79.npy", min_index=61, max_index=79)
 
     # Merge actions
-    merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_0_20.npy", min_index=0, max_index=20)
-    merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_21_40.npy", min_index=21, max_index=40)
-    merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_41_60.npy", min_index=41, max_index=60)
-    merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_61_79.npy", min_index=61, max_index=79)
+    merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_merged.npy", min_index=0, max_index=20)
+    #merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_21_40.npy", min_index=21, max_index=40)
+    #merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_41_60.npy", min_index=41, max_index=60)
+    #merge_npy_safely(dataset_folder, "demo_actions", "demo_actions_61_79.npy", min_index=61, max_index=79)
+
+    # Merge episode lengths
+    merge_npy_safely(dataset_folder, "demo_episode_lengths", "demo_episode_lengths_merged.npy", min_index=0, max_index=20)
