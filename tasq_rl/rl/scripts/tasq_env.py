@@ -3,6 +3,9 @@ import numpy as np
 from gymnasium import spaces
 import pybullet as p
 from rl.scripts.tasq_simulator import TASQSimulator  # Adjust this import path as needed
+from collections import deque
+import torch
+import torch.nn.functional as F
 
 OBSERVED_INDICES = np.r_[
     3:7,    # base orientation
@@ -19,7 +22,7 @@ class TASQEnv(gym.Env):
         self.urdf_path = urdf_path
         self.no_links = no_links
         self.sim = TASQSimulator(self.urdf_path, gui=gui, no_links=self.no_links, render_mode=render_mode)
-        self.max_steps = 20000
+        self.max_steps = 3500
         self.step_count = 0
 
         # --- Frame stacking ---
@@ -27,11 +30,11 @@ class TASQEnv(gym.Env):
         self.obs_buffer = deque(maxlen=frame_stack)
         
         # Initialize pressures and suction states
-        self.pressures = np.ones((4,3)*10, dtype=np.float32)
-        self.suction_states = np.arrary(([0,100,100,100]), dtype=np.float32)
+        self.pressures = np.ones((4,3), dtype=np.float32)*10
+        self.suction_states = np.array([0,100,100,100], dtype=np.float32)
            
         # Observation space: Stacked observations
-        self.obs_dim = len(self._get_state())
+        self.obs_dim = 31
         self.observation_space = gym.spaces.Box(
             low=-np.inf, high=np.inf, shape=(self.obs_dim * frame_stack,), dtype=np.float32
         )
@@ -49,6 +52,14 @@ class TASQEnv(gym.Env):
         self.target_height = 0.12  # Set a target height for the robot
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
 
+        self._np_random = None
+        self.seed()  # initialize RNG
+
+    def seed(self, seed: int = None):
+        """Set the random seed for reproducibility."""
+        self._np_random, seed = gym.utils.seeding.np_random(seed)
+        return [seed]
+    
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.sim.reset_simulation()
@@ -58,7 +69,7 @@ class TASQEnv(gym.Env):
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset target position
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset goal position
-        self.goal_ori = np.array([np.sin(0.0), np.cos(0,0)], dtype=np.float32)  
+        self.goal_ori = np.array([np.sin(0.0), np.cos(0.0)], dtype=np.float32)  
         obs = self._get_obs()
         self.obs_buffer.clear()
         for _ in range(self.frame_stack):
@@ -132,7 +143,7 @@ class TASQEnv(gym.Env):
         
         # 2. Height deviation penalty
         current_height = state[2]
-        height_penalty = np.abs(current_height - self.target_height)
+        height_penalty = np.abs(current_height - self.target_height)**4
 
         # 3. Orientation deviation penalty 
         orientation_penalty = np.abs(pitch) + np.abs(roll)
@@ -164,8 +175,8 @@ class TASQEnv(gym.Env):
         reward = sum(reward_terms.values())
 
         # Terminate or truncate
-        terminated = distance < 0.0005
-        truncated = self.step_count >= self.max_steps
+        terminated = distance < 0.0005 
+        truncated = self.step_count >= self.max_steps or current_height < 0.06
 
         self.step_count += 1
         return stacked_obs, reward, terminated, truncated, {"reward_terms": reward_terms}

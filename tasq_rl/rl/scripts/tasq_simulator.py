@@ -25,6 +25,7 @@ class TASQSimulator:
         self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
+        self.randomization = False
 
     def reset_simulation(self):
         # Reset PyBullet simulation (clears all bodies, constraints, etc.)
@@ -73,9 +74,13 @@ class TASQSimulator:
 
         self.num_joints = p.getNumJoints(self.robot_id)
         # Domain randomization:
-        self._randomize_link_masses(mass_range=(0.8, 1.2))  # for example, ±20% mass
-        self.joint_randomizer_values = np.random.normal(1, 0.01, size=(6,))
-        self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
+        if self.randomization:
+            self._randomize_link_masses(mass_range=(0.8, 1.2))  # for example, ±20% mass
+            self.joint_randomizer_values = np.random.normal(1, 0.01, size=(6,))
+            self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
+        else:
+            self.joint_randomizer_values = np.ones((6,))
+            self.suction_randomization = 1.0
 
         self.position_gain = 0.8
         self.velocity_gain = 1.0
