@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from rl.models.actor import BCActor
+from tasq_rl.rl.models.architecture.actor import BCActor
 from rl.scripts.tasq_sac import SACActorWithBC
 from rl.scripts.tasq_env import TASQEnv
 

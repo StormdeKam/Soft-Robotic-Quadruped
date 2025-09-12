@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
-from tasq_rl.rl.models.actor import BCActor
+from tasq_rl.rl.models.architecture.actor import BCActor
 from collections import defaultdict
 
 # === Load model ===

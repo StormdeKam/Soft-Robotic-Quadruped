@@ -7,7 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 from rl.utils.framestacking.dataset_stacker import StackedDataset
-from rl.models.actor import BCActor
+from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
 MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V2"

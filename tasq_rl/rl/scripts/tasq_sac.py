@@ -13,11 +13,13 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecMoni
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback, BaseCallback
 
-from rl.models.actor import BCActor
+from rl.models.architecture.actor import BCActor
 from rl.utils.callbacks.reward_logger_callback import RewardLoggerCallback
 from rl.utils.callbacks.training_progress_callback import TrainingProgressCallback
 from rl.scripts.tasq_env import TASQEnv
 
+SAVE_PATH = "rl/models/tasq_sac/trial_1(9_11)"
+os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[
     3:7,    # base orientation
@@ -27,6 +29,32 @@ OBSERVED_INDICES = np.r_[
     29:33,  # grfs
     33:37   # goal_pos and orientation
 ]
+
+# ---------------- Extended checkpoint callback ----------------
+class ActorCheckpointCallback(CheckpointCallback):
+    """
+    Extends CheckpointCallback to also save the SAC actor weights (.pt).
+    """
+    def __init__(self, *args, actor_save_path: str = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.actor_save_path = actor_save_path or self.save_path
+        os.makedirs(self.actor_save_path, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        # Call parent to save the usual SB3 checkpoint
+        super()._on_step()
+
+        # Only save actor if checkpointing condition is met
+        if self.n_calls % self.save_freq == 0:
+            steps = self.num_timesteps
+            actor_file = os.path.join(
+                self.actor_save_path, f"{self.name_prefix}_actor_{steps}_steps.pt"
+            )
+            torch.save(self.model.policy.actor.state_dict(), actor_file)
+            if self.verbose > 0:
+                print(f"[ActorCheckpoint] ✅ Saved actor weights to {actor_file}")
+
+        return True
 
 # ---------------- Warm start callback ----------------
 class WarmStartSACCallback(BaseCallback):
@@ -79,13 +107,29 @@ class SACActorWithBC(nn.Module):
         self.bc_actor.load_state_dict(new_state_dict)
         self.bc_actor.eval()
 
-    def forward(self, obs):
+    def forward(self, obs, deterministic=False):
+        """
+        obs: [batch_size, obs_dim]
+        deterministic: if True, return mean (BC output), else sample with log_std
+        """
         if not isinstance(obs, torch.Tensor):
             obs = torch.tensor(obs, dtype=torch.float32, device=self.device)
         obs = obs.to(self.device)
+
+        # Get BC actor output
         pressures, suctions = self.bc_actor(obs)
         mu = torch.cat([pressures, suctions], dim=-1)
-        return torch.clamp(mu, -1.0, 1.0)
+
+        if deterministic:
+            # During evaluation or warm-start: just return BC action
+            action = mu
+        else:
+            # Stochastic: add Gaussian noise with current log_std
+            std = torch.exp(self.log_std)
+            noise = torch.randn_like(mu) * std
+            action = mu + noise
+
+        return torch.clamp(action, -1.0, 1.0)
 
     def set_training_mode(self, mode: bool):
         if mode:
@@ -178,21 +222,23 @@ if __name__ == "__main__":
         torch.nn.utils.clip_grad_norm_(model.policy.actor.parameters(), 0.5)
 
     # Callbacks
-    total_timesteps = 1  # warm-start only
+    total_timesteps = 1_000#_000  
     log_interval = 10_000
     reward_logger = RewardLoggerCallback(log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
-    checkpoint_callback = CheckpointCallback(
-        save_freq=100_000 // n_envs,
-        save_path="rl/models/tasq_sac/checkpoints",
+    checkpoint_callback = ActorCheckpointCallback(
+        save_freq=100,#_000 // n_envs,
+        save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,
         save_vecnormalize=True,
+        actor_save_path=os.path.join(SAVE_PATH,"actors"), 
+        verbose=1,
     )
+
     warm_start_callback = WarmStartSACCallback(freeze_steps=300_000, verbose=1)
     callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, warm_start_callback])
 
-    # Warm-start (tiny training run)
     model.learn(total_timesteps=total_timesteps, callback=callback)
 
     # ---------- Seed Replay Buffer with BC Demos ----------
@@ -248,8 +294,6 @@ if __name__ == "__main__":
     else:
         print("[BC] ⚠️ Demo dataset not found, skipping replay buffer seeding.")
 
-    out_dir = "rl/models/tasq_sac/cloned_from_bc"
-    os.makedirs(out_dir, exist_ok=True)
-    model.save(os.path.join(out_dir, "tasq_sac_full"))
-    torch.save(model.policy.actor.state_dict(), os.path.join(out_dir, "tasq_sac_actor.pt"))
-    print(f"[SAVE] SAC model + actor saved to {out_dir}")
+    model.save(os.path.join(SAVE_PATH, "tasq_sac_full"))
+    torch.save(model.policy.actor.state_dict(), os.path.join(SAVE_PATH, "tasq_sac_actor.pt"))
+    print(f"[SAVE] SAC model + actor saved to {SAVE_PATH}")

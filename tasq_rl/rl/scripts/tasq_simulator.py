@@ -22,6 +22,12 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
+        #change background color to black
+        p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+
         self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
@@ -36,7 +42,7 @@ class TASQSimulator:
         if self.gui:
             p.resetDebugVisualizerCamera(
                 cameraDistance=0.5,
-                cameraYaw= 180,#self.start_yaw + 0.25*np.pi,  # Adjust yaw for better view
+                cameraYaw= 180,
                 cameraPitch=-1,
                 cameraTargetPosition=[0, 0, 0.1],
                 physicsClientId=self.physics_client
@@ -59,6 +65,7 @@ class TASQSimulator:
 
     def _load_environment(self):
         self.plane_id = p.loadURDF("plane.urdf")
+        p.changeVisualShape(self.plane_id, -1, rgbaColor=[0.5, 0.5, 0.5, 1])  # grey
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
         self.start_x, self.start_y = 0.0, 0.0
