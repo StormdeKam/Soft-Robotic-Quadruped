@@ -17,6 +17,8 @@ from rl.models.architecture.actor import BCActor
 from rl.utils.callbacks.reward_logger_callback import RewardLoggerCallback
 from rl.utils.callbacks.training_progress_callback import TrainingProgressCallback
 from rl.scripts.tasq_env import TASQEnv
+from rl.scripts.tasq_test import test_model, test_model_video_cv2
+
 
 SAVE_PATH = "rl/models/tasq_sac/trial_1(9_11)"
 os.makedirs(SAVE_PATH, exist_ok=True)
@@ -35,10 +37,13 @@ class ActorCheckpointCallback(CheckpointCallback):
     """
     Extends CheckpointCallback to also save the SAC actor weights (.pt).
     """
-    def __init__(self, *args, actor_save_path: str = None, **kwargs):
+    def __init__(self, *args, actor_save_path: str = None, eval_runs=10, device="cpu", **kwargs):
         super().__init__(*args, **kwargs)
         self.actor_save_path = actor_save_path or self.save_path
         os.makedirs(self.actor_save_path, exist_ok=True)
+        self.eval_runs = eval_runs
+        self.device = device
+        self.metrics_file = os.path.join(self.actor_save_path, "metrics.txt")
 
     def _on_step(self) -> bool:
         # Call parent to save the usual SB3 checkpoint
@@ -53,6 +58,21 @@ class ActorCheckpointCallback(CheckpointCallback):
             torch.save(self.model.policy.actor.state_dict(), actor_file)
             if self.verbose > 0:
                 print(f"[ActorCheckpoint] ✅ Saved actor weights to {actor_file}")
+
+                        # ----- Run evaluation -----
+            print(f"[Eval] Running {self.eval_runs} test runs for {actor_file}")
+            results = test_model(actor_file, device=self.device, runs=self.eval_runs)
+
+            # Save metrics
+            with open(self.metrics_file, "a") as f:
+                f.write(f"Steps {steps}: {results}\n")
+
+            # ----- Run video generation -----
+            video_file = os.path.join(
+                self.actor_save_path, f"test_run_{steps}_steps.mp4"
+            )
+            print(f"[Eval] Saving test video to {video_file}")
+            test_model_video_cv2(actor_file, device=self.device, steps=1500, video_path=video_file)
 
         return True
 
@@ -233,6 +253,8 @@ if __name__ == "__main__":
         save_replay_buffer=True,
         save_vecnormalize=True,
         actor_save_path=os.path.join(SAVE_PATH,"actors"), 
+        device=device,
+        eval_runs=10,
         verbose=1,
     )
 

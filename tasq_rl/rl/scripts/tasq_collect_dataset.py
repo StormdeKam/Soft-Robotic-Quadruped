@@ -16,8 +16,8 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 1 # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable2"  # Path to save the dataset
+num_episodes = 500 # Number of simulation rollouts
+save_path = "rl/datasets/minimal_viable3"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -51,7 +51,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
@@ -60,23 +60,25 @@ def run_episode(episode_idx):
     episode_actions = []
     quaternion_states = []
 
-    control_frequency = 1./24.
-    pybullet_frequency = 1./240.
-    steps_per_step = int(control_frequency / pybullet_frequency)
+    #control_frequency = 1./24.
+    #pybullet_frequency = 1./240.
+    #steps_per_step = int(control_frequency / pybullet_frequency)
 
     for step in range(total_steps):
         base_pos = sim.get_base_position()
         base_ori = sim.get_base_orientation()
+        noisy_ori = base_ori + np.random.normal(0, 0.01, size=(4,))
         base_vel = sim.get_base_velocity_local()
+        noisy_vel = base_vel + np.random.normal(0, 0.001, size=(6,))
         grfs = sim.get_grfs_local_foot()
         normalized_grfs = grfs / 10
-        normalized_pressures = (pressures / 200 - 1).flatten()
-        normalized_suction = suction_states/50 -1
+        normalized_pressures = (pressures / 400).flatten()
+        normalized_suction = suction_states/100
 
         state = np.concatenate([
             base_pos,
-            base_ori,
-            base_vel,
+            noisy_ori,
+            noisy_vel,
             normalized_pressures,
             normalized_suction,
             normalized_grfs
@@ -87,18 +89,20 @@ def run_episode(episode_idx):
         noisy_d_suctions = d_suctions + np.random.normal(0, 0.01, size=(4,))
         noisy_d_suctions = np.clip(noisy_d_suctions, -20, 20)
         noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
-        noisy_d_pressures = np.clip(noisy_d_pressures, -20*np.pi, 20*np.pi)
+        noisy_d_pressures = np.clip(noisy_d_pressures, -20, 20)
 
-        action = np.concatenate([(noisy_d_pressures / (20*np.pi)).flatten(), (noisy_d_suctions / 20)]).astype(np.float32)
+        action = np.concatenate([(noisy_d_pressures / (20)).flatten(), (noisy_d_suctions / 20)]).astype(np.float32)
 
-        for _ in range(steps_per_step):
-            pressures += noisy_d_pressures / steps_per_step
-            pressures = np.clip(pressures, 0, 400)
-            suction_states += noisy_d_suctions / steps_per_step
-            suction_states = np.clip(suction_states, 0, 100)
-            sim.apply_pressures(pressures)
-            sim.apply_suction(suction_states)
-            sim.step()
+        pressures += noisy_d_pressures# / steps_per_step
+        pressures = np.clip(pressures, 0, 400)
+        suction_states += noisy_d_suctions# / steps_per_step
+        suction_states = np.clip(suction_states, 0, 100)
+        sim.apply_pressures(pressures)
+        sim.apply_suction(suction_states)
+        sim.step()
+
+        #for _ in range(steps_per_step):
+
         episode_states.append(state)
         episode_actions.append(action)
         quaternion_states.append(sim.get_base_quaternion())

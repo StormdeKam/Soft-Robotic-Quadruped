@@ -28,10 +28,10 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
-        self.randomization = False
+        self.randomization = True
 
     def reset_simulation(self):
         # Reset PyBullet simulation (clears all bodies, constraints, etc.)
@@ -82,14 +82,14 @@ class TASQSimulator:
         self.num_joints = p.getNumJoints(self.robot_id)
         # Domain randomization:
         if self.randomization:
-            self._randomize_link_masses(mass_range=(0.8, 1.2))  # for example, ±20% mass
-            self.joint_randomizer_values = np.random.normal(1, 0.01, size=(6,))
+            self._randomize_link_masses(mass_range=(0.9, 1.1))  # ±10% mass
+            self.joint_randomizer_values = np.random.normal(1, 0.001, size=(6,))
             self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
         else:
             self.joint_randomizer_values = np.ones((6,))
             self.suction_randomization = 1.0
 
-        self.position_gain = 0.8
+        self.position_gain = 1.2
         self.velocity_gain = 1.0
         self.max_force = 500
 
@@ -98,19 +98,20 @@ class TASQSimulator:
         for joint_index in range(self.num_joints):
             joint_info = p.getJointInfo(self.robot_id, joint_index)
             joint_name = joint_info[1].decode()
-            #if "_ry" in joint_name:
-                #p.resetJointState(bodyUniqueId=self.robot_id, jointIndex=joint_index, targetValue=0.15)
             joint_type = joint_info[2]
+
+            # set leg to body spherical joints to very stiff position control
             if joint_type == p.JOINT_SPHERICAL:
                 p.setJointMotorControlMultiDof(
                 bodyUniqueId=self.robot_id,
                 jointIndex=joint_index,
                 controlMode=p.POSITION_CONTROL,
                 targetPosition=[0, 0, 0, 1],   # quaternion (w, x, y, z)
-                positionGain=0.01,                  # proportional gain (same on all axes)
+                positionGain=1,                  # proportional gain (same on all axes)
                 velocityGain=1.4,                   # damping gain (same on all axes)
                 force=[0.04,0.04,0.04]             # torque limits per axis
                 )
+
             if joint_type == p.JOINT_REVOLUTE:
                 self.revolute_joints.append(joint_index)
                 #p.resetJointState(self.robot_id, joint_index, targetValue)
@@ -240,7 +241,7 @@ class TASQSimulator:
 
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
-    def apply_suction(self, suction_states, force_magnitude=3.0):
+    def apply_suction(self, suction_states, force_magnitude=10.0):
         #print(suction_states>50)
         """
         Simulate suction cups as prismatic actuators + contact/friction modifiers.
@@ -311,9 +312,9 @@ class TASQSimulator:
                 p.changeDynamics(
                     bodyUniqueId=self.robot_id,
                     linkIndex=cup_joint_idx + 1,
-                    lateralFriction=0.8,
-                    rollingFriction=0.0,
-                    spinningFriction=0.0
+                    lateralFriction=5.0,
+                    rollingFriction=0.01,
+                    spinningFriction=0.01
                 )
 
         # --- 4) Logging pressures + suction ---
@@ -340,9 +341,19 @@ class TASQSimulator:
         for step in range(steps):
             #print(pressures)
             #self.get_grfs_local_foot()
-            #prev_suction_states = self.suction_states.copy()
             #print(pressures)
-            #print(suction_states)          
+            #print(suction_states)  
+            #print(self.get_grfs_local_foot())   
+            #orientation = self.get_base_orientation()
+            #print("orientation = ", orientation)
+            pressures += pressure_callback(step,mode)
+            self.apply_pressures(pressures)
+            suction_states += suction_callback(step, mode)
+            self.apply_suction(suction_states)    
+            #print("dpressures=",pressure_callback(step,mode))
+            #print("dsuctions=",suction_callback(step,mode))
+            self.step()
+            """
             for i in range(steps_per_step): 
                 if pressure_callback:
                     pressures += pressure_callback(step,mode)/steps_per_step
@@ -352,6 +363,7 @@ class TASQSimulator:
                     suction_states += suction_callback(step, mode)/steps_per_step
                     self.apply_suction(suction_states)            
                 self.step()
+            """
         end_time = time.time()
         time_difference = end_time - start_time
         print(f"Simulation ran for {steps} steps in {time_difference:.2f} seconds.")

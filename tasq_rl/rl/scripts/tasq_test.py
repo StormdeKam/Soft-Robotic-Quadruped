@@ -55,9 +55,9 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
     mse_y_deviations = []
     failures = 0
 
-    control_frequency = 1./24.
-    pybullet_frequency = 1./240.
-    steps_per_step = int(control_frequency / pybullet_frequency)
+    #control_frequency = 1./24.
+    #pybullet_frequency = 1./240.
+    #steps_per_step = int(control_frequency / pybullet_frequency)
 
     for run in range(n_runs):
         print(f"[RUN] Starting test run {run+1}/{n_runs}")
@@ -86,15 +86,15 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
 
             d_pressures, d_suctions = action_to_pressures_and_suction(action)
 
-            for _ in range(steps_per_step):
-                pressures += d_pressures / steps_per_step
-                pressures = np.clip(pressures, 0, 400)
-                suction_states += d_suctions / steps_per_step
-                suction_states = np.clip(suction_states, 0, 100)
+            #for _ in range(steps_per_step):
+            pressures += d_pressures# / steps_per_step
+            pressures = np.clip(pressures, 0, 400)
+            suction_states += d_suctions# / steps_per_step
+            suction_states = np.clip(suction_states, 0, 100)
 
-                env.apply_pressures(pressures)
-                env.apply_suction(suction_states)
-                env.step()
+            env.apply_pressures(pressures)
+            env.apply_suction(suction_states)
+            env.step()
 
             # Collect metrics
             base_pos = np.array(env.get_base_position())
@@ -159,7 +159,7 @@ def test_model_video_cv2(model_path, device, steps=3500, video_path="tasq_test.a
     model.eval()
 
     # Create environment with GUI or DIRECT mode
-    env = TASQSimulator(urdf_path="rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
+    env = TASQSimulator(urdf_path="rl/urdfs/TASQ_n7.urdf", gui=False, no_links=7)
     env.reset_simulation()
 
     # OpenCV video writer

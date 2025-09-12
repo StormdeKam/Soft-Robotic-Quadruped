@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import os
 
 # Path to saved dataset
-dataset_dir = "rl/datasets/minimal_viable"
+dataset_dir = "rl/datasets/minimal_viable3"
 
 # Load merged state data and episode lengths
-states = np.load(os.path.join(dataset_dir, "demo_states_merged.npy"))
-episode_lengths = np.load(os.path.join(dataset_dir, "demo_episode_lengths_merged.npy"))
+states = np.load(os.path.join(dataset_dir, "demo_states_0.npy"))
+episode_lengths = np.load(os.path.join(dataset_dir, "demo_episode_lengths_0.npy"))
 
 # Sanity checks
 print(f"Loaded states shape: {states.shape}")

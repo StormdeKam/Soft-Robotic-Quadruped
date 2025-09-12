@@ -117,19 +117,19 @@ class TASQEnv(gym.Env):
         self.obs_buffer.append(obs)
         stacked_obs = np.concatenate(self.obs_buffer)
 
-        control_frequency = 1./24.
-        pybullet_frequency = 1./240.
-        steps_per_step = int(control_frequency / pybullet_frequency)
+        #control_frequency = 1./24.
+        #pybullet_frequency = 1./240.
+        #steps_per_step = int(control_frequency / pybullet_frequency)
 
-        for i in range(steps_per_step):
-            # Apply pressure deltas
-            self.pressures = np.clip(self.pressures + d_pressures/steps_per_step, 0.0, 400.0)
-            self.suction_states = np.clip(self.suction_states + d_suctions/steps_per_step, 0, 100)
-            # Step the simulator with current pressure and suction state
-            self.sim.apply_pressures(self.pressures)
-            self.sim.apply_suction(self.suction_states)
-            #print(self.pressures, self.suction_states)
-            self.sim.step()
+        #for i in range(steps_per_step):
+        # Apply pressure deltas
+        self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
+        self.suction_states = np.clip(self.suction_states + d_suctions, 0, 100)
+        # Step the simulator with current pressure and suction state
+        self.sim.apply_pressures(self.pressures)
+        self.sim.apply_suction(self.suction_states)
+        #print(self.pressures, self.suction_states)
+        self.sim.step()
 
         # Calculate reward
         state = self._get_state()
