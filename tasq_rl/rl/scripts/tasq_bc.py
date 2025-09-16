@@ -10,7 +10,7 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V2"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V3"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -36,8 +36,8 @@ OBSERVED_INDICES = np.r_[
 ]
 
 dataset = StackedDataset(
-    "rl/datasets/minimal_viable/demo_states_merged.npy",
-    "rl/datasets/minimal_viable/demo_actions_merged.npy",
+    "rl/datasets/minimal_viable3/demo_states_merged.npy",
+    "rl/datasets/minimal_viable3/demo_actions_merged.npy",
     N=4,
     observed_indices=OBSERVED_INDICES
 )

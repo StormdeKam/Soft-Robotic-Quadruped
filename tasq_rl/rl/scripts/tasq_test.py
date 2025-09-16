@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import SAC
 from rl.scripts.tasq_simulator import TASQSimulator
 from rl.models.architecture.actor import BCActor
-from rl.scripts.tasq_sac import SACActorWithBC
+from rl.models.architecture.SAC import SACActorWithBC
 import pybullet as p
 import torch.nn as nn
 import cv2
@@ -58,10 +58,15 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
     #control_frequency = 1./24.
     #pybullet_frequency = 1./240.
     #steps_per_step = int(control_frequency / pybullet_frequency)
+    
+    no_links_list = [5, 6, 7]
+    urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
 
     for run in range(n_runs):
         print(f"[RUN] Starting test run {run+1}/{n_runs}")
-        env = TASQSimulator(urdf_path="rl/urdfs/TASQ_n7.urdf", gui=gui, no_links=7)
+        no_links = np.random.choice(no_links_list)
+        urdf_path = urdf_dict[no_links]
+        env = TASQSimulator(urdf_path=urdf_path, gui=gui, no_links=no_links)
         env.reset_simulation()
 
         state_buffer = []
@@ -237,13 +242,13 @@ def get_env_observation(env, obs=None):
     base_ori = np.array(env.get_base_orientation())
     base_vel = np.array(env.get_base_velocity_local())
     pressures = np.array(env.get_pressure_state()).flatten()
-    normalized_pressures = (pressures / 200 - 1).flatten()
+    normalized_pressures = (pressures / 400).flatten()
     suction_states = np.array(env.get_suction_state())
-    normalized_suction = suction_states / 50 - 1
-    grfs = np.array(env.get_grfs_local_foot())
-    normalized_grfs = grfs / 10
+    normalized_suction = suction_states / 100
+    grfs = np.array(env.get_grfs_local_foot())+np.random.normal(6, 6, size=(4,))
+    normalized_grfs = grfs / 30
     goal_pos = np.array([0.30, 0.0])
-    goal_yaw = np.array([np.sin(0), np.sin(0)])
+    goal_yaw = np.array([np.sin(np.pi/4), np.sin(np.pi/4)])  # 45 degrees
 
     full_obs = np.concatenate([
         base_pos,
@@ -260,7 +265,7 @@ def get_env_observation(env, obs=None):
     return obs
 
 def action_to_pressures_and_suction(action):
-    d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
+    d_pressures = (action[:12].reshape(4, 3)) * 20
     d_suctions = action[12:16] * 20
     return d_pressures, d_suctions
 
@@ -273,15 +278,15 @@ if __name__ == "__main__":
     parser.add_argument("--runs", type=int, default=10, help="Number of test runs")
     parser.add_argument("--gui", action="store_true", help="Enable GUI for debugging (slows evaluation)")
     args = parser.parse_args()
-    """
+    
     results = test_model(args.model_path, args.device, n_runs=args.runs, gui=args.gui)
-
+    #"""
     print("\n=== Evaluation Results ===")
     print(f"Average Final X Position: {results['avg_final_x']:.3f}")
     print(f"Average Y-Deviation MSE: {results['avg_mse_y']:.6f}")
     print(f"Failure Rate: {results['failure_rate']*100:.2f}%")
-    """
+    #
     # Run one video
-    video_file = os.path.join("/home/storm-de-kam/TASQ/Soft-Robotic-Quadruped/tasq_rl/sim_videos", "tasq_test.mp4")
-    test_model_video_cv2(args.model_path, args.device, steps=20, video_path=video_file)
-
+    video_file = os.path.join("/home/storm-de-kam/TASQ/Soft-Robotic-Quadruped/tasq_rl/rl/models/tasq_bc/minimal_viable_V3", "tasq_test.mp4")
+    test_model_video_cv2(args.model_path, args.device, steps=1400, video_path=video_file)
+    #"""

@@ -69,7 +69,7 @@ class TASQEnv(gym.Env):
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset target position
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset goal position
-        self.goal_ori = np.array([np.sin(0.0), np.cos(0.0)], dtype=np.float32)  
+        self.goal_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  
         obs = self._get_obs()
         self.obs_buffer.clear()
         for _ in range(self.frame_stack):
@@ -88,10 +88,10 @@ class TASQEnv(gym.Env):
         base_pos = self.sim.get_base_position()         
         base_ori = self.sim.get_base_orientation()      
         base_vel = self.sim.get_base_velocity_local()   
-        normalized_pressures = (self.pressures / 200 - 1).flatten()
-        normalized_suction = self.suction_states/50 -1
-        grfs = self.sim.get_grfs_local_foot()         
-        normalized_grfs = grfs / 10
+        normalized_pressures = (self.pressures / 400).flatten()
+        normalized_suction = self.suction_states/100
+        grfs = self.sim.get_grfs_local_foot() + np.random.normal(6, 6, size=(4,))     
+        normalized_grfs = grfs / 30
 
         # Combine all into one observation array
         obs = np.concatenate([
@@ -110,7 +110,7 @@ class TASQEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
-        d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
+        d_pressures = (action[:12].reshape(4, 3)) * 20
         d_suctions = (action[12:16]) * 20  
 
         obs = self._get_obs()

@@ -28,14 +28,14 @@ class BCActor(nn.Module):
 
 # --- Load model ---
 model = BCActor(obs_dim=41*4)
-model.load_state_dict(torch.load("rl/models/tasq_bc/2_heads/tasq_bc_ep100_20250620-002326.pt"))
+model.load_state_dict(torch.load("rl/models/tasq_bc/minimal_viable_V3/tasq_bc_ep150_20250913-044605.pt"))
 model.eval()
 
 # --- Load states and sample 25 stacked observations ---
 states = np.load("rl/datasets/random_gait_cycle_start/demo_states_19.npy")
 stack_size = 4
 sample_size = 25
-state_dim = 41
+state_dim = 31
 
 np.random.seed(42)
 max_start = len(states) - stack_size
@@ -64,8 +64,8 @@ for i in range(outputs.shape[1]):  # loop over output dims
 saliency = saliency.numpy()  # shape: (16, 168)
 
 # --- Create input labels ---
-feature_groups = ["pos", "ori", "vel", "pres", "suct", "grf"]
-group_sizes = [3, 4, 6, 12, 4, 12]
+feature_groups = ["ori", "vel", "pres", "suct", "grf", "goal"]
+group_sizes = [4, 3, 12, 4, 4, 4]
 
 input_labels = []
 for frame in range(4):
@@ -100,7 +100,7 @@ plt.tight_layout()
 plt.show()
 
 # --- Aggregate saliency across frames ---
-saliency = saliency.reshape(16, 4, 41)  # (outputs, frames, features)
+saliency = saliency.reshape(16, 4, 31)  # (outputs, frames, features)
 saliency = saliency.mean(axis=1)  # shape: (16, 41)
 
 # --- Update input labels to one per feature ---

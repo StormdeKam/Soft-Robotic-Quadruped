@@ -28,7 +28,7 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = False
+        self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
         self.randomization = True
@@ -78,6 +78,7 @@ class TASQSimulator:
         self.prismatic_joints = []
         self.suction_states = np.array([0,100,100,100],dtype=np.float64)  # Initialize suction states
         self.pressure_state = np.ones((4,3)) *10 
+        self.last_targets = np.zeros((4,3))
 
         self.num_joints = p.getNumJoints(self.robot_id)
         # Domain randomization:
@@ -109,7 +110,7 @@ class TASQSimulator:
                 targetPosition=[0, 0, 0, 1],   # quaternion (w, x, y, z)
                 positionGain=1,                  # proportional gain (same on all axes)
                 velocityGain=1.4,                   # damping gain (same on all axes)
-                force=[0.04,0.04,0.04]             # torque limits per axis
+                force=[self.max_force,self.max_force,self.max_force]             # torque limits per axis
                 )
 
             if joint_type == p.JOINT_REVOLUTE:
@@ -157,12 +158,14 @@ class TASQSimulator:
             mass = info[0]  # mass is always the first element
 
             scale = np.random.uniform(*mass_range)
-            p.changeDynamics(self.robot_id, joint_index, mass=mass * scale)
+            p.changeDynamics(self.robot_id, joint_index, mass=2* mass * scale)
 
-    def apply_pressures(self, pressures):
+    def apply_pressures(self, pressures, pressure_gradients = np.ones((4,3))):
         self.pressure_state = pressures
         #print(pressures)
-        
+        alpha = 0
+        alpha_up = 0.1
+        alpha_down = 0.03
         """
         Apply actuator pressures to the robot. Converts them to joint target positions/gains.
 
@@ -180,6 +183,7 @@ class TASQSimulator:
         prismatics_per_leg = len(self.prismatic_joints) // 4
         
         for leg_index, leg_pressures in enumerate(pressures):
+
             if leg_pressures.all() <= 400:                
                 target_pos_x, target_pos_y, target_pos_z, \
                 pos_gain_x, vel_gain_x, \
@@ -198,6 +202,24 @@ class TASQSimulator:
             else:
                 self.logger.warning(f"Pressure in leg  {leg_index +1} exceeding max_pressure of {max_pressure} mBar")
 
+            if target_pos_x > self.last_targets[leg_index,0]:
+                alpha = alpha_up
+            else:
+                alpha = alpha_down
+            thx = self.last_targets[leg_index,0] + alpha * (target_pos_x - self.last_targets[leg_index,0])
+
+            if target_pos_y > self.last_targets[leg_index,1]:
+                alpha = alpha_up
+            else:
+                alpha = alpha_down
+            thy = self.last_targets[leg_index,1] + alpha * (target_pos_y - self.last_targets[leg_index,1])
+
+            if target_pos_z > self.last_targets[leg_index,2]:
+                alpha = alpha_up
+            else:
+                alpha = alpha_down
+            thz = self.last_targets[leg_index,2] + alpha * (target_pos_z - self.last_targets[leg_index,2])
+                                                            
                 #print(f"Leg {leg_index}, Joint {joint_index}: {joint_name}")
             # Apply to this leg's revolute joints
             for j in range(revolutes_per_leg-2):  
@@ -205,9 +227,9 @@ class TASQSimulator:
 
                 # Alternate X and Y for revolute joints
                 if j % 2 == 0:
-                    target, pg, vg = target_pos_x, pos_gain_x, vel_gain_x
+                    target, pg, vg = thx, pos_gain_x, vel_gain_x
                 else:
-                    target, pg, vg = target_pos_y, pos_gain_y, vel_gain_y
+                    target, pg, vg = thy, pos_gain_y, vel_gain_y
 
                 p.setJointMotorControl2(
                     bodyIndex=self.robot_id,
@@ -220,25 +242,27 @@ class TASQSimulator:
                 )
                 #print(f"[REVOLUTE] Joint {joint_index} -> Target: {target:.3f}, PG: {pg:.2f}, VG: {vg:.2f}")
             # Apply to this leg's prismatic joints
-            total_pos_z = 0
-            total_target_pos_z = 0
+            #total_pos_z = 0
+            #total_target_pos_z = 0
             cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
             for j in range(prismatics_per_leg):
                 joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
                 if joint_index not in cup_link_idx:                
-                    total_pos_z += p.getJointState(self.robot_id, joint_index)[0]
-                    total_target_pos_z += target_pos_z
+                    #total_pos_z += p.getJointState(self.robot_id, joint_index)[0]
+                    #total_target_pos_z += target_pos_z
                 
                     p.setJointMotorControl2(
                         bodyIndex=self.robot_id,
                         jointIndex=joint_index,
                         controlMode=p.POSITION_CONTROL,
-                        targetPosition=target_pos_z,
+                        targetPosition=thz,
                         positionGain=pos_gain_z,
                         velocityGain=vel_gain_z,
                         force=self.max_force
                     )
-
+            self.last_targets[leg_index,0] = thx
+            self.last_targets[leg_index,1] = thy
+            self.last_targets[leg_index,2] = thz
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
                 
     def apply_suction(self, suction_states, force_magnitude=10.0):
@@ -293,7 +317,7 @@ class TASQSimulator:
                 force = [0, 0, -force_magnitude * (suction_state/100.0) * self.suction_randomization]
                 p.applyExternalForce(
                     objectUniqueId=self.robot_id,
-                    linkIndex=cup_joint_idx - 1,
+                    linkIndex=cup_joint_idx ,
                     forceObj=force,
                     posObj=pos_cup,
                     flags=p.WORLD_FRAME
@@ -499,7 +523,7 @@ class TASQSimulator:
             if self.log_data:
                 import csv
                 header = [f"p_{i}" for i in range(12)] + [f"suction_{i}" for i in range(4)]
-                with open("rl/log/tasq_log_true.csv", "w", newline="") as f:
+                with open("rl/log/tasq_log.csv", "w", newline="") as f:
                     writer = csv.writer(f)
                     writer.writerow(header)
                     writer.writerows(self.log_data)

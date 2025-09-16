@@ -5,11 +5,12 @@ theta = np.pi/6 # positioning angle for hall sensors in rad
 hs_radius = 0.0065 # positioning radius for hall sensors in m
 
 def pneu2posandgains(pressures, no_links):
-    k1 = 0.00002 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-    k2 = 0.0000001 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
-    kp__th_1 = 0.02# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+
+    k1 = 0.000026 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+    k2 = 0.00000022 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+    kp__th_1 = 0.08# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
     kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
-    kp__dz_1 = 0.06# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+    kp__dz_1 = 0.15# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
     kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
     c1 = 2 # constant to map torque to change in position gain for revolute joints
     c2 = 1 # constant to map torque to change in velocity gain for revolute joints
@@ -74,18 +75,18 @@ def pneu2posandgains(pressures, no_links):
     T = k1*(np.cross(p1,v1) + np.cross(p2,v2) + np.cross(p3,v3)) *no_links
     F = k2*(p1 + p2 + p3) *no_links
     # Feedback gains 
-    random_noise_gains = np.random.normal(1, 0.01, size=(4,))
-    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links * random_noise_gains[0]
-    kd_thx_n = (kd__th_1 + np.abs(T[0]) * c2) * no_links * random_noise_gains[1]
-    kp_thy_n = (kp__th_1 + np.abs(T[1]) * c1) * no_links * random_noise_gains[0]
-    kd_thy_n = (kd__th_1 + np.abs(T[1]) * c2) * no_links * random_noise_gains[1]
-    kp_dz_n = (kp__dz_1 + F[2] * c3) * no_links * random_noise_gains[2]
-    kd_dz_n = (kd__dz_1 + F[2] * c4) * no_links * random_noise_gains[3]
+    #random_noise_gains = np.random.normal(1, 0.01, size=(4,))
+    kp_thx_n = (kp__th_1 + np.abs(T[0]) * c1) * no_links
+    kd_thx_n = (kd__th_1 + np.abs(T[0]) * c2) * no_links 
+    kp_thy_n = (kp__th_1 + np.abs(T[1]) * c1) * no_links
+    kd_thy_n = (kd__th_1 + np.abs(T[1]) * c2) * no_links
+    kp_dz_n = (kp__dz_1 + F[2] * c3) * no_links 
+    kd_dz_n = (kd__dz_1 + F[2] * c4) * no_links 
     # Target angles and position
-    random_noise_pos = np.random.normal(1, 0.01, size=(3,))
-    thx = T[0]/(kp_thx_n * deg2rad) * random_noise_pos[0]
-    thy = T[1]/(kp_thy_n * deg2rad) * random_noise_pos[1]
-    dz = -F[2]/kp_dz_n * random_noise_pos[2]
+    #random_noise_pos = np.random.normal(1, 0.01, size=(3,))
+    thx = T[0]/(kp_thx_n * deg2rad)
+    thy = T[1]/(kp_thy_n * deg2rad)
+    dz = -F[2]/kp_dz_n
 
     
     """

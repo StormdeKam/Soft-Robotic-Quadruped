@@ -242,12 +242,12 @@ if __name__ == "__main__":
         torch.nn.utils.clip_grad_norm_(model.policy.actor.parameters(), 0.5)
 
     # Callbacks
-    total_timesteps = 1_000#_000  
+    total_timesteps = 1_000_000  
     log_interval = 10_000
     reward_logger = RewardLoggerCallback(log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
     checkpoint_callback = ActorCheckpointCallback(
-        save_freq=100,#_000 // n_envs,
+        save_freq=100_000 // n_envs,
         save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,

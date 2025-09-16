@@ -11,7 +11,7 @@ import pybullet as p
 import zipfile
 import tempfile
 import torch.nn as nn
-
+import csv
 
 def load_policy_from_checkpoint(zip_path, device):
     with zipfile.ZipFile(zip_path, "r") as archive:
@@ -113,28 +113,36 @@ def test_model(model_path, env, device):
     control_frequency = 1./24.
     pybullet_frequency = 1./240.
     steps_per_step = int(control_frequency / pybullet_frequency)
-
+    log_states = []
+    log_actions = []
     for step in range(steps):
         state = get_env_observation(env)
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
+        log_states.append(stacked_state.flatten().tolist())
         state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
 
         action_tensor = model_forward(state_tensor)
         action = action_tensor.cpu().numpy().squeeze()
-
+        log_actions.append(action.tolist())
         d_pressures, d_suctions = action_to_pressures_and_suction(action)
+        
+        #for _ in range(steps_per_step):
+        pressures += d_pressures #/ steps_per_step
+        pressures = np.clip(pressures, 0, 400)
+        suction_states += d_suctions #/ steps_per_step
+        suction_states = np.clip(suction_states, 0, 100)
 
-        for _ in range(steps_per_step):
-            pressures += d_pressures / steps_per_step
-            pressures = np.clip(pressures, 0, 400)
-            suction_states += d_suctions / steps_per_step
-            suction_states = np.clip(suction_states, 0, 100)
-
-            env.apply_pressures(pressures)
-            env.apply_suction(suction_states)
-            env.step()
+        env.apply_pressures(pressures)
+        env.apply_suction(suction_states)
+        env.step()
 
     env.disconnect()
+    with open("rl/log/tasq_state_log.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(log_states)
+    with open("rl/log/tasq_action_log.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(log_actions)
     print("Testing run complete.")
 
 def get_env_observation(env, obs=None):
@@ -146,13 +154,13 @@ def get_env_observation(env, obs=None):
         base_ori = np.array(env.get_base_orientation())
         base_vel = np.array(env.get_base_velocity_local())
         pressures = np.array(env.get_pressure_state()).flatten()
-        normalized_pressures = (pressures / 200 - 1).flatten()
+        normalized_pressures = (pressures / 400).flatten()
         suction_states = np.array(env.get_suction_state())
-        normalized_suction = suction_states / 50 - 1
-        grfs = np.array(env.get_grfs_local_foot())
-        normalized_grfs = grfs / 10
+        normalized_suction = suction_states / 100
+        grfs = np.array(env.get_grfs_local_foot()) + np.random.normal(6, 6, size=(4,))
+        normalized_grfs = grfs / 30
         goal_pos = np.array([0.30, 0.0])
-        goal_yaw = np.array([np.sin(0), np.sin(0)])
+        goal_yaw = np.array([np.sin(np.pi/4), np.sin(np.pi/4)])  # 45 degrees
 
         full_obs = np.concatenate([
             base_pos,
@@ -169,7 +177,7 @@ def get_env_observation(env, obs=None):
     return obs
 
 def action_to_pressures_and_suction(action):
-    d_pressures = (action[:12].reshape(4, 3)) * 20 * np.pi
+    d_pressures = (action[:12].reshape(4, 3)) * 20
     d_suctions = action[12:16] *20
     return d_pressures, d_suctions
 

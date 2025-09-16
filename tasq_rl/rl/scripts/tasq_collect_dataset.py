@@ -16,8 +16,8 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 500 # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable3"  # Path to save the dataset
+num_episodes = 1 # Number of simulation rollouts
+save_path = "rl/datasets/noise_control"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -32,6 +32,7 @@ def rotate_world_to_local(base_pos, base_quat, point):
 
 def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
+    no_links = 7
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
@@ -41,6 +42,7 @@ def run_episode(episode_idx):
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
         gait_cycles = np.random.choice([1,2,3,4,5,7,8])
+        gait_cycles =5
         total_steps = gait_cycles * gait_length
     """
     else:
@@ -51,7 +53,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
@@ -64,14 +66,24 @@ def run_episode(episode_idx):
     #pybullet_frequency = 1./240.
     #steps_per_step = int(control_frequency / pybullet_frequency)
 
+    grf_buffer = []   # buffer to hold last 5 frames
+
     for step in range(total_steps):
         base_pos = sim.get_base_position()
         base_ori = sim.get_base_orientation()
-        noisy_ori = base_ori + np.random.normal(0, 0.01, size=(4,))
+        noisy_ori = base_ori * np.random.normal(1, 0.3, size=(4,))
         base_vel = sim.get_base_velocity_local()
-        noisy_vel = base_vel + np.random.normal(0, 0.001, size=(6,))
-        grfs = sim.get_grfs_local_foot()
-        normalized_grfs = grfs / 10
+        noisy_vel = base_vel * np.random.normal(1, 0.3, size=(6,))
+        grfs = sim.get_grfs_local_foot() + np.random.normal(6, 6, size=(4,))
+    
+        # --- Add to buffer and compute smoothed GRFs ---
+        grf_buffer.append(grfs)
+        if len(grf_buffer) > 20:
+            grf_buffer.pop(0)  # remove oldest if buffer > 5
+        smoothed_grfs = np.mean(grf_buffer, axis=0)
+        
+        normalized_grfs = smoothed_grfs / 30
+
         normalized_pressures = (pressures / 400).flatten()
         normalized_suction = suction_states/100
 
@@ -86,9 +98,9 @@ def run_episode(episode_idx):
 
         d_pressures = pressure_callback(step)
         d_suctions = suction_callback(step)
-        noisy_d_suctions = d_suctions + np.random.normal(0, 0.01, size=(4,))
+        noisy_d_suctions = d_suctions * np.random.normal(1, 0.1, size=(4,))
         noisy_d_suctions = np.clip(noisy_d_suctions, -20, 20)
-        noisy_d_pressures = d_pressures + np.random.normal(0, 0.01, size=(4, 3))
+        noisy_d_pressures = d_pressures * np.random.normal(1, 0.1, size=(4, 3))
         noisy_d_pressures = np.clip(noisy_d_pressures, -20, 20)
 
         action = np.concatenate([(noisy_d_pressures / (20)).flatten(), (noisy_d_suctions / 20)]).astype(np.float32)
@@ -97,7 +109,7 @@ def run_episode(episode_idx):
         pressures = np.clip(pressures, 0, 400)
         suction_states += noisy_d_suctions# / steps_per_step
         suction_states = np.clip(suction_states, 0, 100)
-        sim.apply_pressures(pressures)
+        sim.apply_pressures(pressures,noisy_d_pressures)
         sim.apply_suction(suction_states)
         sim.step()
 

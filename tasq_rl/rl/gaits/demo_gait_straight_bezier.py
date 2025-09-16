@@ -164,7 +164,7 @@ class DemoGaitStraight:
         # Plot the full curves
         self.planner.plot(duration=12.0, dt=0.005)
 
-    def save_to_csv(self, filename="gait_straight.csv"):
+    def save_to_csv(self, filename="minimal_viableV3_gait.csv"):
         self.planner.save_to_csv(filename=filename, duration=12.0, dt=0.005)
 
 if __name__ == "__main__":
