@@ -5,12 +5,13 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Run TASQ with Behavior Cloning or SAC")
 parser.add_argument("--gait", type=str, choices=["straight_bezier", "straight", "straightv3", "rotation"], required=True, help="Run straight_bezier, straight or rotation gait")
+parser.add_argument("--no_links", type=str, choices=["5","6","7"], required=True, help="amount of links in the robot legs")
 args = parser.parse_args()
 
+no_links = int(args.no_links)
+gait_length = 1300*5
 
-gait_length = 700
-
-
+urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
 
 if args.gait == "straight_bezier":
     from rl.gaits.demo_gait_straight_bezier import DemoGaitStraight
@@ -19,9 +20,9 @@ if args.gait == "straight_bezier":
     demo_pressures = demogait.demo_pressures
     demo_suction = demogait.demo_suction
     #demogait.plot()
-    sim = TASQSimulator("rl/urdfs/TASQ_n5.urdf", gui=True, no_links=5)
+    sim = TASQSimulator(urdf_dict[no_links], gui=True, no_links = no_links)
     sim.reset_simulation()
-    sim.run(steps=2*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+    sim.run(steps=3*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
 
 elif args.gait == "straightv3":
     from rl.gaits.old.demo_gait_straight_v3 import gait_pressures, gait_suction

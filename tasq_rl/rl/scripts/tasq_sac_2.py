@@ -19,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 
-SAVE_PATH = "rl/models/tasq_sac/trial_1(9_15_2025)"
+SAVE_PATH = "rl/models/tasq_sac/minimal_viable_v3/trial_2(9_17_2025)"
 os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[

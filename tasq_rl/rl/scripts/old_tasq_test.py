@@ -108,7 +108,7 @@ def test_model(model_path, env, device):
     state_buffer = []
     suction_states = np.array([0, 100, 100, 100], dtype=np.float32)
     pressures = np.ones((4, 3)) * 10
-    steps = 700
+    steps = 2100
 
     control_frequency = 1./24.
     pybullet_frequency = 1./240.

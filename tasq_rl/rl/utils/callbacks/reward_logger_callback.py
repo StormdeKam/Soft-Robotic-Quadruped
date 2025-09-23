@@ -61,5 +61,5 @@ class RewardLoggerCallback(BaseCallback):
         df = pd.DataFrame(self.episode_components)
         df["reward"] = self.episode_rewards
         df["length"] = self.episode_lengths
-        df.to_csv("reward_log.csv", index=False)
+        df.to_csv("models/tasq_sac/minimal_viable_v5/reward_log.csv", index=False)
         print("[RewardLogger] Saved reward log to reward_log.csv")

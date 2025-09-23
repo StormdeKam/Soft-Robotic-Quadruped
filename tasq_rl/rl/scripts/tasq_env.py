@@ -51,7 +51,7 @@ class TASQEnv(gym.Env):
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32) # Target orientation for the robot (used in reward calculation)
         self.target_height = 0.12  # Set a target height for the robot
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
-
+        self.grf_buffer = []
         self._np_random = None
         self.seed()  # initialize RNG
 
@@ -81,6 +81,7 @@ class TASQEnv(gym.Env):
         state = self._get_state()
         # Select only the observed indices
         obs = state[OBSERVED_INDICES].astype(np.float32)
+        obs[0:7] *= np.random.normal(1, 0.01, size=(7,))  # Add noise to orientation and velocity       
 
         return obs
     
@@ -91,7 +92,12 @@ class TASQEnv(gym.Env):
         normalized_pressures = (self.pressures / 400).flatten()
         normalized_suction = self.suction_states/100
         grfs = self.sim.get_grfs_local_foot() + np.random.normal(6, 6, size=(4,))     
-        normalized_grfs = grfs / 30
+        # --- Add to buffer and compute smoothed GRFs ---
+        self.grf_buffer.append(grfs)
+        if len(self.grf_buffer) > 20:
+            self.grf_buffer.pop(0)  # remove oldest if buffer > 20
+        smoothed_grfs = np.mean(self.grf_buffer, axis=0)
+        normalized_grfs = smoothed_grfs / 30
 
         # Combine all into one observation array
         obs = np.concatenate([
@@ -134,7 +140,9 @@ class TASQEnv(gym.Env):
         # Calculate reward
         state = self._get_state()
 
-        # 1. Target reward
+        # 0. Reward survival
+        alive = 1
+        # 1. Distance to target position and orientation
         pos = state[:2]
         distance = np.linalg.norm(pos - self.target_pos)
         roll, pitch, sin_yaw, cos_yaw = state[3:7]
@@ -143,7 +151,7 @@ class TASQEnv(gym.Env):
         
         # 2. Height deviation penalty
         current_height = state[2]
-        height_penalty = np.abs(current_height - self.target_height)**4
+        height_penalty = np.abs(current_height - self.target_height)
 
         # 3. Orientation deviation penalty 
         orientation_penalty = np.abs(pitch) + np.abs(roll)
@@ -155,15 +163,17 @@ class TASQEnv(gym.Env):
         suction_smoothness_penalty = np.sum(np.square(np.abs(d_suctions)))
 
         # --- Weighting factors ---
+        w_alive = 1.0
         w_dist = 1.0
         w_ori = 1.0
         w_height = 2.0
         w_orient = 2.0
-        w_pressure_smoothness = 0.1
-        w_suction_smoothness = 0.1
+        w_pressure_smoothness = 0.00001
+        w_suction_smoothness = 0.0001
         #w_gait_length
 
         reward_terms = {
+            "alive": alive * w_alive,
             "distance": -w_dist * distance,
             "orientation_reward": -w_ori * orientation_reward,
             "height_penalty": -w_height * height_penalty,
@@ -172,10 +182,11 @@ class TASQEnv(gym.Env):
             "suction_smoothness": -w_suction_smoothness * suction_smoothness_penalty,
         }
 
-        reward = sum(reward_terms.values())
+        reward = sum(reward_terms.values()) 
 
         # Terminate or truncate
-        terminated = distance < 0.0005 
+        terminated = distance < 0.05 
+        reward += 1000.0 if terminated else 0.0  # Bonus for reaching target
         truncated = self.step_count >= self.max_steps or current_height < 0.06
 
         self.step_count += 1

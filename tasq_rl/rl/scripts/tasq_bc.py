@@ -10,7 +10,7 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V3"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V6/real_dataset"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -36,8 +36,8 @@ OBSERVED_INDICES = np.r_[
 ]
 
 dataset = StackedDataset(
-    "rl/datasets/minimal_viable3/demo_states_merged.npy",
-    "rl/datasets/minimal_viable3/demo_actions_merged.npy",
+    "rl/datasets/minimal_viable_v6/real_datasets/0.5xspeed/real_states_merged.npy",
+    "rl/datasets/minimal_viable_v6/real_datasets/0.5xspeed/real_actions_merged.npy",
     N=4,
     observed_indices=OBSERVED_INDICES
 )
@@ -144,7 +144,7 @@ for epoch in range(1, EPOCHS + 1):
     model_path = ""
     if epoch % SAVE_INTERVAL == 0 or epoch == EPOCHS:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        model_path = os.path.join(MODEL_DIR, f"{MODEL_NAME}_ep{epoch}_{timestamp}.pt")
+        model_path = os.path.join(MODEL_DIR, f"{MODEL_NAME}_ep{epoch}.pt")
         torch.save(model.state_dict(), model_path)
 
     with open(LOG_FILE, "a") as f:

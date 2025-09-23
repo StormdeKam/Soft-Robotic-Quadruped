@@ -16,8 +16,8 @@ demo_suction = demogait.demo_suction
 
 
 # --- Parameters ---
-num_episodes = 1 # Number of simulation rollouts
-save_path = "rl/datasets/noise_control"  # Path to save the dataset
+num_episodes = 300 # Number of simulation rollouts
+save_path = "rl/datasets/minimal_viable_v6"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -32,17 +32,15 @@ def rotate_world_to_local(base_pos, base_quat, point):
 
 def run_episode(episode_idx):
     no_links = np.random.choice(no_links_list)
-    no_links = 7
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 700
+        gait_length = 1400*5
         #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
         pressure_callback = partial(demo_pressures, mode=mode)
         suction_callback = partial(demo_suction, mode=mode)
         gait_cycles = np.random.choice([1,2,3,4,5,7,8])
-        gait_cycles =5
         total_steps = gait_cycles * gait_length
     """
     else:
@@ -53,7 +51,7 @@ def run_episode(episode_idx):
         total_steps = 2 * gait_length
     """
     urdf_path = urdf_dict[no_links]
-    sim = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=no_links)
+    sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
     pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
@@ -66,20 +64,20 @@ def run_episode(episode_idx):
     #pybullet_frequency = 1./240.
     #steps_per_step = int(control_frequency / pybullet_frequency)
 
-    grf_buffer = []   # buffer to hold last 5 frames
+    grf_buffer = []   # buffer to hold last 20 frames
 
     for step in range(total_steps):
         base_pos = sim.get_base_position()
         base_ori = sim.get_base_orientation()
-        noisy_ori = base_ori * np.random.normal(1, 0.3, size=(4,))
+        noisy_ori = base_ori * np.random.normal(1, 0.01, size=(4,))
         base_vel = sim.get_base_velocity_local()
-        noisy_vel = base_vel * np.random.normal(1, 0.3, size=(6,))
+        noisy_vel = base_vel * np.random.normal(1, 0.01, size=(6,))
         grfs = sim.get_grfs_local_foot() + np.random.normal(6, 6, size=(4,))
     
         # --- Add to buffer and compute smoothed GRFs ---
         grf_buffer.append(grfs)
         if len(grf_buffer) > 20:
-            grf_buffer.pop(0)  # remove oldest if buffer > 5
+            grf_buffer.pop(0)  # remove oldest if buffer > 20
         smoothed_grfs = np.mean(grf_buffer, axis=0)
         
         normalized_grfs = smoothed_grfs / 30

@@ -164,8 +164,8 @@ class TASQSimulator:
         self.pressure_state = pressures
         #print(pressures)
         alpha = 0
-        alpha_up = 0.1
-        alpha_down = 0.03
+        alpha_up = 0.2
+        alpha_down = 0.02
         """
         Apply actuator pressures to the robot. Converts them to joint target positions/gains.
 

@@ -41,26 +41,68 @@ class BezierGaitPlanner:
         p2 = self.evaluate(t + dt)
         gradient = p2 - p1
         return gradient
-    
+
     def plot(self, duration=1.0, dt=0.01):
         time = np.arange(0, duration, dt)
         signals = np.array([self.evaluate(t) for t in time])
 
-        plt.figure(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(12, 8))
+        cmap = plt.get_cmap("tab20")
+        lines = []
+
         for i in range(self.num_channels):
-            plt.plot(time, signals[:, i], label=f'Channel {i}')
-            # Also show key points
+            color = cmap(i % 20)
+            # Main line
+            line, = ax.plot(time, signals[:, i], label=f'Channel {i}', color=color)
+            lines.append(line)
+
+            # Key points
             pts = self.points[i]
             if pts:
                 pt_times, pt_vals = zip(*pts)
-                plt.plot(pt_times, pt_vals, 'o', label=f'Points {i}')
-        plt.xlabel("Time (s)")
-        plt.ylabel("Value")
-        plt.title("Bezier Gait Planner")
-        plt.grid(True)
-        plt.legend(ncol=2)
+                pt_line, = ax.plot(pt_times, pt_vals, 'o', color=color, markersize=5, label=f'Points {i}')
+                lines.append(pt_line)
+
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Value")
+        ax.set_title("Bezier Gait Planner")
+        ax.grid(True)
+
+        # Legend
+        leg = ax.legend(ncol=2)
+
+        # Map legend entries to original lines
+        legend_map = {}
+        for legline, origline in zip(leg.legend_handles, lines):
+            legline.set_picker(5)  # 5 pts tolerance
+            legend_map[legline] = origline
+        # Also map the legend text so it's clickable too
+        for text, origline in zip(leg.get_texts(), lines):
+            text.set_picker(True)
+            legend_map[text] = origline
+
+        def on_pick(event):
+            leg_item = event.artist
+            if leg_item not in legend_map:
+                return
+            orig_line = legend_map[leg_item]
+            visible = not orig_line.get_visible()
+            orig_line.set_visible(visible)
+
+            # Fade legend entry
+            for k, v in legend_map.items():
+                if v is orig_line:
+                    if isinstance(k, plt.Text):
+                        k.set_alpha(1.0 if visible else 0.4)
+                    else:
+                        k.set_alpha(1.0 if visible else 0.2)
+
+            fig.canvas.draw()
+
+        fig.canvas.mpl_connect('pick_event', on_pick)
         plt.tight_layout()
         plt.show()
+
 
     def save_to_csv(self, filename="gait_data.csv", duration=1.0, dt=0.01):
         """
