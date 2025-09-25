@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 # Path to saved dataset
-dataset_dir = "rl/datasets/minimal_viable_v6"
+dataset_dir = "rl/datasets/minimal_viable_v7"
 
 # Load merged state data and episode lengths
 states = np.load(os.path.join(dataset_dir, "demo_states_merged.npy"))

@@ -29,7 +29,8 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal_pos and orientation
+    33:35,
+    35:39   # goal_pos and orientation
 ]
 
 # ---------------- Extended checkpoint callback ----------------

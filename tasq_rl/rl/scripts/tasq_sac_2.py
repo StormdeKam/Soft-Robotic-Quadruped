@@ -19,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 
-SAVE_PATH = "rl/models/tasq_sac/minimal_viable_v3/trial_2(9_17_2025)"
+SAVE_PATH = "rl/models/tasq_sac/minimal_viable_V7/trial_1(9_25_2025)"
 os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[
@@ -28,7 +28,8 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal_pos and orientation
+    33:35,  # phase
+    35:39   # goal_pos and orientation
 ]
 
 # Make initial actor LR tiny
@@ -86,13 +87,13 @@ class ActorCheckpointCallback(CheckpointCallback):
                 self.actor_save_path, f"test_run_{steps}_steps.mp4"
             )
             print(f"[Eval] Saving test video to {video_file}")
-            test_model_video_cv2(actor_file, device=self.device, steps=1500, video_path=video_file)
+            test_model_video_cv2(actor_file, device=self.device, steps=1400*2, video_path=video_file)
 
         return True
 
 # ---------------- Warm start callback ----------------
 class WarmStartSACCallback(BaseCallback):
-    def __init__(self, freeze_steps: int = 300_000, start_log_std: float = -6.0, end_log_std: float = -2.0, start_actor_lr: float = 1e-6, end_actor_lr: float = 3e-5, verbose: int = 0):
+    def __init__(self, freeze_steps: int = 500_000, start_log_std: float = -6.0, end_log_std: float = -2.0, start_actor_lr: float = 1e-6, end_actor_lr: float = 3e-5, verbose: int = 0):
         super().__init__(verbose)
         self.freeze_steps = freeze_steps
         self.start = start_log_std
@@ -240,7 +241,7 @@ if __name__ == "__main__":
     )
 
     # Load BC weights
-    bc_weights_path = "rl/models/tasq_bc/minimal_viable_V3/tasq_bc_ep150_20250913-044605.pt"
+    bc_weights_path = "rl/models/tasq_bc/minimal_viable_V7/tasq_bc_ep100.pt"
     
     if os.path.isfile(bc_weights_path):
         model.policy.load_bc_weights(bc_weights_path, device=model.device)
@@ -265,12 +266,12 @@ if __name__ == "__main__":
         #torch.nn.utils.clip_grad_norm_(model.policy.actor.parameters(), 0.5)
 
     # Callbacks
-    total_timesteps = 1_000_000  
+    total_timesteps = 10_000_000  
     log_interval = 10_000
     reward_logger = RewardLoggerCallback(log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
     checkpoint_callback = ActorCheckpointCallback(
-        save_freq=100_000 // n_envs,
+        save_freq=1_000_000 // n_envs,
         save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,
@@ -281,12 +282,12 @@ if __name__ == "__main__":
         verbose=1,
     )
 
-    warm_start_callback = WarmStartSACCallback(freeze_steps=300_000, verbose=1)
+    warm_start_callback = WarmStartSACCallback(freeze_steps=500_000, verbose=1)
     callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, warm_start_callback])
     
     # ---------- Seed Replay Buffer with BC Demos ----------
-    states_path = "rl/datasets/minimal_viable3/demo_states_merged.npy"
-    actions_path = "rl/datasets/minimal_viable3/demo_actions_merged.npy"
+    states_path = "rl/datasets/minimal_viable_v7/demo_states_merged.npy"
+    actions_path = "rl/datasets/minimal_viable_v7/demo_actions_merged.npy"
     frame_stack = getattr(env, "frame_stack", 4)  # match TASQEnv setting
 
     if os.path.isfile(states_path) and os.path.isfile(actions_path):

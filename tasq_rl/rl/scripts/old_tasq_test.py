@@ -108,14 +108,16 @@ def test_model(model_path, env, device):
     state_buffer = []
     suction_states = np.array([0, 100, 100, 100], dtype=np.float32)
     pressures = np.ones((4, 3)) * 10
-    steps = 2100
+    steps = 1400*2
 
-    control_frequency = 1./24.
-    pybullet_frequency = 1./240.
-    steps_per_step = int(control_frequency / pybullet_frequency)
+    control_frequency = 24.
+    control_period = 1.0 / control_frequency
     log_states = []
     log_actions = []
+    start_time = time.time()
+
     for step in range(steps):
+        step_start = time.time()
         state = get_env_observation(env)
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
         log_states.append(stacked_state.flatten().tolist())
@@ -135,6 +137,16 @@ def test_model(model_path, env, device):
         env.apply_pressures(pressures)
         env.apply_suction(suction_states)
         env.step()
+
+        elapsed = time.time() - step_start
+        sleep_time = control_period - elapsed
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"Simulation ran for {steps} control steps in {duration:.2f} seconds.")
+    print(f"Achieved control frequency: {steps/duration:.2f} Hz")
 
     env.disconnect()
     with open("rl/log/tasq_state_log.csv", "w", newline="") as f:

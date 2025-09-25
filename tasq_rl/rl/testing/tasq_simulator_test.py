@@ -9,7 +9,7 @@ parser.add_argument("--no_links", type=str, choices=["5","6","7"], required=True
 args = parser.parse_args()
 
 no_links = int(args.no_links)
-gait_length = 1300*5
+gait_length = 1400*2
 
 urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
 
@@ -22,7 +22,7 @@ if args.gait == "straight_bezier":
     #demogait.plot()
     sim = TASQSimulator(urdf_dict[no_links], gui=True, no_links = no_links)
     sim.reset_simulation()
-    sim.run(steps=3*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+    sim.run(steps=10*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
 
 elif args.gait == "straightv3":
     from rl.gaits.old.demo_gait_straight_v3 import gait_pressures, gait_suction
@@ -34,7 +34,7 @@ elif args.gait == "straight":
     from rl.gaits.old.demo_gait_straight import demo_pressures, demo_suction
     sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     sim.reset_simulation()
-    sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+    sim.run(steps=100, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
 
 elif args.gait == "rotation":
     from rl.gaits.old.demo_gait_rotation import demo_pressures_rot as demo_pressures

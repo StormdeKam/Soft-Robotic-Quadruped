@@ -10,14 +10,14 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V6/real_dataset"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V7"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 3e-4
-EPOCHS = 150
+EPOCHS = 100
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,12 +32,14 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal_pos and orientation
+    33:35,  # phase signal
+    35:39   # goal_pos and orientation
+
 ]
 
 dataset = StackedDataset(
-    "rl/datasets/minimal_viable_v6/real_datasets/0.5xspeed/real_states_merged.npy",
-    "rl/datasets/minimal_viable_v6/real_datasets/0.5xspeed/real_actions_merged.npy",
+    "rl/datasets/minimal_viable_v7/demo_states_merged.npy",
+    "rl/datasets/minimal_viable_v7/demo_actions_merged.npy",
     N=4,
     observed_indices=OBSERVED_INDICES
 )

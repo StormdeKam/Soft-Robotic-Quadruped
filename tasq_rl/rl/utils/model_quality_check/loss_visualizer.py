@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import csv
 
 # File path to the log data
-loss_data_file = "rl/models/tasq_bc/minimal_viable_V4/tasq_bc_log.txt"
+loss_data_file = "rl/models/tasq_bc/minimal_viable_V7/tasq_bc_log.txt"
 
 # Read data from file
 epochs = []

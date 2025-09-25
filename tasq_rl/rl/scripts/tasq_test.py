@@ -54,10 +54,6 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
     final_x_positions = []
     mse_y_deviations = []
     failures = 0
-
-    #control_frequency = 1./24.
-    #pybullet_frequency = 1./240.
-    #steps_per_step = int(control_frequency / pybullet_frequency)
     
     no_links_list = [5, 6, 7]
     urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
@@ -91,10 +87,9 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
 
             d_pressures, d_suctions = action_to_pressures_and_suction(action)
 
-            #for _ in range(steps_per_step):
-            pressures += d_pressures# / steps_per_step
+            pressures += d_pressures
             pressures = np.clip(pressures, 0, 400)
-            suction_states += d_suctions# / steps_per_step
+            suction_states += d_suctions
             suction_states = np.clip(suction_states, 0, 100)
 
             env.apply_pressures(pressures)

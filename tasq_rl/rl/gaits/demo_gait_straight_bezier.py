@@ -4,7 +4,7 @@ import numpy as np
 class DemoGaitStraight:
     def __init__(self):
         self.num_channels = 16
-        self.speed_increase = .2  # Speed increase factor
+        self.speed_increase = .5  # Speed increase factor
         self.gait_length = int(1400/self.speed_increase) #steps
         self.dt = 1/(self.speed_increase*240.0) #s #artificial dt to increase or decrease number of steps in the gait 
         self.planner = BezierGaitPlanner(self.num_channels)
@@ -145,7 +145,7 @@ class DemoGaitStraight:
         self.sine([3,4,5,9,10,11], 390, -380/2, 1300, 100, -np.pi/2, np.pi, 20)
 
         #t=1400/t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
-        """
+  """      
         
         #suctions:
         self.flat_line([12],0,290,0)
@@ -280,8 +280,126 @@ class DemoGaitStraight:
         self.sine([11], 105, -95/2, t, 100, -np.pi/2, np.pi, 20)  
         t+=100
         #t=1300/t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
-    #"""
-    
+
+    """
+#upside down gait
+        #suctions:
+        self.flat_line([12],0,290,0)
+        self.flat_line([13,14,15], 0, 290, 100)
+
+        self.sine([12], 0, 50, 290, 20, -np.pi/2, np.pi, 40)
+        self.sine([14], 100, -50, 290, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([13,15],290,20,100)
+        self.flat_line([14],310,280,0)
+        self.flat_line([12,13,15], 310, 280, 100)
+
+        self.sine([14], 0, 50, 590, 20, -np.pi/2, np.pi, 40)
+        self.sine([13], 100, -50, 590, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([12,15],590, 20,100)
+        self.flat_line([13],610,280,0)
+        self.flat_line([12,14,15], 610, 280, 100)
+
+        self.sine([13], 0, 50, 890, 20, -np.pi/2, np.pi, 40)
+        self.sine([15], 100, -50, 890, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([12,14],890,20,100)
+        self.flat_line([15],910,280,0)
+        self.flat_line([12,13,14], 910, 280, 100)        
+
+        self.sine([15], 0, 50, 1190, 20, -np.pi/2, np.pi, 40)
+        self.sine([12], 100, -50,1190, 20, -np.pi/2, np.pi, 40)
+        self.flat_line([13,14],1190,20,100)
+        self.flat_line([12],1210,90,0)
+        self.flat_line([13,14,15], 1210, 90, 100)
+
+        #step 1
+        t=0
+        #t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.single_point([0,1,2,3,4,5,6,7,8,9,10,11], t, 10)
+        self.flat_line([0,1,2,3,4,5,6,7,8,9,10,11], t, 100, 10)
+        t+=100
+
+        #t=100 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([0,3,4,5,6,7,8,9,10,11], t, 100, 10)
+        self.sine([1],10, 55/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([2],10, 210/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=200 [10,65,220,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([3,4,5,9,10,11], t, 100, 10)
+        self.sine([0],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([1],65, 335/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([2],220, 180/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([6,7,8],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100 
+
+        #t=300 [400,400,400,  10,10,10,  400,400,400,  10,10,10]
+        self.flat_line([3,4,5,9,10,11], t, 100, 10)
+        self.sine([0,1,2,6,7,8],400, -390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #step2
+        #t=400 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([0,1,2,3,4,5,8,9,10,11], t, 100, 10)
+        self.sine([6],10, 245/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([7],10, 185/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100  
+
+        #t=500 [10,10,10,  10,10,10,  255,195,10,  10,10,10]
+        self.flat_line([3,4,5,9,10,11], t, 100, 10)
+        self.sine([6],255, 145/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([7],195, 205/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([8],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([0,1,2],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100  
+
+        #t=600 [400,400,400,  10,10,10,  400,400,400,  10,10,10]
+        self.flat_line([3,4,5,9,10,11], t, 100, 10)
+        self.sine([0,1,2,6,7,8],400, -390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #step3
+        #t=700 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([0,1,2,3,6,7,8,9,10,11], t, 100, 10)
+        self.sine([4],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([5],10, 110/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=800 [10,10,10,  10,400,120,  10,10,10,  10,10,10]
+        self.flat_line([0,1,2,6,7,8], t, 100, 10)
+        self.flat_line([4], t, 100, 400)
+        self.sine([3],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([5],120, 280/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([9,10,11],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=900 [10,10,10,  400,400,400,  10,10,10,  400,400,400,]
+        self.flat_line([0,1,2,6,7,8], t, 100, 10)
+        self.sine([3,4,5,9,10,11], 400, -390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #step4
+        #t=1000 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([0,1,2,3,4,5,6,7,8,10], t, 100, 10)
+        self.sine([9],10, 310/2, t, 100, -np.pi/2, np.pi, 20)        
+        self.sine([11],10, 225/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=1100 [10,10,10  10,10,10,  10,10,10,  320,10,235]
+        self.flat_line([0,1,2,6,7,8], t, 100, 10)
+        self.sine([9],320, 80/2, t, 100, -np.pi/2, np.pi, 20)   
+        self.sine([10],10, 390/2, t, 100, -np.pi/2, np.pi, 20)     
+        self.sine([11],235, 165/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([3,4,5],10, 390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=1200 [10,10,10  400,400,400,  10,10,10,  400,400,400]
+        self.flat_line([0,1,2,6,7,8], t, 100, 10) 
+        self.sine([3,4,5,9,10,11],400, -390/2, t, 100, -np.pi/2, np.pi, 20)
+        t+=100
+
+        #t=1300/t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
+        self.flat_line([0,1,2,3,4,5,6,7,8,9,10,11], t, 100, 10)
+"""
     def demo_pressures(self, step, mode=0):
         gait_cycle = step // self.gait_length
         rel_step = step % self.gait_length
@@ -299,7 +417,7 @@ class DemoGaitStraight:
         # Plot the full curves
         self.planner.plot(duration=1400/(self.speed_increase*240.0), dt=1/240.0)
 
-    def save_to_csv(self, filename="minimal_viable_V5_gait.csv"):
+    def save_to_csv(self, filename="minimal_viable_V7_gait.csv"):
         self.planner.save_to_csv(filename=filename, duration=1400/(self.speed_increase*240.0), dt=1/240.0)
 
 if __name__ == "__main__":

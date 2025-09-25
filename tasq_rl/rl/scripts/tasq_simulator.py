@@ -22,13 +22,14 @@ class TASQSimulator:
         self.physics_client = p.connect(p.GUI if gui else p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
+
         #change background color to black
         p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
         self.randomization = True
@@ -86,6 +87,7 @@ class TASQSimulator:
             self._randomize_link_masses(mass_range=(0.9, 1.1))  # ±10% mass
             self.joint_randomizer_values = np.random.normal(1, 0.001, size=(6,))
             self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
+            self.hysteresis_randomization = np.random.normal(1, 0.1, size=(2,))
         else:
             self.joint_randomizer_values = np.ones((6,))
             self.suction_randomization = 1.0
@@ -93,8 +95,9 @@ class TASQSimulator:
         self.position_gain = 1.2
         self.velocity_gain = 1.0
         self.max_force = 500
+        self.max_vel=100
 
-        excluded_names = {"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
+        excluded_names = {}#"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
         
         for joint_index in range(self.num_joints):
             joint_info = p.getJointInfo(self.robot_id, joint_index)
@@ -131,7 +134,8 @@ class TASQSimulator:
                 targetPosition=0.0,
                 positionGain=self.position_gain,
                 velocityGain=self.velocity_gain,
-                force=self.max_force
+                force=self.max_force,
+                maxVelocity=self.max_vel
             )
 
         # Foot link indices
@@ -203,21 +207,21 @@ class TASQSimulator:
                 self.logger.warning(f"Pressure in leg  {leg_index +1} exceeding max_pressure of {max_pressure} mBar")
 
             if target_pos_x > self.last_targets[leg_index,0]:
-                alpha = alpha_up
+                alpha = alpha_up*self.hysteresis_randomization[0]
             else:
-                alpha = alpha_down
+                alpha = alpha_down*self.hysteresis_randomization[1]
             thx = self.last_targets[leg_index,0] + alpha * (target_pos_x - self.last_targets[leg_index,0])
 
             if target_pos_y > self.last_targets[leg_index,1]:
-                alpha = alpha_up
+                alpha = alpha_up*self.hysteresis_randomization[0]
             else:
-                alpha = alpha_down
+                alpha = alpha_down*self.hysteresis_randomization[1]
             thy = self.last_targets[leg_index,1] + alpha * (target_pos_y - self.last_targets[leg_index,1])
 
             if target_pos_z > self.last_targets[leg_index,2]:
-                alpha = alpha_up
+                alpha = alpha_up*self.hysteresis_randomization[0]
             else:
-                alpha = alpha_down
+                alpha = alpha_down*self.hysteresis_randomization[1]
             thz = self.last_targets[leg_index,2] + alpha * (target_pos_z - self.last_targets[leg_index,2])
                                                             
                 #print(f"Leg {leg_index}, Joint {joint_index}: {joint_name}")
@@ -238,13 +242,15 @@ class TASQSimulator:
                     targetPosition=target,
                     positionGain=pg,
                     velocityGain=vg,
-                    force=self.max_force
+                    force=self.max_force,
+                    maxVelocity=self.max_vel
                 )
                 #print(f"[REVOLUTE] Joint {joint_index} -> Target: {target:.3f}, PG: {pg:.2f}, VG: {vg:.2f}")
             # Apply to this leg's prismatic joints
             #total_pos_z = 0
             #total_target_pos_z = 0
             cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
+            #print(cup_link_idx)
             for j in range(prismatics_per_leg):
                 joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
                 if joint_index not in cup_link_idx:                
@@ -258,7 +264,8 @@ class TASQSimulator:
                         targetPosition=thz,
                         positionGain=pos_gain_z,
                         velocityGain=vel_gain_z,
-                        force=self.max_force
+                        force=self.max_force,
+                        maxVelocity=self.max_vel
                     )
             self.last_targets[leg_index,0] = thx
             self.last_targets[leg_index,1] = thy
@@ -280,6 +287,7 @@ class TASQSimulator:
         for leg in range(4):
             suction_state = suction_states[leg]
             cup_joint_idx = leg * (self.no_links * 4 + 2) + self.no_links * 4 + 1  
+            #print("cup joint index = ", cup_joint_idx)
  
             target_extension = -(suction_state / 100.0) * suction_extension
             p.setJointMotorControl2(
@@ -291,6 +299,11 @@ class TASQSimulator:
                 velocityGain=suction_vel_gain,
                 force=self.max_force
             )
+            # print extension
+            current_extension = p.getJointState(self.robot_id, cup_joint_idx)[0]
+            #print("target extension leg ", leg, " = ", target_extension, "current extension =", current_extension)
+            # print max force for debugging
+            
 
             # --- 2) Orientation & contact check ---
             pos_cup, orient_cup = p.getLinkState(self.robot_id, cup_joint_idx)[0:2]
@@ -306,7 +319,7 @@ class TASQSimulator:
             distance = abs(dz)
 
             engaged = (
-                distance < 0.02             # within 2 cm
+                distance < 0.02            # within 2 cm
                 and alignment > angle_threshold  # close to vertical
                 and suction_state > 10      # nonzero suction
             )
@@ -354,45 +367,39 @@ class TASQSimulator:
             time.sleep(1. / 240.)
                 
     def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
-        pressures = np.ones((4, 3))*10
-        suction_states = np.array([0,100,100,100],dtype=np.float64)  # Initialize suction states
-        control_frequency = 1./24.
-        pybullet_frequency = 1./240.
-        steps_per_step = int(control_frequency / pybullet_frequency)
-        #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "./tasq_rl/videos/simulation_record.mp4")
-        start_time = time.time()
+        control_hz=24
+        pressures = np.ones((4, 3)) * 10
+        suction_states = np.array([0, 100, 100, 100], dtype=np.float64)
         
-        for step in range(steps):
-            #print(pressures)
-            #self.get_grfs_local_foot()
-            #print(pressures)
-            #print(suction_states)  
-            #print(self.get_grfs_local_foot())   
-            #orientation = self.get_base_orientation()
-            #print("orientation = ", orientation)
-            pressures += pressure_callback(step,mode)
-            self.apply_pressures(pressures)
-            suction_states += suction_callback(step, mode)
-            self.apply_suction(suction_states)    
-            #print("dpressures=",pressure_callback(step,mode))
-            #print("dsuctions=",suction_callback(step,mode))
-            self.step()
-            """
-            for i in range(steps_per_step): 
-                if pressure_callback:
-                    pressures += pressure_callback(step,mode)/steps_per_step
-                    self.apply_pressures(pressures)
+        control_period = 1.0 / control_hz
 
-                if suction_callback:
-                    suction_states += suction_callback(step, mode)/steps_per_step
-                    self.apply_suction(suction_states)            
-                self.step()
-            """
+        start_time = time.time()
+
+        for step in range(steps):
+            step_start = time.time()
+
+            # --- callbacks update pressures and suctions
+            if pressure_callback:
+                pressures += pressure_callback(step, mode)
+            self.apply_pressures(pressures)
+
+            if suction_callback:
+                suction_states += suction_callback(step, mode)
+            self.apply_suction(suction_states)
+            # --- run multiple physics substeps per control cycle
+            self.step()
+
+            # --- enforce real-time control frequency
+            if self.gui:
+                elapsed = time.time() - step_start
+                sleep_time = control_period - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
         end_time = time.time()
-        time_difference = end_time - start_time
-        print(f"Simulation ran for {steps} steps in {time_difference:.2f} seconds.")
-        real_control_freq = 1/(time_difference/steps)
-        print(f"Real control frequency: {real_control_freq:.2f} Hz")
+        duration = end_time - start_time
+        print(f"Simulation ran for {steps} control steps in {duration:.2f} seconds.")
+        print(f"Achieved control frequency: {steps/duration:.2f} Hz")
 
     def get_pressure_state(self):
         return self.pressure_state
@@ -448,8 +455,10 @@ class TASQSimulator:
         _, ori = p.getBasePositionAndOrientation(self.robot_id)
         rotation_matrix = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
-        lin_vel_body = np.dot(rotation_matrix.T, np.array(lin_vel))
-        ang_vel_body = np.dot(rotation_matrix.T, np.array(ang_vel))
+        lin_vel = np.array(lin_vel)/10 #to account for difference in pybullet and control frequency
+        ang_vel = np.array(ang_vel)/10 #to account for difference in pybullet and control frequency
+        lin_vel_body = np.dot(rotation_matrix.T, lin_vel)
+        ang_vel_body = np.dot(rotation_matrix.T, ang_vel)
         return np.concatenate([lin_vel_body, ang_vel_body])
     
     def get_grfs(self):

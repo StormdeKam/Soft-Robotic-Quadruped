@@ -6,6 +6,7 @@ from rl.scripts.tasq_simulator import TASQSimulator  # Adjust this import path a
 from collections import deque
 import torch
 import torch.nn.functional as F
+import time
 
 OBSERVED_INDICES = np.r_[
     3:7,    # base orientation
@@ -13,7 +14,8 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal_pos and orientation
+    33:37,  # phase
+    37:39   # goal_pos and orientation
 ]
 
 class TASQEnv(gym.Env):
@@ -24,6 +26,8 @@ class TASQEnv(gym.Env):
         self.sim = TASQSimulator(self.urdf_path, gui=gui, no_links=self.no_links, render_mode=render_mode)
         self.max_steps = 3500
         self.step_count = 0
+        self.previous_step_time = time.time()
+        self.gait_length = 1400*2
 
         # --- Frame stacking ---
         self.frame_stack = frame_stack
@@ -52,6 +56,7 @@ class TASQEnv(gym.Env):
         self.target_height = 0.12  # Set a target height for the robot
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
         self.grf_buffer = []
+        self.grf_randomizer = np.random.normal(0, 6, size=(4,))
         self._np_random = None
         self.seed()  # initialize RNG
 
@@ -81,7 +86,7 @@ class TASQEnv(gym.Env):
         state = self._get_state()
         # Select only the observed indices
         obs = state[OBSERVED_INDICES].astype(np.float32)
-        obs[0:7] *= np.random.normal(1, 0.01, size=(7,))  # Add noise to orientation and velocity       
+        obs[0:7] *= np.random.normal(1, 0.02, size=(7,))  # Add noise to orientation and velocity       
 
         return obs
     
@@ -91,13 +96,15 @@ class TASQEnv(gym.Env):
         base_vel = self.sim.get_base_velocity_local()   
         normalized_pressures = (self.pressures / 400).flatten()
         normalized_suction = self.suction_states/100
-        grfs = self.sim.get_grfs_local_foot() + np.random.normal(6, 6, size=(4,))     
+        grfs = self.sim.get_grfs_local_foot() + self.grf_randomizer     
         # --- Add to buffer and compute smoothed GRFs ---
         self.grf_buffer.append(grfs)
-        if len(self.grf_buffer) > 20:
-            self.grf_buffer.pop(0)  # remove oldest if buffer > 20
+        if len(self.grf_buffer) > 5:
+            self.grf_buffer.pop(0)  # remove oldest if buffer > 5
         smoothed_grfs = np.mean(self.grf_buffer, axis=0)
         normalized_grfs = smoothed_grfs / 30
+        raw_phase = ((self.step_count % self.gait_length) / self.gait_length) * 2 * np.pi
+        phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
 
         # Combine all into one observation array
         obs = np.concatenate([
@@ -107,6 +114,7 @@ class TASQEnv(gym.Env):
             normalized_pressures,   # shape (12,)
             normalized_suction,     # shape (4,)
             normalized_grfs,        # shape (4,)
+            phase,                  # shape (2,)
             self.goal_pos,          # shape (2,)
             self.goal_ori           # shape (2,)
         ]).astype(np.float32)
@@ -123,11 +131,10 @@ class TASQEnv(gym.Env):
         self.obs_buffer.append(obs)
         stacked_obs = np.concatenate(self.obs_buffer)
 
-        #control_frequency = 1./24.
-        #pybullet_frequency = 1./240.
-        #steps_per_step = int(control_frequency / pybullet_frequency)
+        control_frequency = 24 #Hz
+        control_period = 1.0/control_frequency
 
-        #for i in range(steps_per_step):
+
         # Apply pressure deltas
         self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
         self.suction_states = np.clip(self.suction_states + d_suctions, 0, 100)
@@ -170,7 +177,6 @@ class TASQEnv(gym.Env):
         w_orient = 2.0
         w_pressure_smoothness = 0.00001
         w_suction_smoothness = 0.0001
-        #w_gait_length
 
         reward_terms = {
             "alive": alive * w_alive,
@@ -190,6 +196,7 @@ class TASQEnv(gym.Env):
         truncated = self.step_count >= self.max_steps or current_height < 0.06
 
         self.step_count += 1
+
         return stacked_obs, reward, terminated, truncated, {"reward_terms": reward_terms}
 
     def render(self):
