@@ -82,18 +82,6 @@ class TASQSimulator:
         self.last_targets = np.zeros((4,3)) *10 
         self.control_freq = 24 #Hz
 
-        self.pressure_delay_steps = 1#int(self.control_freq * 0.05)  # e.g. 50 ms delay
-        self.prev_pressures = np.ones((4,3)) *10 
-        self.delay_buffers = [
-            {
-                "x": [0.0] * self.pressure_delay_steps,
-                "y": [0.0] * self.pressure_delay_steps,
-                "z": [0.0] * self.pressure_delay_steps,
-            }
-            for _ in range(4)
-        ]
-
-
         self.num_joints = p.getNumJoints(self.robot_id)
         # Domain randomization:
         if self.randomization:
@@ -115,16 +103,6 @@ class TASQSimulator:
         excluded_names = {"j1_ps", "j2_ps", "j3_ps", "j4_ps"}
         
         for joint_index in range(self.num_joints):
-            p.setJointMotorControl2(
-                bodyIndex=self.robot_id,
-                jointIndex=joint_index,
-                controlMode=p.POSITION_CONTROL,
-                targetPosition=0.0,
-                positionGain=self.position_gain,
-                velocityGain=self.velocity_gain,
-                force=self.max_force,
-                maxVelocity=self.max_lin_vel
-            )
             joint_info = p.getJointInfo(self.robot_id, joint_index)
             joint_name = joint_info[1].decode()
             joint_type = joint_info[2]
@@ -152,7 +130,7 @@ class TASQSimulator:
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             
         self.controlled_joints = self.revolute_joints + self.prismatic_joints
-
+        """
         for joint_index in self.controlled_joints:
             p.setJointMotorControl2(
                 bodyIndex=self.robot_id,
@@ -164,7 +142,7 @@ class TASQSimulator:
                 force=self.max_force,
                 #maxVelocity=self.max_lin_vel
             )
-
+        """
         # Foot link indices
         self.foot_link_indices = np.zeros(4)
         for leg_idx in range(4):
@@ -190,7 +168,7 @@ class TASQSimulator:
 
             scale = np.random.uniform(*mass_range)
             p.changeDynamics(self.robot_id, joint_index, mass=2* mass * scale)
-    """
+    
     def apply_pressures(self, pressures, pressure_gradients=np.ones((4,3))):
         self.pressure_state = pressures
         alpha = 0
@@ -307,15 +285,15 @@ class TASQSimulator:
 
         self.prev_pressures = self.pressure_state
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
+    
     """
-
     def apply_pressures(self, pressures, pressure_gradients=np.ones((4,3))):
         self.pressure_state = pressures
-        alpha = 0
-        alpha_up = 1 * self.hysteresis_randomization[0]
-        alpha_up_z = 1* self.hysteresis_randomization[1]
-        alpha_down = 0.3* self.hysteresis_randomization[2]
-        alpha_down_z = 0.3* self.hysteresis_randomization[3]
+
+        kp_th =0.1
+        kd_th = 0.003
+        kp_z = 10000
+        kd_z = 0.1
 
         max_pressure = 400  # mBar
 
@@ -326,106 +304,54 @@ class TASQSimulator:
         revolutes_per_leg = len(self.revolute_joints) // 4
         prismatics_per_leg = len(self.prismatic_joints) // 4
 
-        for leg_index, leg_pressures in enumerate(self.prev_pressures):
+        for leg_index, leg_pressures in enumerate(pressures):
 
             if leg_pressures.all() <= 400:
-                target_pos_x, target_pos_y, target_pos_z, \
-                pos_gain_x, vel_gain_x, \
-                pos_gain_y, vel_gain_y, \
-                pos_gain_z, vel_gain_z = pneu2posandgains(leg_pressures, self.no_links)
-
-                target_pos_x *= self.joint_randomizer_values[0]
-                target_pos_y *= self.joint_randomizer_values[0]
-                target_pos_z *= self.joint_randomizer_values[1]
-                pos_gain_x *= self.joint_randomizer_values[2]
-                vel_gain_x *= self.joint_randomizer_values[3]
-                pos_gain_y *= self.joint_randomizer_values[2]
-                vel_gain_y *= self.joint_randomizer_values[3]
-                pos_gain_z *= self.joint_randomizer_values[4]
-                vel_gain_z *= self.joint_randomizer_values[5]
-                #print(f"leg {leg_index}:raw targets= {target_pos_x, target_pos_y, target_pos_z}")
+                Tx, Ty, F = pneu2posandgains(leg_pressures, self.no_links)
 
             else:
                 self.logger.warning(f"Pressure in leg {leg_index+1} exceeding max_pressure of {max_pressure} mBar")
-
-            # -------------------------
-            # First-order filtering
-            # -------------------------
-            if np.abs(target_pos_x) > np.abs(self.last_targets[leg_index,0]):
-                alpha = alpha_up
-            else:
-                alpha = alpha_down
-            filtered_x = self.last_targets[leg_index,0] + alpha * (target_pos_x - self.last_targets[leg_index,0])
-
-            if np.abs(target_pos_y) > np.abs(self.last_targets[leg_index,1]):
-                alpha = alpha_up
-            else:
-                alpha = alpha_down
-            filtered_y = self.last_targets[leg_index,1] + alpha * (target_pos_y - self.last_targets[leg_index,1])
-
-            if target_pos_z < self.last_targets[leg_index,2]:
-                alpha = alpha_up_z
-            else:
-                alpha = alpha_down_z
-            filtered_z = self.last_targets[leg_index,2] + alpha * (target_pos_z - self.last_targets[leg_index,2])
-
-            # -------------------------
-            # Apply constant delay (FIFO buffer)
-            # -------------------------
-            
-            #buf = self.delay_buffers[leg_index]
-            #buf["x"].append(filtered_x); filtered_x = buf["x"].pop(0)
-            #buf["y"].append(filtered_y); filtered_y = buf["y"].pop(0)
-            #buf["z"].append(filtered_z); filtered_z = buf["z"].pop(0)
 
             # -------------------------
             # Apply to joints
             # -------------------------
             for j in range(revolutes_per_leg-2):
                 joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
-
-                if j % 2 == 0:
-                    target, pg, vg = filtered_x, pos_gain_x, vel_gain_x
-                else:
-                    target, pg, vg = filtered_y, pos_gain_y, vel_gain_y
-
-                p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=joint_index,
-                    controlMode=p.POSITION_CONTROL,
-                    targetPosition=target,
-                    positionGain=pg,
-                    velocityGain=vg,
-                    force=self.max_force,
-                    #maxVelocity=self.max_ang_vel
-                )
-
-            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
-            for j in range(prismatics_per_leg):
-                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
-                if joint_index not in cup_link_idx:
-                    p.setJointMotorControl2(
-                        bodyIndex=self.robot_id,
-                        jointIndex=joint_index,
-                        controlMode=p.POSITION_CONTROL,
-                        targetPosition=filtered_z,
-                        positionGain=pos_gain_z,
-                        velocityGain=vel_gain_z,
-                        force=self.max_force,
-                        #maxVelocity=self.max_lin_vel
-                    )
-
-            # Save last applied (delayed) targets
-            self.last_targets[leg_index,0] = filtered_x
-            self.last_targets[leg_index,1] = filtered_y
-            self.last_targets[leg_index,2] = filtered_z
-
-                # Print commanded vs real joint angle
-        # -------------------------
-
-        self.prev_pressures = self.pressure_state
-        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
+                # PD control
+                joint_state = p.getJointState(self.robot_id, joint_index)
+                pos = joint_state[0]
+                vel = joint_state[1]
                 
+                if j % 2 == 0:
+                    torque = kp_th * (0 - pos) - kd_th* vel + Tx*500
+                else:
+                    torque = kp_th * (0 - pos) - kd_th* vel + Ty*500
+
+                p.setJointMotorControl2(
+                    bodyIndex=self.robot_id,
+                    jointIndex=joint_index,
+                    controlMode=p.TORQUE_CONTROL,
+                    force=torque
+                )
+
+            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
+            for j in range(prismatics_per_leg):
+                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
+                if joint_index not in cup_link_idx:
+                    joint_state = p.getJointState(self.robot_id, joint_index)
+                    pos = joint_state[0]
+                    vel = joint_state[1]
+                    force = kp_z * (0 - pos) - kd_z * vel + F*10000
+                    #print(pos)
+                    p.setJointMotorControl2(
+                        bodyIndex=self.robot_id,
+                        jointIndex=joint_index,
+                        controlMode=p.TORQUE_CONTROL,
+                        force=force
+                    )
+
+        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
+    """            
     def apply_suction(self, suction_states, force_magnitude=10.0):
         #print(suction_states>50)
         """

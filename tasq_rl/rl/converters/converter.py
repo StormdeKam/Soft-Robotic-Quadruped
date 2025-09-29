@@ -121,10 +121,12 @@ def pneu2posandgains(pressures, no_links):
     print(f"{'Z':<5} | {dz:12.8f}")
     print()
     """
-
+    return (T[0], T[1], F[2])
+"""
     return (
         thx, thy, dz,
         kp_thx_n, kd_thx_n,
         kp_thy_n, kd_thy_n,
         kp_dz_n, kd_dz_n
     )
+    """
