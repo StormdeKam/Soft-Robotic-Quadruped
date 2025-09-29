@@ -5,13 +5,24 @@ theta = np.pi/6 # positioning angle for hall sensors in rad
 hs_radius = 0.0065 # positioning radius for hall sensors in m
 
 def pneu2posandgains(pressures, no_links):
-
+    """
     k1 = 0.0003 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
     k2 = 0.0000005 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
     kp__th_1 = 0.08# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
     kd__th_1 = 0.1# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
     kp__dz_1 = 0.15# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
     kd__dz_1 = 0.1#velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
+    c1 = 2 # constant to map torque to change in position gain for revolute joints
+    c2 = 1 # constant to map torque to change in velocity gain for revolute joints
+    c3 = 2 # constant to map force to change in position gain for prismatic joints
+    c4 = 1 # constant to map force to change in velocity gain for prismatic joints
+    """
+    k1 = 0.000026 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
+    k2 = 0.00000022 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+    kp__th_1 = 0.08# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
+    kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
+    kp__dz_1 = 0.15# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)
+    kd__dz_1 = 0.2# velocity gain for prismatic z joints when no pressure is applied (physical interpretation: axial damping)
     c1 = 2 # constant to map torque to change in position gain for revolute joints
     c2 = 1 # constant to map torque to change in velocity gain for revolute joints
     c3 = 2 # constant to map force to change in position gain for prismatic joints
@@ -87,6 +98,18 @@ def pneu2posandgains(pressures, no_links):
     thx = T[0]/(kp_thx_n * deg2rad)
     thy = T[1]/(kp_thy_n * deg2rad)
     dz = -F[2]/kp_dz_n
+    
+    thx = 0
+    thy = 0
+    dz = 0
+    
+    kp_thx_n = 0.01
+    kd_thx_n = 2
+    kp_thy_n = 0.01
+    kd_thy_n = 2
+    kp_dz_n = 0.1
+    kd_dz_n = 1.8
+    
 
     
     """

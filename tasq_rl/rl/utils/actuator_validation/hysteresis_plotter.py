@@ -6,19 +6,19 @@ import pybullet as p
 # -------------------------
 # PARAMETERS
 # -------------------------
-URDF_PATH = "rl/urdfs/TASQ_n5.urdf"
+URDF_PATH = "rl/urdfs/TASQ_n7.urdf"
 
 CSV_PATH = "rl/datasets/actuator_validation/hysteresis_data.csv"
 
 TEST_LEG = 0
 NO_LINKS = 3
 CONTROL_FREQ = 240
-STEPS = 100
+STEPS = 10
 MAX_PRESSURE = 400
 DT = 1.0 / CONTROL_FREQ
 HOLD_ZERO_STEPS = 100
 STABILIZE_STEPS = 200
-NUM_RUNS = 10
+NUM_RUNS = 1
 
 # -------------------------
 # HELPER FUNCTION
@@ -46,7 +46,7 @@ plt.grid(True)
 # SIMULATION RUNS
 # -------------------------
 for run in range(NUM_RUNS):
-    sim = TASQSimulator(URDF_PATH, gui=False, no_links=NO_LINKS)
+    sim = TASQSimulator(URDF_PATH, gui=True, no_links=NO_LINKS)
 
     sim.reset_simulation()
     p.resetBasePositionAndOrientation(sim.robot_id, [0,0,0.3], [0,0,0,1])
@@ -75,7 +75,7 @@ for run in range(NUM_RUNS):
         z_positions.append(pos[2])
         pressures_record.append(p_val)
 
-    pressure_ramp_down = ramp_pressures(MAX_PRESSURE, 0, STEPS)
+    pressure_ramp_down = ramp_pressures(MAX_PRESSURE-40, 0, STEPS-1)
     for p_val in pressure_ramp_down:
         pressures = np.zeros((4,3))
         pressures[TEST_LEG,:] = p_val
@@ -113,7 +113,7 @@ for run in range(NUM_RUNS):
         x_positions.append(pos[0])
         pressures_record.append(p_val)
 
-    pressure_ramp_down = ramp_pressures(MAX_PRESSURE, 0, STEPS)
+    pressure_ramp_down = ramp_pressures(MAX_PRESSURE-40, 0, STEPS-1)
     for p_val in pressure_ramp_down:
         pressures = np.zeros((4,3))
         pressures[TEST_LEG,0] = p_val
