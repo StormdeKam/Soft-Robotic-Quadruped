@@ -187,6 +187,7 @@ def demo_pressures(step, mode):
         d_pressures[l3,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*150
         d_pressures[l4,:]=-(np.pi*dn*np.sin(np.pi*rel_rel_step*dn))*0.5*360
         #[0,0,0,  0,0,0,    0,0,0,    0,0,0]
+    d_pressures = np.zeros((4,3))
     return d_pressures
 """ 
     return d_pressures

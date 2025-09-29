@@ -60,8 +60,8 @@ def run_episode(episode_idx):
     episode_actions = []
     quaternion_states = []
 
-    grf_buffer = []   # buffer to hold last 20 frames
-    grf_randomizer = np.random.normal(0, 6, size=(4,))
+    grf_buffer = []   # buffer to hold last 5 frames
+    grf_randomizer = np.random.normal(0, 3, size=(4,))
     for step in range(total_steps):
 
         base_pos = sim.get_base_position()
@@ -70,7 +70,7 @@ def run_episode(episode_idx):
         base_vel = sim.get_base_velocity_local()
         noisy_vel = base_vel * np.random.normal(1, 0.01, size=(6,))
         grfs = sim.get_grfs_local_foot() + grf_randomizer
-        raw_phase = ((step % total_steps)/total_steps) * 2 * np.pi 
+        raw_phase = ((step % gait_length)/gait_length) * 2 * np.pi 
         phase = np.array([np.sin(raw_phase), np.cos(raw_phase)]) #Central Pattern Generator
     
         # --- Add to buffer and compute smoothed GRFs ---

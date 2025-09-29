@@ -29,7 +29,8 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal_pos and orientation
+    33:35,  # phase
+    35:39   # goal_pos and orientation
 ]
 
 import zipfile
@@ -118,7 +119,7 @@ def test_model(model_path, env, device):
 
     for step in range(steps):
         step_start = time.time()
-        state = get_env_observation(env)
+        state = get_env_observation(env, step)
         stacked_state, state_buffer = stack_states(state_buffer, state, max_len=N)
         log_states.append(stacked_state.flatten().tolist())
         state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
@@ -157,7 +158,8 @@ def test_model(model_path, env, device):
         writer.writerows(log_actions)
     print("Testing run complete.")
 
-def get_env_observation(env, obs=None):
+def get_env_observation(env, step, obs=None):
+    gait_length = 2*1400
     # Use provided obs if available (already stacked)
     if obs is not None:
         full_obs = obs
@@ -171,6 +173,8 @@ def get_env_observation(env, obs=None):
         normalized_suction = suction_states / 100
         grfs = np.array(env.get_grfs_local_foot()) + np.random.normal(6, 6, size=(4,))
         normalized_grfs = grfs / 30
+        raw_phase = ((step % gait_length)/gait_length) * 2 * np.pi 
+        phase = np.array([np.sin(raw_phase), np.cos(raw_phase)]) #Central Pattern Generator
         goal_pos = np.array([0.30, 0.0])
         goal_yaw = np.array([np.sin(np.pi/4), np.sin(np.pi/4)])  # 45 degrees
 
@@ -181,6 +185,7 @@ def get_env_observation(env, obs=None):
             normalized_pressures,
             normalized_suction,
             normalized_grfs,
+            phase,
             goal_pos,
             goal_yaw
         ]).astype(np.float32)

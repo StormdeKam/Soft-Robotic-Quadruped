@@ -51,6 +51,7 @@ for j in range(prismatic_per_leg):
 # Record z position over time
 z_positions = []
 for _ in range(SIM_STEPS):
+    sim.apply_pressures(np.zeros((4,3)))
     sim.step()
     pos, _ = p.getLinkState(sim.robot_id, bottom_link_idx)[:2]
     z_positions.append(pos[2])
@@ -82,6 +83,7 @@ for joint_idx in sim.revolute_joints:
 
 x_positions = []
 for _ in range(SIM_STEPS):
+    sim.apply_pressures(np.zeros((4,3)))
     sim.step()
     pos, _ = p.getLinkState(sim.robot_id, bottom_link_idx)[:2]
     x_positions.append(pos[0])
