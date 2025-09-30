@@ -4,7 +4,7 @@ import os
 
 # --- Paths ---
 dataset_folder = "rl/datasets/noise_control"
-states_file = os.path.join(dataset_folder, "demo_states_0.npy")
+states_file = os.path.join(dataset_folder, "demo_states_0 v3.npy")
 
 # --- Load dataset ---
 states = np.load(states_file)

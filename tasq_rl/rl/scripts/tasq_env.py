@@ -14,8 +14,8 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37,  # phase
-    37:39   # goal_pos and orientation
+    #33:37,  # phase
+    33:37   # goal_pos and orientation
 ]
 
 class TASQEnv(gym.Env):
@@ -56,7 +56,7 @@ class TASQEnv(gym.Env):
         self.target_height = 0.12  # Set a target height for the robot
         self.goal_pos = np.array([0.3, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
         self.grf_buffer = []
-        self.grf_randomizer = np.random.normal(0, 6, size=(4,))
+        self.grf_randomizer = np.random.normal(6, 6, size=(4,))
         self._np_random = None
         self.seed()  # initialize RNG
 
@@ -73,8 +73,8 @@ class TASQEnv(gym.Env):
         self.target_height = 0.12  # Set a target height for the robot
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset target position
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
-        self.goal_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset goal position
-        self.goal_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  
+        self.goal_pos = np.array([0.1, 0.0], dtype=np.float32)  # Reset goal position
+        self.goal_yaw = np.pi/4
         obs = self._get_obs()
         self.obs_buffer.clear()
         for _ in range(self.frame_stack):
@@ -86,7 +86,7 @@ class TASQEnv(gym.Env):
         state = self._get_state()
         # Select only the observed indices
         obs = state[OBSERVED_INDICES].astype(np.float32)
-        obs[0:7] *= np.random.normal(1, 0.02, size=(7,))  # Add noise to orientation and velocity       
+        obs[0:7] *= np.random.normal(1, 0.01, size=(7,))  # Add noise to orientation and velocity       
 
         return obs
     
@@ -103,8 +103,14 @@ class TASQEnv(gym.Env):
             self.grf_buffer.pop(0)  # remove oldest if buffer > 5
         smoothed_grfs = np.mean(self.grf_buffer, axis=0)
         normalized_grfs = smoothed_grfs / 30
-        raw_phase = ((self.step_count % self.gait_length) / self.gait_length) * 2 * np.pi
-        phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
+        #raw_phase = ((self.step_count % self.gait_length) / self.gait_length) * 2 * np.pi
+        #phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
+        base_yaw = np.arctan2(base_ori[2], base_ori[3])
+        delta_yaw = self.goal_yaw - base_yaw
+        delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
+        sin_delta_yaw = np.sin(delta_yaw)
+        cos_delta_yaw = np.cos(delta_yaw)
+        goal_ori = np.array([sin_delta_yaw, cos_delta_yaw])
 
         # Combine all into one observation array
         obs = np.concatenate([
@@ -114,9 +120,9 @@ class TASQEnv(gym.Env):
             normalized_pressures,   # shape (12,)
             normalized_suction,     # shape (4,)
             normalized_grfs,        # shape (4,)
-            phase,                  # shape (2,)
+            #phase,                  # shape (2,)
             self.goal_pos,          # shape (2,)
-            self.goal_ori           # shape (2,)
+            goal_ori           # shape (2,)
         ]).astype(np.float32)
 
         return obs

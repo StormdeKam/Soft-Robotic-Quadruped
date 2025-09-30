@@ -10,7 +10,7 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V7"
+MODEL_DIR = "rl/models/tasq_bc/minimal_viable_V8"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -38,8 +38,8 @@ OBSERVED_INDICES = np.r_[
 ]
 
 dataset = StackedDataset(
-    "rl/datasets/minimal_viable_v7/demo_states_merged.npy",
-    "rl/datasets/minimal_viable_v7/demo_actions_merged.npy",
+    "rl/datasets/minimal_viable_v8/demo_states_merged.npy",
+    "rl/datasets/minimal_viable_v8/demo_actions_merged.npy",
     N=4,
     observed_indices=OBSERVED_INDICES
 )
@@ -48,7 +48,7 @@ val_size = int(len(dataset) * VAL_SPLIT)
 train_size = len(dataset) - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, pin_memory=True, num_workers=4)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True, pin_memory=True, num_workers=4)
 
 obs_dim = len(OBSERVED_INDICES) * dataset.N
 model = BCActor(obs_dim).to(DEVICE)

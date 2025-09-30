@@ -17,7 +17,7 @@ demo_suction = demogait.demo_suction
 
 # --- Parameters ---
 num_episodes = 300 # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable_v7"  # Path to save the dataset
+save_path = "rl/datasets/minimal_viable_v8"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 

@@ -32,7 +32,7 @@ class TASQSimulator:
         self.data_logging = True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
-        self.randomization = False
+        self.randomization = True
 
     def reset_simulation(self):
         # Reset PyBullet simulation (clears all bodies, constraints, etc.)
@@ -88,7 +88,7 @@ class TASQSimulator:
             self._randomize_link_masses(mass_range=(0.8, 1.2))  # ±0% mass
             self.joint_randomizer_values = np.random.normal(1, 0.001, size=(6,))
             self.suction_randomization = np.random.normal(1, 0.2, size=(1,))
-            self.hysteresis_randomization = np.random.normal(1, 0.4, size=(4,))
+            self.hysteresis_randomization = np.random.normal(1, 0.1, size=(4,))
         else:
             self.joint_randomizer_values = np.ones((6,))
             self.suction_randomization = 1.0
@@ -131,7 +131,7 @@ class TASQSimulator:
                 #print(f"{joint_type} joint {joint_index}: {joint_name}, active")
             
         self.controlled_joints = self.revolute_joints + self.prismatic_joints
-        """
+        
         for joint_index in self.controlled_joints:
             p.setJointMotorControl2(
                 bodyIndex=self.robot_id,
@@ -143,7 +143,7 @@ class TASQSimulator:
                 force=self.max_force,
                 #maxVelocity=self.max_lin_vel
             )
-        """
+        
         # Foot link indices
         self.foot_link_indices = np.zeros(4)
         for leg_idx in range(4):
@@ -170,6 +170,72 @@ class TASQSimulator:
             scale = np.random.uniform(*mass_range)
             p.changeDynamics(self.robot_id, joint_index, mass=2* mass * scale)
     
+    """
+    def apply_pressures(self, pressures, pressure_gradients=np.ones((4,3))):
+        self.pressure_state = pressures
+
+        kp_th =0.1
+        kd_th = 0.003
+        kp_z = 10000
+        kd_z = 0.1
+
+        max_pressure = 400  # mBar
+
+        if len(pressures) != 4 or any(len(leg) != 3 for leg in pressures):
+            raise ValueError("Pressures must be a list of 4 arrays, each with 3 pressure values.")
+
+        # Assume revolute and prismatic joints are grouped by leg
+        revolutes_per_leg = len(self.revolute_joints) // 4
+        prismatics_per_leg = len(self.prismatic_joints) // 4
+
+        for leg_index, leg_pressures in enumerate(pressures):
+
+            if leg_pressures.all() <= 400:
+                Tx, Ty, F = pneu2posandgains(leg_pressures, self.no_links)
+
+            else:
+                self.logger.warning(f"Pressure in leg {leg_index+1} exceeding max_pressure of {max_pressure} mBar")
+
+            # -------------------------
+            # Apply to joints
+            # -------------------------
+            for j in range(revolutes_per_leg-2):
+                joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
+                # PD control
+                joint_state = p.getJointState(self.robot_id, joint_index)
+                pos = joint_state[0]
+                vel = joint_state[1]
+                
+                if j % 2 == 0:
+                    torque = kp_th * (0 - pos) - kd_th* vel + Tx*500
+                else:
+                    torque = kp_th * (0 - pos) - kd_th* vel + Ty*500
+
+                p.setJointMotorControl2(
+                    bodyIndex=self.robot_id,
+                    jointIndex=joint_index,
+                    controlMode=p.TORQUE_CONTROL,
+                    force=torque
+                )
+
+            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
+            for j in range(prismatics_per_leg):
+                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
+                if joint_index not in cup_link_idx:
+                    joint_state = p.getJointState(self.robot_id, joint_index)
+                    pos = joint_state[0]
+                    vel = joint_state[1]
+                    force = kp_z * (0 - pos) - kd_z * vel + F*10000
+                    #print(pos)
+                    p.setJointMotorControl2(
+                        bodyIndex=self.robot_id,
+                        jointIndex=joint_index,
+                        controlMode=p.TORQUE_CONTROL,
+                        force=force
+                    )
+
+        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
+    """            
     def apply_pressures(self, pressures, pressure_gradients = np.ones((4,3))):
         self.pressure_state = pressures
         #print(pressures)
@@ -277,73 +343,7 @@ class TASQSimulator:
             self.last_targets[leg_index,1] = thy
             self.last_targets[leg_index,2] = thz
         self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
-    
-    """
-    def apply_pressures(self, pressures, pressure_gradients=np.ones((4,3))):
-        self.pressure_state = pressures
-
-        kp_th =0.1
-        kd_th = 0.003
-        kp_z = 10000
-        kd_z = 0.1
-
-        max_pressure = 400  # mBar
-
-        if len(pressures) != 4 or any(len(leg) != 3 for leg in pressures):
-            raise ValueError("Pressures must be a list of 4 arrays, each with 3 pressure values.")
-
-        # Assume revolute and prismatic joints are grouped by leg
-        revolutes_per_leg = len(self.revolute_joints) // 4
-        prismatics_per_leg = len(self.prismatic_joints) // 4
-
-        for leg_index, leg_pressures in enumerate(pressures):
-
-            if leg_pressures.all() <= 400:
-                Tx, Ty, F = pneu2posandgains(leg_pressures, self.no_links)
-
-            else:
-                self.logger.warning(f"Pressure in leg {leg_index+1} exceeding max_pressure of {max_pressure} mBar")
-
-            # -------------------------
-            # Apply to joints
-            # -------------------------
-            for j in range(revolutes_per_leg-2):
-                joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
-                # PD control
-                joint_state = p.getJointState(self.robot_id, joint_index)
-                pos = joint_state[0]
-                vel = joint_state[1]
                 
-                if j % 2 == 0:
-                    torque = kp_th * (0 - pos) - kd_th* vel + Tx*500
-                else:
-                    torque = kp_th * (0 - pos) - kd_th* vel + Ty*500
-
-                p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=joint_index,
-                    controlMode=p.TORQUE_CONTROL,
-                    force=torque
-                )
-
-            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
-            for j in range(prismatics_per_leg):
-                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
-                if joint_index not in cup_link_idx:
-                    joint_state = p.getJointState(self.robot_id, joint_index)
-                    pos = joint_state[0]
-                    vel = joint_state[1]
-                    force = kp_z * (0 - pos) - kd_z * vel + F*10000
-                    #print(pos)
-                    p.setJointMotorControl2(
-                        bodyIndex=self.robot_id,
-                        jointIndex=joint_index,
-                        controlMode=p.TORQUE_CONTROL,
-                        force=force
-                    )
-
-        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
-    """            
     def apply_suction(self, suction_states, force_magnitude=10.0):
         #print(suction_states>50)
         """
@@ -435,20 +435,19 @@ class TASQSimulator:
 
     def step(self):
         p.stepSimulation()
-        #if self.gui:
-            #time.sleep(1. / 240.)
-              
+        if self.gui:
+            time.sleep(1. / 240.)
+                
     def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
-        control_hz=240
+        control_hz=24
         pressures = np.ones((4, 3)) * 10
         suction_states = np.array([0, 100, 100, 100], dtype=np.float64)
         
         control_period = 1.0 / control_hz
-        substeps = 240/control_hz
+
         start_time = time.time()
 
         for step in range(steps):
-            #print(pressures)
             step_start = time.time()
 
             # --- callbacks update pressures and suctions
@@ -460,7 +459,6 @@ class TASQSimulator:
                 suction_states += suction_callback(step, mode)
             self.apply_suction(suction_states)
             # --- run multiple physics substeps per control cycle
-            #for i in range(substeps):
             self.step()
 
             # --- enforce real-time control frequency

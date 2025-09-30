@@ -242,8 +242,14 @@ def get_env_observation(env, obs=None):
     normalized_suction = suction_states / 100
     grfs = np.array(env.get_grfs_local_foot())+np.random.normal(6, 6, size=(4,))
     normalized_grfs = grfs / 30
-    goal_pos = np.array([0.30, 0.0])
-    goal_yaw = np.array([np.sin(np.pi/4), np.sin(np.pi/4)])  # 45 degrees
+    goal_pos = np.array([0.1, 0.0])
+    goal_yaw = np.pi/4
+    base_yaw = np.arctan2(base_ori[2], base_ori[3])
+    delta_yaw = goal_yaw - base_yaw
+    delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
+    sin_delta_yaw = np.sin(delta_yaw)
+    cos_delta_yaw = np.cos(delta_yaw)
+    goal_ori = np.array([sin_delta_yaw, cos_delta_yaw])
 
     full_obs = np.concatenate([
         base_pos,
@@ -253,7 +259,7 @@ def get_env_observation(env, obs=None):
         normalized_suction,
         normalized_grfs,
         goal_pos,
-        goal_yaw
+        goal_ori
     ]).astype(np.float32)
 
     obs = full_obs[OBSERVED_INDICES]

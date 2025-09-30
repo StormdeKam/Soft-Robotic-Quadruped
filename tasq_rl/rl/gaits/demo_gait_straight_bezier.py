@@ -203,27 +203,27 @@ class DemoGaitStraight:
         self.sine([0], 10, 390/2, t, 100, -np.pi/2, np.pi, 20)
         self.sine([1], 65, 85/2, t, 100, -np.pi/2, np.pi, 20)
         self.sine([2], 220, -210/2, t, 100, -np.pi/2, np.pi, 20)
-        self.sine([3,4,5,9,10,11],150, -140/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([3,4,5,9,10,11],150, -145/2, t, 100, -np.pi/2, np.pi, 20)
         t+=100       
 
-        #t=300 [400,150,10,  10,10,10,  10,10,10,  10,10,10]
-        self.flat_line([2,6,7,8], t, 100, 10)
-        self.sine([0], 400, -390/2, t, 100, -np.pi/2, np.pi, 20)
-        self.sine([1], 150, -140/2, t, 100, -np.pi/2, np.pi, 20)
-        self.sine([3,4,5,9,10,11], 10, 385/2, t, 100, -np.pi/2, np.pi, 20)
+        #t=300 [400,150,10,  5,5,5,  10,10,10,  5,5,5]
+        self.sine([2,6,7,8], 10, -5/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([0], 400, -395/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([1], 150, -145/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([3,4,5,9,10,11], 5, 385/2, t, 100, -np.pi/2, np.pi, 20)
         t+=100
 
         #step2
-        #t=400 [10,10,10,  395,395,395,  10,10,10,  395,395,395]
-        self.flat_line([3,4,5,9,10,11], t, 100, 395)
-        self.flat_line([0,1,2,8], t, 100, 10)
-        self.sine([6], 10, 245/2, t, 100, -np.pi/2, np.pi, 20)
-        self.sine([7], 10, 185/2, t, 100, -np.pi/2, np.pi, 20)
+        #t=400 [5,5,5,  390,390,390,  5,5,5,  390,390,390]
+        self.flat_line([3,4,5,9,10,11], t, 100, 390)
+        self.flat_line([0,1,2,8], t, 100, 5)
+        self.sine([6], 5, 250/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([7], 5, 190/2, t, 100, -np.pi/2, np.pi, 20)
         t+=100
 
-        #t=500 [10,10,10,  395,395,395,  255,195,10,  395,395,395]
-        self.sine([0,1,2,8], 10, 390/2, t, 100, -np.pi/2, np.pi, 20)
-        self.sine([3,4,5,9,10,11], 395, -390/2, t, 100, -np.pi/2, np.pi, 20)
+        #t=500 [5,5,5,  390,390,390,  255,195,5,  390,390,390]
+        self.sine([0,1,2,8], 5, 395/2, t, 100, -np.pi/2, np.pi, 20)
+        self.sine([3,4,5,9,10,11], 390, -385/2, t, 100, -np.pi/2, np.pi, 20)
         self.sine([6], 255, -245/2, t, 100, -np.pi/2, np.pi, 20)
         self.sine([7], 195, -80/2, t, 100, -np.pi/2, np.pi, 20)
         t+=100
@@ -417,7 +417,7 @@ class DemoGaitStraight:
         # Plot the full curves
         self.planner.plot(duration=1400/(self.speed_increase*240.0), dt=1/240.0)
 
-    def save_to_csv(self, filename="minimal_viable_V7_gait.csv"):
+    def save_to_csv(self, filename="minimal_viable_V9_gait.csv"):
         self.planner.save_to_csv(filename=filename, duration=1400/(self.speed_increase*240.0), dt=1/240.0)
 
 if __name__ == "__main__":
