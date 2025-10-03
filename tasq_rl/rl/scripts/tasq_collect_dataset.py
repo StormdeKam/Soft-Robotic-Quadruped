@@ -8,11 +8,7 @@ import re
 import pybullet as p
 
 from rl.scripts.tasq_simulator import TASQSimulator
-from rl.gaits.demo_gait_straight_bezier import DemoGaitStraight
-demogait = DemoGaitStraight()
-demogait.gait()
-demo_pressures = demogait.demo_pressures
-demo_suction = demogait.demo_suction
+from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
 
 
 # --- Parameters ---
@@ -35,7 +31,7 @@ def run_episode(episode_idx):
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 1400*2
+        gait_length = 1400
         #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
         pressure_callback = partial(demo_pressures, mode=mode)
@@ -60,61 +56,68 @@ def run_episode(episode_idx):
     episode_actions = []
     quaternion_states = []
 
-    grf_buffer = []   # buffer to hold last 5 frames
+    grf_buffer = []   # buffer to hold last 100 frames
+    vel_buffer = []
     grf_randomizer = np.random.normal(0, 3, size=(4,))
+    vel_randomizer = np.random.normal(0,0.01, size=(4,))
+
     for step in range(total_steps):
 
-        base_pos = sim.get_base_position()
-        base_ori = sim.get_base_orientation()
-        noisy_ori = base_ori * np.random.normal(1, 0.01, size=(4,))
         base_vel = sim.get_base_velocity_local()
-        noisy_vel = base_vel * np.random.normal(1, 0.01, size=(6,))
-        grfs = sim.get_grfs_local_foot() + grf_randomizer
-        raw_phase = ((step % gait_length)/gait_length) * 2 * np.pi 
-        phase = np.array([np.sin(raw_phase), np.cos(raw_phase)]) #Central Pattern Generator
-    
-        # --- Add to buffer and compute smoothed GRFs ---
-        grf_buffer.append(grfs)
-        if len(grf_buffer) > 5:
-            grf_buffer.pop(0)  # remove oldest if buffer > 5
-        smoothed_grfs = np.mean(grf_buffer, axis=0)
+        vel_buffer.append(base_vel)
+        if len(vel_buffer) > 100:
+            vel_buffer.pop(0)  # remove oldest if buffer > 100
         
-        normalized_grfs = smoothed_grfs / 30
+        grfs = sim.get_grfs_local_foot() 
+        grf_buffer.append(grfs)
+        if len(grf_buffer) > 100:
+            grf_buffer.pop(0)  # remove oldest if buffer > 100
 
-        normalized_pressures = (pressures / 400).flatten()
-        normalized_suction = suction_states/100
+        if step % 100 == 0:
+            base_pos = sim.get_base_position()
+            base_ori = sim.get_base_orientation()
+            noisy_ori = base_ori * np.random.normal(1, 0.01, size=(4,))
 
-        state = np.concatenate([
-            base_pos,
-            noisy_ori,
-            noisy_vel,
-            normalized_pressures,
-            normalized_suction,
-            normalized_grfs,
-            phase
-        ]).astype(np.float32)
+            mean_vel = np.mean(vel_buffer, axis=0) + vel_randomizer
+            mean_grfs = np.mean(grf_buffer, axis=0) + grf_randomizer
+            normalized_grfs = mean_grfs / 30
 
-        d_pressures = pressure_callback(step)
-        d_suctions = suction_callback(step)
-        noisy_d_suctions = d_suctions * np.random.normal(1, 0.1, size=(4,))
-        noisy_d_suctions = np.clip(noisy_d_suctions, -20, 20)
-        noisy_d_pressures = d_pressures * np.random.normal(1, 0.1, size=(4, 3))
-        noisy_d_pressures = np.clip(noisy_d_pressures, -20, 20)
+            raw_phase = ((step % gait_length)/gait_length) * 2 * np.pi 
+            phase = np.array([np.sin(raw_phase), np.cos(raw_phase)]) #Central Pattern Generator
 
-        action = np.concatenate([(noisy_d_pressures / (20)).flatten(), (noisy_d_suctions / 20)]).astype(np.float32)
+            normalized_pressures = (pressures / 400).flatten()
+            normalized_suction = suction_states/100
 
-        pressures += noisy_d_pressures
+            state = np.concatenate([
+                base_pos,
+                noisy_ori,
+                mean_vel,
+                normalized_pressures,
+                normalized_suction,
+                normalized_grfs,
+                phase
+            ]).astype(np.float32)
+
+            d_pressures = pressure_callback(step)
+            d_suctions = suction_callback(step)
+            noisy_d_suctions = d_suctions * np.random.normal(1, 0.1, size=(4,))
+            noisy_d_suctions = np.clip(noisy_d_suctions, -100, 100)
+            noisy_d_pressures = d_pressures * np.random.normal(1, 0.1, size=(4, 3))
+            noisy_d_pressures = np.clip(noisy_d_pressures, -400, 400)
+
+            action = np.concatenate([(noisy_d_pressures / (400)).flatten(), (noisy_d_suctions / 100)]).astype(np.float32)
+
+            episode_states.append(state)
+            episode_actions.append(action)
+            quaternion_states.append(sim.get_base_quaternion())
+
+        pressures += noisy_d_pressures/100
         pressures = np.clip(pressures, 0, 400)
-        suction_states += noisy_d_suctions
+        suction_states += noisy_d_suctions/100
         suction_states = np.clip(suction_states, 0, 100)
         sim.apply_pressures(pressures,noisy_d_pressures)
         sim.apply_suction(suction_states)
         sim.step()
-
-        episode_states.append(state)
-        episode_actions.append(action)
-        quaternion_states.append(sim.get_base_quaternion())
-
 
     # Compute final goal info to augment states
     goal_pos = sim.get_base_position()

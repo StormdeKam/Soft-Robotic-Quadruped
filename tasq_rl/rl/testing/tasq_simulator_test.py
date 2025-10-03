@@ -31,10 +31,10 @@ elif args.gait == "straightv3":
     sim.run(steps=10*gait_length, pressure_callback=gait_pressures, suction_callback=gait_suction, mode=0)
     
 elif args.gait == "straight":
-    from rl.gaits.old.demo_gait_straight import demo_pressures, demo_suction
-    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=False, no_links=7)
+    from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
+    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     sim.reset_simulation()
-    sim.run(steps=100, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+    sim.run(steps=1400, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
 
 elif args.gait == "rotation":
     from rl.gaits.old.demo_gait_rotation import demo_pressures_rot as demo_pressures
