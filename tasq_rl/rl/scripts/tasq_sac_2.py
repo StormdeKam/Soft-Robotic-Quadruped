@@ -19,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 
-SAVE_PATH = "rl/models/tasq_sac/minimal_viable_33/trial_3(9_30_2025)"
+SAVE_PATH = "rl/models/tasq_sac/minimal_viable_v3/trial_4(10_2_2025)"
 os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[
@@ -93,36 +93,56 @@ class ActorCheckpointCallback(CheckpointCallback):
 
 # ---------------- Warm start callback ----------------
 class WarmStartSACCallback(BaseCallback):
-    def __init__(self, freeze_steps: int = 500_000, start_log_std: float = -6.0, end_log_std: float = -2.0, start_actor_lr: float = 1e-6, end_actor_lr: float = 3e-5, verbose: int = 0):
+    def __init__(
+        self,
+        freeze_steps: int = 500_000,
+        ramp_steps: int = 500_000,  # how long to ramp after freeze
+        start_log_std: float = -6.0,
+        end_log_std: float = -2.0,
+        start_actor_lr: float = 1e-6,
+        end_actor_lr: float = 3e-5,
+        verbose: int = 0,
+    ):
         super().__init__(verbose)
         self.freeze_steps = freeze_steps
-        self.start = start_log_std
-        self.end = end_log_std
+        self.ramp_steps = ramp_steps
+        self.start_log_std = start_log_std
+        self.end_log_std = end_log_std
         self.start_actor_lr = start_actor_lr
         self.end_actor_lr = end_actor_lr
 
     def _on_step(self) -> bool:
         num_steps = self.num_timesteps
-        t = min(1.0, num_steps / max(1, self.freeze_steps))
-        new_log_std = self.start + t * (self.end - self.start)
-        # If policy.actor has a log_std parameter (SB3 Actor uses a network), attempt to set it:
+
+        if num_steps < self.freeze_steps:
+            # Keep frozen
+            new_log_std = self.start_log_std
+            new_actor_lr = self.start_actor_lr
+        else:
+            # Ramp linearly from freeze_steps → freeze_steps + ramp_steps
+            t = min(
+                1.0,
+                (num_steps - self.freeze_steps) / max(1, self.ramp_steps),
+            )
+            new_log_std = self.start_log_std + t * (self.end_log_std - self.start_log_std)
+            new_actor_lr = self.start_actor_lr + t * (self.end_actor_lr - self.start_actor_lr)
+
+        # Update log_std if actor has it
         if hasattr(self.model.policy, "actor"):
             actor = self.model.policy.actor
-            # Try to set any attribute named "log_std" if exists (rare)
             if hasattr(actor, "log_std") and isinstance(actor.log_std, torch.nn.Parameter):
                 actor.log_std.data.fill_(new_log_std)
 
-        # Ramp optimizer LR for the actor
-        new_actor_lr = self.start_actor_lr + t * (self.end_actor_lr - self.start_actor_lr) if hasattr(self, "end_actor_lr") else self.start_actor_lr
-        # robust way: iterate all optimizers and update param groups that contain actor params
+        # Update actor LR in optimizer
         actor_params = set(self.model.policy.actor.parameters())
-        for k, opt in self.model.__dict__.items():
+        for _, opt in self.model.__dict__.items():
             if isinstance(opt, torch.optim.Optimizer):
                 for pg in opt.param_groups:
                     if any(p in actor_params for p in pg.get("params", [])):
                         pg["lr"] = new_actor_lr
 
         return True
+
 
 # ---------------- BC-initialized Actor ----------------
 class SACActorWithBC(nn.Module):
@@ -268,10 +288,11 @@ if __name__ == "__main__":
     # Callbacks
     total_timesteps = 10_000_000  
     log_interval = 10_000
-    reward_logger = RewardLoggerCallback(log_interval=log_interval, verbose=1)
+    reward_log_path= os.path.join(SAVE_PATH,"reward_log.csv")
+    reward_logger = RewardLoggerCallback(log_path=reward_log_path, log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
     checkpoint_callback = ActorCheckpointCallback(
-        save_freq=1_000_000 // n_envs,
+        save_freq=250_000 // n_envs,
         save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,
@@ -286,8 +307,8 @@ if __name__ == "__main__":
     callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, warm_start_callback])
     
     # ---------- Seed Replay Buffer with BC Demos ----------
-    states_path = "rl/datasets/minimal_viable_3/demo_states_merged.npy"
-    actions_path = "rl/datasets/minimal_viable_3/demo_actions_merged.npy"
+    states_path = "rl/datasets/minimal_viable3/demo_states_merged.npy"
+    actions_path = "rl/datasets/minimal_viable3/demo_actions_merged.npy"
     frame_stack = getattr(env, "frame_stack", 4)  # match TASQEnv setting
 
     if os.path.isfile(states_path) and os.path.isfile(actions_path):

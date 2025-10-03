@@ -27,7 +27,7 @@ class TASQEnv(gym.Env):
         self.max_steps = 3500
         self.step_count = 0
         self.previous_step_time = time.time()
-        self.gait_length = 1400*2
+        #self.gait_length = 700
 
         # --- Frame stacking ---
         self.frame_stack = frame_stack
@@ -199,7 +199,7 @@ class TASQEnv(gym.Env):
         # Terminate or truncate
         terminated = distance < 0.05 
         reward += 1000.0 if terminated else 0.0  # Bonus for reaching target
-        truncated = self.step_count >= self.max_steps or current_height < 0.06
+        truncated = self.step_count >= self.max_steps or current_height < 0.05
 
         self.step_count += 1
 

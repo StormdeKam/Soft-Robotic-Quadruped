@@ -29,7 +29,7 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
         self.randomization = True
@@ -527,8 +527,8 @@ class TASQSimulator:
         _, ori = p.getBasePositionAndOrientation(self.robot_id)
         rotation_matrix = np.array(p.getMatrixFromQuaternion(ori)).reshape(3,3)
         lin_vel, ang_vel = p.getBaseVelocity(self.robot_id)
-        lin_vel = np.array(lin_vel)/10 #to account for difference in pybullet and control frequency
-        ang_vel = np.array(ang_vel)/10 #to account for difference in pybullet and control frequency
+        lin_vel = np.array(lin_vel) #to account for difference in pybullet and control frequency
+        ang_vel = np.array(ang_vel) #to account for difference in pybullet and control frequency
         lin_vel_body = np.dot(rotation_matrix.T, lin_vel)
         ang_vel_body = np.dot(rotation_matrix.T, ang_vel)
         return np.concatenate([lin_vel_body, ang_vel_body])
