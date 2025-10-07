@@ -181,8 +181,8 @@ class TASQEnv(gym.Env):
         w_ori = 1.0
         w_height = 2.0
         w_orient = 2.0
-        w_pressure_smoothness = 0.00001
-        w_suction_smoothness = 0.0001
+        w_pressure_smoothness = 0.001
+        w_suction_smoothness = 0.01
 
         reward_terms = {
             "alive": alive * w_alive,

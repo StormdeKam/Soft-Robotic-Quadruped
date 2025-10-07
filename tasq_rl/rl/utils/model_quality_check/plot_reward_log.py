@@ -3,7 +3,11 @@ import matplotlib.pyplot as plt
 
 def plot_reward_log(csv_file="reward_log.csv", rolling=10):
     # Load CSV
-    df = pd.read_csv(csv_file)
+    col_names = ["reward", "length", "survival", "goal distance", "rel goal orientation", "height deviation", "pitch/roll deviation", "pressure smoothness", "suction smoothness"]
+    df = pd.read_csv(csv_file, names=col_names, header=0)
+
+    # Ensure all numeric
+    df = df.apply(pd.to_numeric, errors="coerce")
 
     # Separate reward components (all columns except reward/length)
     component_cols = [c for c in df.columns if c not in ["reward", "length"]]
@@ -37,6 +41,7 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
     # Plot each reward component
     if component_cols:
         plt.figure(figsize=(10,6))
+        plt.plot(df_smooth["reward"], label="Total Reward")
         for c in component_cols:
             plt.plot(df_smooth[c], label=c)
         plt.xlabel("Episode")
@@ -47,4 +52,4 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
         plt.show()
 
 if __name__ == "__main__":
-    plot_reward_log("reward_log.csv", rolling=10)
+    plot_reward_log("rl/models/tasq_sac/minimal_viable_v3/trial_7(6_10_2025)/reward_log.csv", rolling=10)
