@@ -82,8 +82,11 @@ def run_episode(episode_idx):
             mean_grfs = np.mean(grf_buffer, axis=0) + grf_randomizer
             normalized_grfs = mean_grfs / 30
 
-            raw_phase = ((step % gait_length)/gait_length) * 2 * np.pi 
-            phase = np.array([np.sin(raw_phase), np.cos(raw_phase)]) #Central Pattern Generator
+            #Central Pattern Generator
+            raw_phase1 = ((step % gait_length)/gait_length) * 2 * np.pi 
+            phase1 = np.array([np.sin(raw_phase1), np.cos(raw_phase1)]) 
+            raw_phase2 = ((step % gait_length)/gait_length) * 2 * np.pi 
+            phase2 = np.array([np.sin(raw_phase2), np.cos(raw_phase2)])
 
             normalized_pressures = (pressures / 400).flatten()
             normalized_suction = suction_states/100
@@ -95,7 +98,8 @@ def run_episode(episode_idx):
                 normalized_pressures,
                 normalized_suction,
                 normalized_grfs,
-                phase
+                phase1,
+                phase2,
             ]).astype(np.float32)
 
             d_pressures = pressure_callback(step)
