@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 # Path to saved dataset
-dataset_dir = "rl/datasets/minimal_viable3"
+dataset_dir = "rl/datasets/low_freq_v1"
 
 # Load merged state data and episode lengths
 states = np.load(os.path.join(dataset_dir, "demo_states_merged.npy"))
@@ -15,7 +15,7 @@ print(f"Loaded episode lengths shape: {episode_lengths.shape}")
 assert np.sum(episode_lengths) == states.shape[0], "Mismatch in total episode lengths vs. states"
 
 # Parameters
-gaitcycle_len = 700  # datapoints per gait cycle
+gaitcycle_len = 14  # datapoints per gait cycle
 cmap = plt.colormaps.get_cmap("viridis")  # smooth sequential colormap
 
 plt.figure(figsize=(10, 10))

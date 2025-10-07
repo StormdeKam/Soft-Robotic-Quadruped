@@ -32,9 +32,11 @@ elif args.gait == "straightv3":
     
 elif args.gait == "straight":
     from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
+    demo_pressures_scaled = lambda step, mode: demo_pressures(step, mode) / 100
+    demo_suction_scaled = lambda step, mode: demo_suction(step, mode) / 100
     sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     sim.reset_simulation()
-    sim.run(steps=1400, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+    sim.run(steps=1400,pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
 
 elif args.gait == "rotation":
     from rl.gaits.old.demo_gait_rotation import demo_pressures_rot as demo_pressures

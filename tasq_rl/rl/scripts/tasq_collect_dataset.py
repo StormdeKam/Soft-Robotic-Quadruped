@@ -12,8 +12,8 @@ from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
 
 
 # --- Parameters ---
-num_episodes = 300 # Number of simulation rollouts
-save_path = "rl/datasets/minimal_viable_v8"  # Path to save the dataset
+num_episodes = 1000 # Number of simulation rollouts
+save_path = "rl/datasets/low_freq_v2"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -59,7 +59,7 @@ def run_episode(episode_idx):
     grf_buffer = []   # buffer to hold last 100 frames
     vel_buffer = []
     grf_randomizer = np.random.normal(0, 3, size=(4,))
-    vel_randomizer = np.random.normal(0,0.01, size=(4,))
+    vel_randomizer = np.random.normal(0,0.01, size=(6,))
 
     for step in range(total_steps):
 
@@ -100,9 +100,9 @@ def run_episode(episode_idx):
 
             d_pressures = pressure_callback(step)
             d_suctions = suction_callback(step)
-            noisy_d_suctions = d_suctions * np.random.normal(1, 0.1, size=(4,))
+            noisy_d_suctions = d_suctions * np.random.normal(1, 0.01, size=(4,))
             noisy_d_suctions = np.clip(noisy_d_suctions, -100, 100)
-            noisy_d_pressures = d_pressures * np.random.normal(1, 0.1, size=(4, 3))
+            noisy_d_pressures = d_pressures * np.random.normal(1, 0.01, size=(4, 3))
             noisy_d_pressures = np.clip(noisy_d_pressures, -400, 400)
 
             action = np.concatenate([(noisy_d_pressures / (400)).flatten(), (noisy_d_suctions / 100)]).astype(np.float32)

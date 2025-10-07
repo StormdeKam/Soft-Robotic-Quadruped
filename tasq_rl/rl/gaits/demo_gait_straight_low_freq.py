@@ -139,3 +139,23 @@ def demo_suction(step, mode):
         d_suction = np.array([0,0,0,0])
 
     return d_suction
+
+# --- Main function ---
+def main():
+    out_path = "rl/gaits/demo_gait_straight_low_freq.csv"
+    all_data = []
+    pressures = np.ones(12)*10
+    suctions = np.array([0,100,100,100], dtype=np.float32)
+    for step in range(gait_length):
+        pressures += demo_pressures(step, mode=0).flatten() / 100.0
+        suctions += demo_suction(step, mode=0).flatten() / 100.0
+        combined = np.concatenate([pressures, suctions])
+        all_data.append(combined)
+
+    all_data = np.array(all_data)
+
+    np.savetxt(out_path, all_data, delimiter=",", fmt="%.4f")
+    print(f"✅ Saved {gait_length} steps ({all_data.shape[1]} columns) to {out_path}")
+
+if __name__ == "__main__":
+    main()
