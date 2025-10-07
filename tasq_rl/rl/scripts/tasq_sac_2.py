@@ -98,7 +98,7 @@ class WarmStartSACCallback(BaseCallback):
         self,
         ramp_steps: int = 100_000,  # how long to ramp actor LR and log_std
         start_log_std: float = -6.0,
-        end_log_std: float = -2.0,
+        end_log_std: float = -4.0,
         start_actor_lr: float = 1e-6,
         end_actor_lr: float = 1e-4,
         verbose: int = 0,
@@ -241,7 +241,7 @@ if __name__ == "__main__":
         gamma=0.99,
         train_freq=(1, "step"),
         gradient_steps=1,
-        ent_coef=0.0001,  # smaller entropy
+        ent_coef=0.01,  # smaller entropy
         target_entropy=-16,  # less negative than default (-action_dim)
         verbose=1,
         device=device,
@@ -269,7 +269,7 @@ if __name__ == "__main__":
         #torch.nn.utils.clip_grad_norm_(model.policy.actor.parameters(), 0.5)
 
     # Callbacks
-    total_timesteps = 5_000_000  
+    total_timesteps = 10_000_000  
     log_interval = 10_000
     reward_log_path= os.path.join(SAVE_PATH,"reward_log.csv")
     reward_logger = RewardLoggerCallback(log_path=reward_log_path, log_interval=log_interval, verbose=1)
