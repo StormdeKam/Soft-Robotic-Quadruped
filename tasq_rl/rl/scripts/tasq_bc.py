@@ -17,7 +17,7 @@ LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
 
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-3
-EPOCHS = 1000
+EPOCHS = 500
 SAVE_INTERVAL = 10
 VAL_SPLIT = 0.2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
