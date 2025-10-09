@@ -14,9 +14,15 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    #33:37,  # phase
-    33:37   # goal_pos and orientation
+    33:35,  # phase
+    35:39   # goal_pos and orientation
 ]
+
+def rotate_world_to_local(base_pos, base_quat, point):
+    vec = np.array([point[0] - base_pos[0], point[1] - base_pos[1], 0.0])
+    rot_matrix = np.array(p.getMatrixFromQuaternion(base_quat)).reshape(3, 3)
+    local_vec = rot_matrix.T @ vec
+    return local_vec[0:2]
 
 class TASQEnv(gym.Env):
     def __init__(self, urdf_path, no_links, gui=False, render_mode=None, frame_stack=4):
@@ -24,10 +30,10 @@ class TASQEnv(gym.Env):
         self.urdf_path = urdf_path
         self.no_links = no_links
         self.sim = TASQSimulator(self.urdf_path, gui=gui, no_links=self.no_links, render_mode=render_mode)
-        self.max_steps = 3500
+        self.max_steps = 70
         self.step_count = 0
         self.previous_step_time = time.time()
-        #self.gait_length = 700
+        self.gait_length = 14
 
         # --- Frame stacking ---
         self.frame_stack = frame_stack
@@ -36,9 +42,13 @@ class TASQEnv(gym.Env):
         # Initialize pressures and suction states
         self.pressures = np.ones((4,3), dtype=np.float32)*10
         self.suction_states = np.array([0,100,100,100], dtype=np.float32)
+
+        # Initialize deltas
+        self.d_pressures = np.zeros((4,3), dtype=np.float32)
+        self.d_suctions = np.zeros((4,), dtype=np.float32)
            
         # Observation space: Stacked observations
-        self.obs_dim = 31
+        self.obs_dim = 33
         self.observation_space = gym.spaces.Box(
             low=-np.inf, high=np.inf, shape=(self.obs_dim * frame_stack,), dtype=np.float32
         )
@@ -54,9 +64,12 @@ class TASQEnv(gym.Env):
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32) # Target position for the robot (used in reward calculation)
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32) # Target orientation for the robot (used in reward calculation)
         self.target_height = 0.12  # Set a target height for the robot
-        self.goal_pos = np.array([0.3, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
+        self.goal_pos = np.array([0.01, 0.0], dtype=np.float32) # Relative goal position for the robot (commanded goal direction) 
         self.grf_buffer = []
-        self.grf_randomizer = np.random.normal(6, 6, size=(4,))
+        self.vel_buffer = []
+        self.buffer_len = 100
+        self.grf_randomizer = np.random.normal(0, 3, size=(4,))
+        self.vel_randomizer = np.random.normal(0, 0.01, size=(6,))
         self._np_random = None
         self.seed()  # initialize RNG
 
@@ -73,7 +86,7 @@ class TASQEnv(gym.Env):
         self.target_height = 0.12  # Set a target height for the robot
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset target position
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
-        self.goal_pos = np.array([0.1, 0.0], dtype=np.float32)  # Reset goal position
+        self.goal_pos = np.array([0.01, 0.0], dtype=np.float32)  # Reset goal position
         self.goal_yaw = np.pi/4
         obs = self._get_obs()
         self.obs_buffer.clear()
@@ -86,31 +99,37 @@ class TASQEnv(gym.Env):
         state = self._get_state()
         # Select only the observed indices
         obs = state[OBSERVED_INDICES].astype(np.float32)
-        obs[0:7] *= np.random.normal(1, 0.01, size=(7,))  # Add noise to orientation and velocity       
+        obs[0:4] *= np.random.normal(1, 0.01, size=(4,))  # Add noise to orientation      
 
         return obs
     
     def _get_state(self):
         base_pos = self.sim.get_base_position()         
-        base_ori = self.sim.get_base_orientation()      
-        base_vel = self.sim.get_base_velocity_local()   
+        base_ori = self.sim.get_base_orientation()
+        base_vel = self.get_mean_vel()  
+
+        #pressures and suctions
         normalized_pressures = (self.pressures / 400).flatten()
         normalized_suction = self.suction_states/100
-        grfs = self.sim.get_grfs_local_foot() + self.grf_randomizer     
-        # --- Add to buffer and compute smoothed GRFs ---
-        self.grf_buffer.append(grfs)
-        if len(self.grf_buffer) > 5:
-            self.grf_buffer.pop(0)  # remove oldest if buffer > 5
-        smoothed_grfs = np.mean(self.grf_buffer, axis=0)
-        normalized_grfs = smoothed_grfs / 30
-        #raw_phase = ((self.step_count % self.gait_length) / self.gait_length) * 2 * np.pi
-        #phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
+
+        #grfs
+        grfs = self.get_mean_grf()
+        normalized_grfs = grfs / 30   
+
+        #phase
+        raw_phase = ((self.step_count % self.gait_length) / self.gait_length) * 2 * np.pi
+        phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
+        
+        #goal pos and orientation
+        goal_local_xy = rotate_world_to_local(base_pos[0:2], base_ori, self.goal_pos[0:2])
         base_yaw = np.arctan2(base_ori[2], base_ori[3])
         delta_yaw = self.goal_yaw - base_yaw
         delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
         sin_delta_yaw = np.sin(delta_yaw)
         cos_delta_yaw = np.cos(delta_yaw)
         goal_ori = np.array([sin_delta_yaw, cos_delta_yaw])
+        goal_ori = np.array([0,1])
+
 
         # Combine all into one observation array
         obs = np.concatenate([
@@ -120,8 +139,8 @@ class TASQEnv(gym.Env):
             normalized_pressures,   # shape (12,)
             normalized_suction,     # shape (4,)
             normalized_grfs,        # shape (4,)
-            #phase,                  # shape (2,)
-            self.goal_pos,          # shape (2,)
+            phase,                  # shape (2,)
+            goal_local_xy,          # shape (2,)
             goal_ori           # shape (2,)
         ]).astype(np.float32)
 
@@ -130,25 +149,26 @@ class TASQEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action"
 
-        d_pressures = (action[:12].reshape(4, 3)) * 20
-        d_suctions = (action[12:16]) * 20  
+        self.d_pressures = (action[:12].reshape(4, 3)) * 400
+        self.d_suctions = (action[12:16]) * 100  
+        
+        for i in range(100):
+            grfs = self.sim.get_grfs_local_foot()
+            vel = self.sim.get_base_velocity_local()
+            self.update_buffers(grfs, vel)
+
+            # Apply pressure deltas
+            self.pressures = np.clip(self.pressures + self.d_pressures/100, 0.0, 400.0)
+            self.suction_states = np.clip(self.suction_states + self.d_suctions/100, 0, 100)
+            # Step the simulator with current pressure and suction state
+            self.sim.apply_pressures(self.pressures)
+            self.sim.apply_suction(self.suction_states)
+            #print(self.pressures, self.suction_states)
+            self.sim.step()
 
         obs = self._get_obs()
         self.obs_buffer.append(obs)
         stacked_obs = np.concatenate(self.obs_buffer)
-
-        control_frequency = 24 #Hz
-        control_period = 1.0/control_frequency
-
-
-        # Apply pressure deltas
-        self.pressures = np.clip(self.pressures + d_pressures, 0.0, 400.0)
-        self.suction_states = np.clip(self.suction_states + d_suctions, 0, 100)
-        # Step the simulator with current pressure and suction state
-        self.sim.apply_pressures(self.pressures)
-        self.sim.apply_suction(self.suction_states)
-        #print(self.pressures, self.suction_states)
-        self.sim.step()
 
         # Calculate reward
         state = self._get_state()
@@ -170,19 +190,19 @@ class TASQEnv(gym.Env):
         orientation_penalty = np.abs(pitch) + np.abs(roll)
 
         # 4. Smoothness penalty (based on pressure change)
-        pressure_smoothness_penalty = np.sum(np.square(d_pressures))
+        pressure_smoothness_penalty = np.sum(np.square(self.d_pressures))
 
         # 4. Smoothness penalty (based on suction change)
-        suction_smoothness_penalty = np.sum(np.square(np.abs(d_suctions)))
+        suction_smoothness_penalty = np.sum(np.square(np.abs(self.d_suctions)))
 
         # --- Weighting factors ---
         w_alive = 1.0
         w_dist = 1.0
         w_ori = 1.0
-        w_height = 2.0
-        w_orient = 2.0
-        w_pressure_smoothness = 0.00001
-        w_suction_smoothness = 0.0001
+        w_height = 0.1
+        w_orient = 0.1
+        w_pressure_smoothness = 0.0000001
+        w_suction_smoothness = 0.000001
 
         reward_terms = {
             "alive": alive * w_alive,
@@ -210,3 +230,23 @@ class TASQEnv(gym.Env):
 
     def close(self):
         self.sim.disconnect()
+
+    def update_buffers(self, grfs, base_vel):
+        self.grf_buffer.append(grfs)
+        if len(self.grf_buffer) > self.buffer_len:
+            self.grf_buffer.pop(0)
+        self.vel_buffer.append(base_vel)
+        if len(self.vel_buffer) > self.buffer_len:
+            self.vel_buffer.pop(0)
+
+    def get_mean_grf(self):
+        if len(self.grf_buffer) == 0:
+            return np.zeros(4)
+        mean_grfs = np.mean(self.grf_buffer, axis=0) + self.grf_randomizer
+        return mean_grfs
+
+    def get_mean_vel(self):
+        if len(self.vel_buffer) == 0:
+            return np.zeros(6)
+        mean_vel = np.mean(self.vel_buffer, axis=0) + self.vel_randomizer
+        return mean_vel

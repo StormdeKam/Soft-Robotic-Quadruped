@@ -7,6 +7,8 @@ import csv
 from rl.scripts.tasq_simulator import TASQSimulator
 from rl.models.architecture.actor import BCActor
 from rl.scripts.tasq_sac import SACActorWithBC
+import gymnasium as gym
+
 
 OBSERVED_INDICES = np.r_[
     3:7,    # base orientation
@@ -14,8 +16,9 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:35,  # phase
+    33:35,  # phase signal
     35:39   # goal_pos and orientation
+
 ]
 
 N = 4
@@ -76,10 +79,10 @@ def get_env_observation(env, step, state_buffer: TASQStateBuffer):
     suction_states = np.array(env.get_suction_state())
     normalized_suction = suction_states / 100
 
-    raw_phase = ((step % GAIT_LENGTH) / GAIT_LENGTH) * 2 * np.pi
-    phase = np.array([np.sin(raw_phase), np.cos(raw_phase)])
+    raw_phase1 = ((step % GAIT_LENGTH)/GAIT_LENGTH) * 2 * np.pi 
+    phase1 = np.array([np.sin(raw_phase1), np.cos(raw_phase1)]) 
 
-    goal_world = np.array([0.0010, 0.0])
+    goal_world = np.array([0.010, 0.0])
     goal_local_xy = rotate_world_to_local(base_pos[0:2], base_ori, goal_world[0:2])
     goal_yaw = 0.0
     sin_cos_yaw = np.array([np.sin(goal_yaw), np.cos(goal_yaw)])
@@ -91,7 +94,7 @@ def get_env_observation(env, step, state_buffer: TASQStateBuffer):
         normalized_pressures,
         normalized_suction,
         normalized_grfs,
-        phase,
+        phase1,
         goal_local_xy,
         sin_cos_yaw
     ]).astype(np.float32)
@@ -107,7 +110,7 @@ def stack_states(state_buffer_list, new_state, max_len=N):
     return np.concatenate(state_buffer_list, axis=-1), state_buffer_list
 
 def action_to_pressures_and_suction(action):
-    d_pressures = (action[:12].reshape(4, 3)) * 100
+    d_pressures = (action[:12].reshape(4, 3)) * 400
     d_suctions = action[12:16] * 100
     return d_pressures, d_suctions
 
@@ -115,7 +118,7 @@ def action_to_pressures_and_suction(action):
 # Main testing function
 # ------------------------------
 def test_model(model_path, urdf_path, device="cuda"):
-    env = TASQSimulator(urdf_path=urdf_path, gui=True, no_links=7)
+    env = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=7)
     env.reset_simulation()
     print(f"Loading model from {model_path}")
 
@@ -123,6 +126,8 @@ def test_model(model_path, urdf_path, device="cuda"):
     action_dim = 16
     obs_dim = original_obs_dim * N
 
+    action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(action_dim,), dtype=np.float32)
+        
     state_dict = torch.load(model_path, map_location=device)
     if any(k.startswith("bc_actor.") for k in state_dict.keys()):
         model = SACActorWithBC(obs_dim=obs_dim, act_dim=action_dim, device=device).to(device)
@@ -145,7 +150,7 @@ def test_model(model_path, urdf_path, device="cuda"):
 
     suction_states = np.array([0, 100, 100, 100], dtype=np.float32)
     pressures = np.ones((4, 3)) * 10
-    steps = GAIT_LENGTH
+    steps = GAIT_LENGTH*5
 
     log_states = []
     log_actions = []
@@ -155,14 +160,16 @@ def test_model(model_path, urdf_path, device="cuda"):
 
     for step in range(steps):
         step_start = time.time()
+        
+        obs = get_env_observation(env, step, state_buffer)
 
         if step % 100 == 0:
-            obs = get_env_observation(env, step, state_buffer)
             stacked_state, stacked_state_buffer = stack_states(stacked_state_buffer, obs)
             state_tensor = torch.from_numpy(stacked_state).float().to(device).unsqueeze(0)
 
             action_tensor = model_forward(state_tensor)
             action = action_tensor.cpu().numpy().squeeze()
+            assert action_space.contains(action), "Invalid action"
             log_actions.append(action.tolist())
             d_pressures, d_suctions = action_to_pressures_and_suction(action)
 

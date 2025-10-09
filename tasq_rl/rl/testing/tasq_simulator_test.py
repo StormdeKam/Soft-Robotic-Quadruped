@@ -4,7 +4,7 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser(description="Run TASQ with Behavior Cloning or SAC")
-parser.add_argument("--gait", type=str, choices=["straight_bezier", "straight", "straightv3", "rotation"], required=True, help="Run straight_bezier, straight or rotation gait")
+parser.add_argument("--gait", type=str, choices=["straight_bezier", "straight", "straightv3", "rotation", "cpg_straight"], required=True, help="Run straight_bezier, straight or rotation gait")
 parser.add_argument("--no_links", type=str, choices=["5","6","7"], required=True, help="amount of links in the robot legs")
 args = parser.parse_args()
 
@@ -38,12 +38,21 @@ elif args.gait == "straight":
     sim.reset_simulation()
     sim.run(steps=1400,pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
 
+elif args.gait == "cpg_straight":
+    from rl.gaits.CPG_based_gait import demo_pressures, demo_suction
+    demo_pressures_scaled = lambda step, mode: demo_pressures(step, mode) / 100
+    demo_suction_scaled = lambda step, mode: demo_suction(step, mode) / 100
+    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=False, no_links=7)
+    sim.reset_simulation()
+    sim.run(steps=1200,pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
+
 elif args.gait == "rotation":
     from rl.gaits.old.demo_gait_rotation import demo_pressures_rot as demo_pressures
     from rl.gaits.old.demo_gait_rotation import demo_suction_rot as demo_suction
     sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
     sim.reset_simulation()
     sim.run(steps=4*gait_length, pressure_callback=demo_pressures, suction_callback=demo_suction, mode=0)
+
 
 sim.disconnect()
 

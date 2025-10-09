@@ -15,10 +15,11 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:37   # goal pos and orientation
+    33:35,  # phase signal
+    35:39    # goal pos and orientation
 ]
 
-def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
+def test_model(model_path, device, n_runs=10, steps=70, gui=False):
     print(f"[INFO] Loading model from {model_path}")
 
     # Load state_dict and detect actor type
@@ -57,15 +58,19 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
 
         y_traj = []
         failed = False
-        control_period = 1/24.
+        control_period = 2.4
 
         for step in range(steps):
             step_start = time.time()
+
             # Only use observed indices for the network
             state_tensor = torch.from_numpy(obs).float().to(device).unsqueeze(0)
 
             with torch.no_grad():
-                out = model(state_tensor, deterministic=True)
+                if isinstance(model, SACActorWithBC):
+                    out = model(state_tensor, deterministic=True) 
+                else:
+                    out = model(state_tensor)
                 if isinstance(out, tuple):
                     pred_pressures, pred_suctions = out
                     action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()
@@ -74,6 +79,7 @@ def test_model(model_path, device, n_runs=10, steps=3500, gui=False):
 
             # Step environment
             obs, reward, terminated, truncated, info = env.step(action)
+
             base_pos = env.sim.get_base_position()
             y_traj.append(base_pos[1])
 
@@ -148,7 +154,10 @@ def test_model_video_cv2(model_path, device, steps=3500, video_path="tasq_test.a
     for step in range(steps):
         state_tensor = torch.from_numpy(obs).float().to(device).unsqueeze(0)
         with torch.no_grad():
-            out_action = model(state_tensor, deterministic=True)
+            if isinstance(model, SACActorWithBC):
+                out_action = model(state_tensor, deterministic=True)
+            else:
+                out_action = model(state_tensor)
             if isinstance(out_action, tuple):
                 pred_pressures, pred_suctions = out_action
                 action = torch.cat([pred_pressures, pred_suctions], dim=-1).cpu().numpy().squeeze()

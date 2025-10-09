@@ -12,8 +12,8 @@ from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
 
 
 # --- Parameters ---
-num_episodes = 1000 # Number of simulation rollouts
-save_path = "rl/datasets/low_freq_v2"  # Path to save the dataset
+num_episodes = 300 # Number of simulation rollouts
+save_path = "rl/datasets/low_freq_v5"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -51,6 +51,8 @@ def run_episode(episode_idx):
     sim.reset_simulation()
 
     pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
+    pressures[0,:] = 400
+    pressures[2,:] = 400
     suction_states = np.array([0,100,100,100], dtype=np.float32) # Initial suction states
     episode_states = []
     episode_actions = []
@@ -62,7 +64,7 @@ def run_episode(episode_idx):
     vel_randomizer = np.random.normal(0,0.01, size=(6,))
 
     for step in range(total_steps):
-
+        rel_step = step % gait_length
         base_vel = sim.get_base_velocity_local()
         vel_buffer.append(base_vel)
         if len(vel_buffer) > 100:
@@ -85,8 +87,18 @@ def run_episode(episode_idx):
             #Central Pattern Generator
             raw_phase1 = ((step % gait_length)/gait_length) * 2 * np.pi 
             phase1 = np.array([np.sin(raw_phase1), np.cos(raw_phase1)]) 
-            raw_phase2 = ((step % gait_length)/gait_length) * 2 * np.pi 
-            phase2 = np.array([np.sin(raw_phase2), np.cos(raw_phase2)])
+
+            """
+            # Leg selector
+            if rel_step < 300:
+                legselector = np.array([1,0,0,0])
+            elif rel_step < 600:
+                legselector = np.array([0,1,0,0])
+            elif rel_step < 900:
+                legselector = np.array([0,0,0,1])
+            elif rel_step < 1200:
+                legselector = np.array([0,0,1,0])
+            """
 
             normalized_pressures = (pressures / 400).flatten()
             normalized_suction = suction_states/100
@@ -98,8 +110,7 @@ def run_episode(episode_idx):
                 normalized_pressures,
                 normalized_suction,
                 normalized_grfs,
-                phase1,
-                phase2,
+                phase1
             ]).astype(np.float32)
 
             d_pressures = pressure_callback(step)
@@ -109,7 +120,7 @@ def run_episode(episode_idx):
             noisy_d_pressures = d_pressures * np.random.normal(1, 0.01, size=(4, 3))
             noisy_d_pressures = np.clip(noisy_d_pressures, -400, 400)
 
-            action = np.concatenate([(noisy_d_pressures / (400)).flatten(), (noisy_d_suctions / 100)]).astype(np.float32)
+            action = np.concatenate([(d_pressures / (400)).flatten(), (d_suctions / 100)]).astype(np.float32)
 
             episode_states.append(state)
             episode_actions.append(action)

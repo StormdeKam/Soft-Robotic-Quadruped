@@ -12,103 +12,95 @@ def demo_pressures(step, mode):
     #step 1
     #t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
     if rel_step < 100:
-        d_pressures[1,:] = 385
-        d_pressures[3,:] = 385
+        d_pressures[1,:] = 390
+        d_pressures[3,:] = 390
 
-    #t=100 [10,10,10,  395,395,395  10,10,10,  395,395,395]
+    #t=100 [10,10,10,  400,400,400  10,10,10,  400,400,400]
     elif rel_step < 200:
-        d_pressures[0,1] = 80
-        d_pressures[0,2] = 300
+        d_pressures[0,1] = 70
+        d_pressures[0,2] = 290
 
-    #t=200 [10,90,310,  395,395,395,  10,10,10,  395,395,395]
+    #t=200 [10,80,300,  400,400,400,  10,10,10,  400,400,400]
     elif rel_step < 300:
         d_pressures[0,0] = 390
         d_pressures[0,1] = 60
         d_pressures[0,2] = -300
-        d_pressures[1,:] = -380
+        d_pressures[1,:] = -390
         d_pressures[2,:] = 390
-        d_pressures[3,:] = -380
+        d_pressures[3,:] = -390
 
-    #t=300 [400,150,10,  15,15,15,  400,400,400,  15,15,15]
+    #t=300 [400,150,10,  10,10,10,  400,400,400,  10,10,10]
     elif rel_step < 400:
         d_pressures[0,1] = 250
         d_pressures[0,2] = 390      
 
-    #t=400 [400,400,400,  15,15,15,  400,400,400,  15,15,15]
+    #t=400 [400,400,400,  10,10,10,  400,400,400, 10,10,10]
     elif rel_step < 500:
-        d_pressures[1,1] = 300
-        d_pressures[1,2] = 80   
+        d_pressures[1,1] = 290
+        d_pressures[1,2] = 70   
 
-    #t=500 [400,400,400,  15,315,95,  400,400,400,  15,15,15]
+    #t=500 [400,400,400,  10,300,80,  400,400,400,  10,10,10,]
     elif rel_step < 600:
-        d_pressures[1,0] = 375
-        d_pressures[1,1] = -295
-        d_pressures[1,2] = 60 
-        d_pressures[0,:] = -380
-        d_pressures[2,:] = -380
-        d_pressures[3,:] = 375
+        d_pressures[1,0] = 390
+        d_pressures[1,1] = -290
+        d_pressures[1,2] = 70 
+        d_pressures[0,:] = -390
+        d_pressures[2,:] = -390
+        d_pressures[3,:] = 390
 
-    #t=600 [20,20,20  390,20,155,  20,20,20,  390,390,390]
+    #t=600 [10,10,10,  400,10,150,  10,10,10,  400,400,400]
     elif rel_step < 700:
-        d_pressures[1,0] = -380
-        d_pressures[1,1] = -10
-        d_pressures[1,2] = -145 
-        d_pressures[0,:] = 377
-        d_pressures[2,:] = 377
-        d_pressures[3,:] = -380
+        d_pressures[1,0] = -390
+        d_pressures[1,2] = -140 
+        d_pressures[0,:] = 390
+        d_pressures[2,:] = 390
+        d_pressures[3,:] = -390
 
-    #t=700 [397,397,397  10,10,10,  397,397,397,  10,10,10]
+    #t=700 [400,400,400  10,10,10,  400,400,400,  10,10,10]
     elif rel_step < 800:
-        d_pressures[3,0] = 310
-        d_pressures[3,2] = 225
+        d_pressures[3,0] = 290
+        d_pressures[3,2] = 210
 
-    #t=800 [397,397,397  10,10,10,  397,397,397,  320,10,235]
+    #t=800 [400,400,400  10,10,10,  400,400,400,  300,10,220]
     elif rel_step < 900:
-        d_pressures[0,:] = -377
-        d_pressures[1,:] = 380
-        d_pressures[2,:] = -377
-        d_pressures[3,0] = -300
-        d_pressures[3,1] = 380
-        d_pressures[3,2] = -120 
+        d_pressures[0,:] = -390
+        d_pressures[1,:] = 390
+        d_pressures[2,:] = -390
+        d_pressures[3,0] = -290
+        d_pressures[3,1] = 390
+        d_pressures[3,2] = -110
 
-    #t=900 [20,20,20  390,390,390,  20,20,20,  20,390,105]
+    #t=900 [10,10,10  400,400,400,  10,10,10,  10,400,110]
     elif rel_step < 1000:
-        d_pressures[0,:] = -8
-        d_pressures[1,:] = 8
-        d_pressures[2,:] = -8
-        d_pressures[3,0] = 378
-        d_pressures[3,1] = 8
-        d_pressures[3,2] = 293
+        d_pressures[3,0] = 390
+        d_pressures[3,2] = 290
 
-    #t=1000 [12,12,12  398,398,398,  12,12,12,  398,398,398]
+    #t=1000 [10,10,10  400,400,400,  10,10,10  400,400,400,]
     elif rel_step < 1100:
-        d_pressures[2,0] = 300
-        d_pressures[2,1] = 220
+        d_pressures[2,0] = 290
+        d_pressures[2,1] = 210
 
-    #t=1100 [12,12,12  398,398,398,  312,232,12,  398,398,398]
+    #t=1100 [10,10,10  400,400,400,  300,220,10,  400,400,400,]
     elif rel_step < 1200:
-        d_pressures[0,:] = 386
-        d_pressures[1,:] = -386
-        d_pressures[2,0] = -300
-        d_pressures[2,1] = -120
-        d_pressures[2,2] = 386
-        d_pressures[3,:] = -386
+        d_pressures[0,:] = 390
+        d_pressures[1,:] = -390
+        d_pressures[2,0] = -290
+        d_pressures[2,1] = -110
+        d_pressures[2,2] = 390
+        d_pressures[3,:] = -390
 
-    #t=1200 [398,398,398,  12,12,12,  12,112,398,  12,12,12]
+    #t=1200 [400,400,400,  10,10,10,  10,110,400,  10,10,10]
     elif rel_step < 1300:
-        d_pressures[0,:] = -384
-        d_pressures[1,:] = 378
-        d_pressures[2,0] = 2
-        d_pressures[2,1] = -98
-        d_pressures[2,2] = -384
-        d_pressures[3,:] = 378
+        d_pressures[0,:] = -390
+        d_pressures[1,:] = 390
+        d_pressures[2,1] = -100
+        d_pressures[2,2] = -390
+        d_pressures[3,:] = 390
 
-    #t=1300 [14,14,14,  390,390,390,  14,14,14, 390,390,390]
+    #t=1300 [10,10,10,  400,400,400,  10,10,10, 400,400,400]
     elif rel_step < 1400:
-        d_pressures[0,:] = -4
-        d_pressures[1,:] = -380
-        d_pressures[2,:] = -4
-        d_pressures[3,:] = -380
+        d_pressures[1,:] = -390
+        d_pressures[3,:] = -390
     #t=1400/t=0 [10,10,10,  10,10,10,  10,10,10,  10,10,10]
 
     return d_pressures
