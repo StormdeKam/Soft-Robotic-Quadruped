@@ -175,9 +175,9 @@ class TASQEnv(gym.Env):
 
         # 0. Reward survival
         alive = 1
-        # 1. Distance to target position and orientation
-        pos = state[:2]
-        distance = np.linalg.norm(pos - self.target_pos)
+        # 1. Traveled x distance and orientation reward
+        pos_x = state[0]
+        x_distance = pos_x#np.linalg.norm(pos - self.target_pos)
         roll, pitch, sin_yaw, cos_yaw = state[3:7]
         relative_ori = np.array([sin_yaw, cos_yaw]) - self.target_ori
         orientation_reward = np.linalg.norm(relative_ori)
@@ -197,16 +197,16 @@ class TASQEnv(gym.Env):
 
         # --- Weighting factors ---
         w_alive = 1.0
-        w_dist = 1.0
+        w_dist = 100.0
         w_ori = 1.0
-        w_height = 0.1
-        w_orient = 0.1
+        w_height = 1.0
+        w_orient = 1.0
         w_pressure_smoothness = 0.0000001
-        w_suction_smoothness = 0.000001
+        w_suction_smoothness = 0.00001
 
         reward_terms = {
             "alive": alive * w_alive,
-            "distance": -w_dist * distance,
+            "distance": np.clip(w_dist * x_distance, -1,1),
             "orientation_reward": -w_ori * orientation_reward,
             "height_penalty": -w_height * height_penalty,
             "orientation_penalty": -w_orient * orientation_penalty,
@@ -217,9 +217,9 @@ class TASQEnv(gym.Env):
         reward = sum(reward_terms.values()) 
 
         # Terminate or truncate
-        terminated = distance < 0.05 
-        reward += 1000.0 if terminated else 0.0  # Bonus for reaching target
-        truncated = self.step_count >= self.max_steps or current_height < 0.05
+        terminated = current_height < 0.05
+        reward -= 100.0 if terminated else 0.0  # Penalty for falling
+        truncated = self.step_count >= self.max_steps 
 
         self.step_count += 1
 

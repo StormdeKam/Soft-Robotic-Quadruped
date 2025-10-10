@@ -18,7 +18,7 @@ def pneu2posandgains(pressures, no_links):
     c4 = 1 # constant to map force to change in velocity gain for prismatic joints
     """
     k1 = 0.000026 # constant to map pressure to torque (physical interpretation: area to which pressure is applied)
-    k2 = 0.00000012 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
+    k2 = 0.00000020 # constant to map pressure to force (physical interpretation: area to which pressure is applied)
     kp__th_1 = 0.08# position gain for revolute joints when no pressure is applied (physical interpretation: bending stiffness)
     kd__th_1 = 0.2# velocity gain for revolute joints when no pressure is applied (physical interpretation: bending damping)
     kp__dz_1 = 0.15# position gain for prismatic z joints when no pressure is applied (physical interpretation: axial stiffness)

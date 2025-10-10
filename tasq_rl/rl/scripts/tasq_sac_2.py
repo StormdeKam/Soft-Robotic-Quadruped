@@ -19,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 
-SAVE_PATH = "rl/models/tasq_sac/low_freq/trial_1(9_10_2025)"
+SAVE_PATH = "rl/models/tasq_sac/low_freq/trial_2(10_10_2025)"
 os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[
@@ -37,15 +37,48 @@ initial_actor_lr = 1e-6  # effectively frozen
 # We'll find the actor-related optimizer(s) and reduce LR below
 # After creating the model, adjust optimizer param groups:
 def set_optimizer_lr_for_actor(model, lr):
-    # find all torch.optim.Optimizer objects in model.__dict__
-    for k, v in model.__dict__.items():
-        if isinstance(v, torch.optim.Optimizer):
-            # adjust any param_group that contains parameters from model.policy.actor
-            for pg in v.param_groups:
-                # check if this param_group contains an actor param by identity
-                params = pg.get("params", [])
-                if any(p in list(model.policy.actor.parameters()) for p in params):
-                    pg["lr"] = lr
+    """
+    Robustly find optimizers that own the policy/actor parameters and set their lr.
+    Searches common places SB3 stores optimizers (model, model.policy).
+    """
+    import torch
+
+    actor_param_ids = {id(p) for p in model.policy.actor.parameters()}
+    found = False
+
+    # helper to scan a namespace (dict-like)
+    def scan_namespace(namespace, namespace_name="namespace"):
+        nonlocal found
+        for name, obj in namespace.items():
+            if isinstance(obj, torch.optim.Optimizer):
+                # check param groups
+                for pg in obj.param_groups:
+                    params = pg.get("params", [])
+                    if any(id(p) in actor_param_ids for p in params):
+                        old_lrs = [pg.get("lr") for pg in obj.param_groups]
+                        for pg in obj.param_groups:
+                            pg["lr"] = lr
+                        print(f"[BC] set lr={lr} for optimizer '{name}' in {namespace_name} (old lrs={old_lrs})")
+                        found = True
+
+    # scan top-level model dict
+    scan_namespace(vars(model), "model.__dict__")
+
+    # scan model.policy dict if present
+    if hasattr(model, "policy"):
+        scan_namespace(vars(model.policy), "model.policy.__dict__")
+
+        # some versions keep optimizers on the class or hidden attrs; check class dict
+        try:
+            scan_namespace({k: v for k, v in vars(model.policy.__class__).items()}, "model.policy.__class__.__dict__")
+        except Exception:
+            pass
+
+    if not found:
+        print("[BC] Warning: no optimizer param_group matched actor params. "
+              "Make sure the actor parameters are included in an optimizer on the model.policy (actor_optimizer).")
+
+
 
 # ---------------- Extended checkpoint callback ----------------
 class ActorCheckpointCallback(CheckpointCallback):
@@ -83,28 +116,28 @@ class ActorCheckpointCallback(CheckpointCallback):
                 f.write(f"Steps {steps}: {results}\n")
 
             # ----- Run video generation -----
+            """
             video_file = os.path.join(
                 self.actor_save_path, f"test_run_{steps}_steps.mp4"
             )
             print(f"[Eval] Saving test video to {video_file}")
             test_model_video_cv2(actor_file, device=self.device, steps=700*2, video_path=video_file)
-
+            """
         return True
 
 # ---------------- Warm start callback ----------------
+# WarmStartSACCallback
 class WarmStartSACCallback(BaseCallback):
     def __init__(
         self,
-        freeze_steps: int = 500_000,
-        ramp_steps: int = 500_000,  # how long to ramp after freeze
-        start_log_std: float = -6.0,
-        end_log_std: float = -4.0,
+        ramp_steps: int = 5_000,  # how long to ramp actor LR and log_std
+        start_log_std: float = -3.0,
+        end_log_std: float = -2.0,
         start_actor_lr: float = 1e-6,
-        end_actor_lr: float = 3e-5,
+        end_actor_lr: float = 3e-4,
         verbose: int = 0,
     ):
         super().__init__(verbose)
-        self.freeze_steps = freeze_steps
         self.ramp_steps = ramp_steps
         self.start_log_std = start_log_std
         self.end_log_std = end_log_std
@@ -113,35 +146,42 @@ class WarmStartSACCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         num_steps = self.num_timesteps
+        t = min(1.0, num_steps / max(1, self.ramp_steps))
 
-        if num_steps < self.freeze_steps:
-            # Keep frozen
-            new_log_std = self.start_log_std
-            new_actor_lr = self.start_actor_lr
-        else:
-            # Ramp linearly from freeze_steps → freeze_steps + ramp_steps
-            t = min(
-                1.0,
-                (num_steps - self.freeze_steps) / max(1, self.ramp_steps),
-            )
-            new_log_std = self.start_log_std + t * (self.end_log_std - self.start_log_std)
-            new_actor_lr = self.start_actor_lr + t * (self.end_actor_lr - self.start_actor_lr)
+        new_log_std = self.start_log_std + t * (self.end_log_std - self.start_log_std)
+        new_actor_lr = self.start_actor_lr + t * (self.end_actor_lr - self.start_actor_lr)
 
-        # Update log_std if actor has it
-        if hasattr(self.model.policy, "actor"):
+        # Update log_std
+        if hasattr(self.model.policy, "actor") and hasattr(self.model.policy.actor, "log_std"):
             actor = self.model.policy.actor
-            if hasattr(actor, "log_std") and isinstance(actor.log_std, torch.nn.Parameter):
+            if isinstance(actor.log_std, torch.nn.Parameter):
                 actor.log_std.data.fill_(new_log_std)
 
-        # Update actor LR in optimizer
-        actor_params = set(self.model.policy.actor.parameters())
-        for _, opt in self.model.__dict__.items():
+        # Update actor LR
+        actor_param_ids = {id(p) for p in self.model.policy.actor.parameters()}
+        for name, opt in self.model.__dict__.items():
+            if not isinstance(opt, torch.optim.Optimizer):
+                continue
+            for pg in opt.param_groups:
+                params = pg.get("params", [])
+                if any(id(p) in actor_param_ids for p in params):
+                    pg["lr"] = new_actor_lr
+                    if self.verbose:
+                        print(f"[WarmStart] updated optimizer '{name}' lr -> {new_actor_lr}")
+
+        for name, opt in self.model.__dict__.items():
             if isinstance(opt, torch.optim.Optimizer):
-                for pg in opt.param_groups:
-                    if any(p in actor_params for p in pg.get("params", [])):
-                        pg["lr"] = new_actor_lr
+                try:
+                    lrs = [pg.get("lr", None) for pg in opt.param_groups]
+                except Exception:
+                    lrs = None
+                print(f"[OPT] {name}: {lrs}")
+            else:
+                # skip non-optimizer attributes
+                pass
 
         return True
+
 
 
 # ---------------- BC-initialized Actor ----------------
@@ -212,6 +252,18 @@ class BCInitializedSACPolicy(SACPolicy):
         self.actor = bc_wrapper
         print("[BC] ✅ BC-initialized SAC actor loaded and ready.")
 
+        # Reinitialize optimizer so it tracks the BC actor parameters
+        if hasattr(self, "actor_optimizer_class") and hasattr(self, "lr_schedule"):
+            lr = self.lr_schedule(1)
+            self.actor_optimizer = self.actor_optimizer_class(self.actor.parameters(), lr=lr)
+            print(f"[BC] 🔁 Reinitialized actor optimizer with lr={lr}")
+        else:
+            # Fallback (SB3 version dependent)
+            import torch
+            self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
+            print("[BC] ⚠️ Used fallback Adam optimizer for BC actor.")
+
+
 # ---------------- VecEnv ----------------
 NO_LINKS_LIST = [5, 6, 7]
 URDF_BY_LINKS = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
@@ -253,33 +305,31 @@ if __name__ == "__main__":
         gamma=0.99,
         train_freq=(1, "step"),
         gradient_steps=1,
-        ent_coef=0.0001,  # smaller entropy
-        target_entropy=-16,  # less negative than default (-action_dim)
+        ent_coef=0.1, 
+        target_entropy=-16, 
         verbose=1,
         device=device,
         seed=seed,
     )
 
-    # Load BC weights
+
+    # Load BC actor
     bc_weights_path = "rl/models/tasq_bc/low_freq_v2/tasq_bc_ep350.pt"
-    
     if os.path.isfile(bc_weights_path):
         model.policy.load_bc_weights(bc_weights_path, device=model.device)
     else:
         print(f"[BC] Skipping: file not found at {bc_weights_path}")
 
-    # CALL THIS IMMEDIATELY AFTER model = SAC(...)
-    set_optimizer_lr_for_actor(model, initial_actor_lr)
-    print(f"[BC] set actor LR to {initial_actor_lr}")
-
-    # Freeze actor params initially
-    for p in model.policy.actor.parameters():
-        p.requires_grad = False
-
-    # Reduce actor LR after init
-    if hasattr(model.policy, "actor_optimizer"):
-        for g in model.policy.actor_optimizer.param_groups:
-            g["lr"] = 3e-5
+    # CALL THIS IMMEDIATELY AFTER model = SAC(...) 
+    set_optimizer_lr_for_actor(model, initial_actor_lr) 
+    print("[BC] post-optimizer-lr check:")
+    for name, opt in model.__dict__.items():
+        if isinstance(opt, torch.optim.Optimizer):
+            print(f"  {name}: {[pg.get('lr') for pg in opt.param_groups]}")
+    # Lower actor LR for warm start
+    #for pg in model.policy.actor_optimizer.param_groups:
+    #    pg["lr"] = initial_actor_lr  # e.g. 1e-6
+    #print(f"[BC] actor learning rate set to {initial_actor_lr}")
 
     # Gradient clipping (actor)
     #if hasattr(model.policy, "actor_optimizer"):
@@ -292,7 +342,7 @@ if __name__ == "__main__":
     reward_logger = RewardLoggerCallback(log_path=reward_log_path, log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
     checkpoint_callback = ActorCheckpointCallback(
-        save_freq=25_000 // n_envs,
+        save_freq=10_000 // n_envs,
         save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,
@@ -303,7 +353,7 @@ if __name__ == "__main__":
         verbose=1,
     )
 
-    warm_start_callback = WarmStartSACCallback(freeze_steps=5_000, verbose=1)
+    warm_start_callback = WarmStartSACCallback(ramp_steps=5_000, verbose=1)
     callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, warm_start_callback])
     
     # ---------- Seed Replay Buffer with BC Demos ----------
@@ -323,7 +373,7 @@ if __name__ == "__main__":
         )
 
         n_envs = model.n_envs
-        max_seed_transitions = min(len(demo_dataset), model.replay_buffer.buffer_size // 2)  # up to 50% of buffer
+        max_seed_transitions = min(len(demo_dataset), model.replay_buffer.buffer_size // 20)  # up to 5% of buffer
         transitions_added = 0
         perm = np.random.permutation(len(demo_dataset) - 1) 
 
@@ -362,6 +412,7 @@ if __name__ == "__main__":
         print("[BC] ⚠️ Demo dataset not found, skipping replay buffer seeding.")
     
     model.learn(total_timesteps=total_timesteps, callback=callback)
+    
     
     model.save(os.path.join(SAVE_PATH, "tasq_sac_full"))
     torch.save(model.policy.actor.state_dict(), os.path.join(SAVE_PATH, "tasq_sac_actor.pt"))

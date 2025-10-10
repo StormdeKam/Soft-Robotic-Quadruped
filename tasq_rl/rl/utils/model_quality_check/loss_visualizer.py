@@ -2,24 +2,26 @@ import matplotlib.pyplot as plt
 import csv
 
 # File path to the log data
-loss_data_file = "rl/models/tasq_bc/minimal_viable_V8/tasq_bc_log.txt"
+loss_data_file = "rl/models/tasq_bc/low_freq_v4/tasq_bc_log.txt"
 
 # Read data from file
 epochs = []
 train_total, train_pressure, train_suction = [], [], []
 val_total, val_pressure, val_suction = [], [], []
-
+count = 0
 with open(loss_data_file, "r") as f:
     reader = csv.reader(f)
     next(reader)  # Skip header line
     for row in reader:
-        epochs.append(int(row[0]))
-        train_total.append(float(row[1]))
-        train_pressure.append(float(row[2]))
-        train_suction.append(float(row[3]))
-        val_total.append(float(row[4]))
-        val_pressure.append(float(row[5]))
-        val_suction.append(float(row[6]))
+        if count<150:
+            epochs.append(int(row[0]))
+            train_total.append(float(row[1]))
+            train_pressure.append(float(row[2]))
+            train_suction.append(float(row[3]))
+            val_total.append(float(row[4]))
+            val_pressure.append(float(row[5]))
+            val_suction.append(float(row[6]))
+            count+=1
 
 # Plot all in one figure with 3 subplots
 plt.figure(figsize=(12, 10))
@@ -56,5 +58,5 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-plt.savefig("figures/loss_4_8.png", dpi=300)
+plt.savefig("figures/loss_4_8.png", dpi=300, transparent=True)
 plt.show()
