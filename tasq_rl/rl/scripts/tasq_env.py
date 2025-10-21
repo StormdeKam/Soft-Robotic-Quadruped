@@ -30,10 +30,10 @@ class TASQEnv(gym.Env):
         self.urdf_path = urdf_path
         self.no_links = no_links
         self.sim = TASQSimulator(self.urdf_path, gui=gui, no_links=self.no_links, render_mode=render_mode)
-        self.max_steps = 70
+        self.max_steps = 12*5
         self.step_count = 0
         self.previous_step_time = time.time()
-        self.gait_length = 14
+        self.gait_length = 12
 
         # --- Frame stacking ---
         self.frame_stack = frame_stack
@@ -41,7 +41,10 @@ class TASQEnv(gym.Env):
         
         # Initialize pressures and suction states
         self.pressures = np.ones((4,3), dtype=np.float32)*10
-        self.suction_states = np.array([0,100,100,100], dtype=np.float32)
+        self.pressures[1,:] = 400
+        self.pressures[3,:] = 400
+        self.suction_states = np.array([0,0,100,0], dtype=np.float32)
+
 
         # Initialize deltas
         self.d_pressures = np.zeros((4,3), dtype=np.float32)
@@ -88,6 +91,12 @@ class TASQEnv(gym.Env):
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
         self.goal_pos = np.array([0.01, 0.0], dtype=np.float32)  # Reset goal position
         self.goal_yaw = np.pi/4
+        #for i in range(100):
+        #    self.pressures[1,:] += 3.9
+        #    self.pressures[3,:] += 3.9
+        #    self.sim.apply_pressures(self.pressures)
+        #    self.sim.apply_suction(self.suction_states)
+        #    self.sim.step()
         obs = self._get_obs()
         self.obs_buffer.clear()
         for _ in range(self.frame_stack):
@@ -197,7 +206,7 @@ class TASQEnv(gym.Env):
 
         # --- Weighting factors ---
         w_alive = 1.0
-        w_dist = 100.0
+        w_dist = 20.0
         w_ori = 1.0
         w_height = 1.0
         w_orient = 1.0
@@ -218,10 +227,15 @@ class TASQEnv(gym.Env):
 
         # Terminate or truncate
         terminated = current_height < 0.05
-        reward -= 100.0 if terminated else 0.0  # Penalty for falling
+        reward -= 0.0 if terminated else 0.0  # Penalty for falling
         truncated = self.step_count >= self.max_steps 
 
         self.step_count += 1
+
+        if np.random.rand() < 0.01:
+            total = sum(reward_terms.values())
+            print(f"[Reward] { {k: round(float(v), 3) for k, v in reward_terms.items()} } total={total:.3f}")
+
 
         return stacked_obs, reward, terminated, truncated, {"reward_terms": reward_terms}
 

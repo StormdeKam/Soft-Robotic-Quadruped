@@ -6,19 +6,19 @@ import pybullet as p
 # -------------------------
 # PARAMETERS
 # -------------------------
-URDF_PATH = "rl/urdfs/TASQ_n5.urdf"
+URDF_PATH = "rl/urdfs/TASQ_n7.urdf"
 CSV_PATH = "rl/datasets/actuator_validation/hysteresis_data.csv"
 
 TEST_LEG = 0
-NO_LINKS = 3
-CONTROL_FREQ = 240
+NO_LINKS = 7
+CONTROL_FREQ = 24
 SIM_STEPS = 500      # number of simulation steps to record oscillations
-STABILIZE_STEPS = 200  # stabilize before starting
+STABILIZE_STEPS = 500  # stabilize before starting
 DT = 1.0 / CONTROL_FREQ
 
 # Max initial values
-PRISMATIC_MAX = 0.005  # meters (as in apply_suction)
-REVOLUTE_MAX_Y = 0.5   # rad (example maximum angle for y-axis joints)
+PRISMATIC_MAX = -0.001  # meters (as in apply_suction)
+REVOLUTE_MAX_Y = 0.16   # rad (example maximum angle for y-axis joints)
 
 # -------------------------
 # INITIALIZE SIMULATOR
@@ -46,7 +46,7 @@ for _ in range(STABILIZE_STEPS):
 prismatic_per_leg = len(sim.prismatic_joints) // 4
 for j in range(prismatic_per_leg):
     joint_idx = sim.prismatic_joints[TEST_LEG*prismatic_per_leg + j]
-    p.resetJointState(sim.robot_id, joint_idx, targetValue=PRISMATIC_MAX/3)
+    p.resetJointState(sim.robot_id, joint_idx, targetValue=PRISMATIC_MAX)
 
 z_positions = []
 for step in range(SIM_STEPS):
@@ -60,29 +60,35 @@ z_positions = np.array(z_positions)
 z_positions_rel = z_positions - z_positions[-1]
 time_sim = np.arange(SIM_STEPS) * DT
 
-plt.figure(figsize=(12,5))
-plt.subplot(1,2,1)
+plt.figure(figsize=(5,5))
 plt.plot(time_sim, z_positions_rel, label="Simulated")
 plt.axhline(0, color='k', linestyle='--', label="Zero reference")
 plt.xlabel("Time (s)")
 plt.ylabel("Z position (m)")
-plt.title("Prismatic oscillation")
+plt.title("Expansion time response")
 plt.grid(True)
 
+"""
 # -------------------------
 # 2) REVOLUTE Y OSCILLATION (x position)
 # -------------------------
+time_sim = np.arange(SIM_STEPS) * DT
+
 # Reset joints
 sim.apply_pressures(np.zeros((4,3)))
 sim.apply_suction(np.zeros(4))
 for joint_idx in sim.revolute_joints:
     if joint_idx % 2 == 1:  # y-axis joints
         p.resetJointState(sim.robot_id, joint_idx, targetValue=REVOLUTE_MAX_Y)
+        
     else:
         p.resetJointState(sim.robot_id, joint_idx, targetValue=0.0)
+for step in range(STABILIZE_STEPS):
+    sim.step()
 
 x_positions = []
 for step in range(SIM_STEPS):
+
     sim.apply_pressures(np.zeros((4,3)))
     sim.step()
     pos, _ = p.getLinkState(sim.robot_id, bottom_link_idx)[:2]
@@ -92,14 +98,14 @@ x_positions = np.array(x_positions)
 # Make relative to initial simulation position
 x_positions_rel = x_positions - x_positions[-1]
 
-plt.subplot(1,2,2)
+plt.figure(figsize=(5,5))
 plt.plot(time_sim, x_positions_rel, label="Simulated")
 plt.axhline(0, color='k', linestyle='--', label="Zero reference")
 plt.xlabel("Time (s)")
 plt.ylabel("X position (m)")
-plt.title("Revolute Y oscillation")
+plt.title("Bending time response")
 plt.grid(True)
-
+"""
 # -------------------------
 # REAL DATA (CSV)
 # -------------------------
@@ -110,26 +116,25 @@ data = np.loadtxt(CSV_PATH, delimiter=",", skiprows=1)
 # Bending test: 0(time), 1(deflection x)
 
 # Expansion (z)
-time_real_z = data[:114,2]
-z_deflection_real = data[:114,3]
-plt.subplot(1,2,1)
+time_real_z = data[:111,2]
+z_deflection_real = -data[:111,3]
 plt.plot(time_real_z, z_deflection_real, 'k--', linewidth=2, label="Real data")
-
+plt.legend()
+"""
 # Bending (x)
 time_real_x = data[:,0]
 x_deflection_real = -data[:,1]
-plt.subplot(1,2,2)
 plt.plot(time_real_x, x_deflection_real, 'k--', linewidth=2, label="Real data")
-
+plt.legend()
+"""
 # -------------------------
 # FINALIZE
-# -------------------------
-plt.subplot(1,2,1)
-plt.legend()
-plt.subplot(1,2,2)
-plt.legend()
-
+# ------------------------
 plt.tight_layout()
+# Save with transparent background
+plt.savefig("Expansion time response.png", transparent=True, dpi=300)
 plt.show()
+
+
 
 sim.disconnect()

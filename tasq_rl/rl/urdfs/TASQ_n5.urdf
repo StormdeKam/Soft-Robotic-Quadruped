@@ -3,7 +3,7 @@
 <robot
   name="urdfv3">
   <link
-    name="base_link_v3">
+    name="base_link">
     <inertial>
       <origin
         xyz="0 0 0.01"
@@ -24,7 +24,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_link_v3.STL" />
+          filename="./urdfv3/meshes/base_link.STL" />
       </geometry>
       <material
         name="PLA">
@@ -38,7 +38,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="./urdfv3/meshes/base_link_v3.STL" />
+          filename="./urdfv3/meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -89,7 +89,7 @@
       xyz="0.09 0 -0.0126"
       rpy="0 0 0" />
     <parent
-      link="base_link_v3" />
+      link="base_link" />
     <child
       link="l1_1" />
     <axis
@@ -1361,7 +1361,7 @@
       xyz="0 -0.09 -0.0126"
       rpy="0 0 -1.5707963" />
     <parent
-      link="base_link_v3" />
+      link="base_link" />
     <child
       link="l2_1" />
     <axis
@@ -2633,7 +2633,7 @@
       xyz="-0.09 0 -0.0126"
       rpy="0 0 -3.14159265" />
     <parent
-      link="base_link_v3" />
+      link="base_link" />
     <child
       link="l3_1" />
     <axis
@@ -3905,7 +3905,7 @@
       xyz="0 0.09 -0.0126"
       rpy="0 0 1.5707963" />
     <parent
-      link="base_link_v3" />
+      link="base_link" />
     <child
       link="l4_1" />
     <axis

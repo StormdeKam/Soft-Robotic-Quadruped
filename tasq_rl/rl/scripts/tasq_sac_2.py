@@ -19,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 
-SAVE_PATH = "rl/models/tasq_sac/low_freq/trial_2(10_10_2025)"
+SAVE_PATH = "rl/models/tasq_sac/low_freqv2/trial4_17_10_2025"
 os.makedirs(SAVE_PATH, exist_ok=True)
 # Observed state indices (skipping base_pos and base_vel)
 OBSERVED_INDICES = np.r_[
@@ -85,7 +85,7 @@ class ActorCheckpointCallback(CheckpointCallback):
     """
     Extends CheckpointCallback to also save the SAC actor weights (.pt).
     """
-    def __init__(self, *args, actor_save_path: str = None, eval_runs=10, device="cpu", **kwargs):
+    def __init__(self, *args, actor_save_path: str = None, eval_runs=3, device="cpu", **kwargs):
         super().__init__(*args, **kwargs)
         self.actor_save_path = actor_save_path or self.save_path
         os.makedirs(self.actor_save_path, exist_ok=True)
@@ -106,7 +106,7 @@ class ActorCheckpointCallback(CheckpointCallback):
             torch.save(self.model.policy.actor.state_dict(), actor_file)
             if self.verbose > 0:
                 print(f"[ActorCheckpoint] ✅ Saved actor weights to {actor_file}")
-
+            
                         # ----- Run evaluation -----
             print(f"[Eval] Running {self.eval_runs} test runs for {actor_file}")
             results = test_model(actor_file, device=self.device, n_runs=self.eval_runs)
@@ -114,7 +114,7 @@ class ActorCheckpointCallback(CheckpointCallback):
             # Save metrics
             with open(self.metrics_file, "a") as f:
                 f.write(f"Steps {steps}: {results}\n")
-
+            
             # ----- Run video generation -----
             """
             video_file = os.path.join(
@@ -125,63 +125,102 @@ class ActorCheckpointCallback(CheckpointCallback):
             """
         return True
 
-# ---------------- Warm start callback ----------------
-# WarmStartSACCallback
-class WarmStartSACCallback(BaseCallback):
+# ---------------- Hybrid WarmStart + Exploration Decay Callback ----------------
+class MultiPhaseExplorationCallback(BaseCallback):
+    """
+    Three-phase exploration schedule:
+      1️⃣ Warm start: gradually increase exploration (handled like WarmStartSACCallback)
+      2️⃣ Fixed: keep exploration constant
+      3️⃣ Decay: gradually reduce exploration (less noise, lower lr, lower entropy)
+    """
+
     def __init__(
         self,
-        ramp_steps: int = 5_000,  # how long to ramp actor LR and log_std
-        start_log_std: float = -3.0,
-        end_log_std: float = -2.0,
+        warm_start_steps: int = 5_000,
+        fixed_steps: int = 45_000,
+        decay_steps: int = 50_000,
+        start_log_std: float = -6.0,   # low at start of warmup
+        mid_log_std: float = -3.0,     # exploration during fixed phase
+        end_log_std: float = -6.0,     # end of decay
         start_actor_lr: float = 1e-6,
-        end_actor_lr: float = 3e-4,
+        mid_actor_lr: float = 3e-4,
+        end_actor_lr: float = 1e-5,
+        start_ent_coef: float = 0.0001,
+        mid_ent_coef: float = 0.1,
+        end_ent_coef: float = 0.001,
         verbose: int = 0,
     ):
         super().__init__(verbose)
-        self.ramp_steps = ramp_steps
+        self.warm_start_steps = warm_start_steps
+        self.fixed_steps = fixed_steps
+        self.decay_steps = decay_steps
+
+        # Total schedule duration
+        self.total_steps = warm_start_steps + fixed_steps + decay_steps
+
+        # Parameter schedule values
         self.start_log_std = start_log_std
+        self.mid_log_std = mid_log_std
         self.end_log_std = end_log_std
         self.start_actor_lr = start_actor_lr
+        self.mid_actor_lr = mid_actor_lr
         self.end_actor_lr = end_actor_lr
+        self.start_ent_coef = start_ent_coef
+        self.mid_ent_coef = mid_ent_coef
+        self.end_ent_coef = end_ent_coef
 
     def _on_step(self) -> bool:
-        num_steps = self.num_timesteps
-        t = min(1.0, num_steps / max(1, self.ramp_steps))
+        step = self.num_timesteps
 
-        new_log_std = self.start_log_std + t * (self.end_log_std - self.start_log_std)
-        new_actor_lr = self.start_actor_lr + t * (self.end_actor_lr - self.start_actor_lr)
+        # ---- 1️⃣ Warm Start Phase ----
+        if step <= self.warm_start_steps:
+            t = step / self.warm_start_steps
+            log_std = self.start_log_std + t * (self.mid_log_std - self.start_log_std)
+            actor_lr = self.start_actor_lr + t * (self.mid_actor_lr - self.start_actor_lr)
+            ent_coef = self.start_ent_coef + t * (self.mid_ent_coef - self.start_ent_coef)
 
-        # Update log_std
+        # ---- 2️⃣ Fixed Phase ----
+        elif step <= self.warm_start_steps + self.fixed_steps:
+            log_std = self.mid_log_std
+            actor_lr = self.mid_actor_lr
+            ent_coef = self.mid_ent_coef
+
+        # ---- 3️⃣ Decay Phase ----
+        else:
+            decay_step = step - (self.warm_start_steps + self.fixed_steps)
+            t = min(1.0, decay_step / self.decay_steps)
+            smooth_t = 1 - np.exp(-5 * t)  # exponential easing
+            log_std = self.mid_log_std + smooth_t * (self.end_log_std - self.mid_log_std)
+            actor_lr = self.mid_actor_lr + smooth_t * (self.end_actor_lr - self.mid_actor_lr)
+            ent_coef = self.mid_ent_coef + smooth_t * (self.end_ent_coef - self.mid_ent_coef)
+
+        # ---- Apply updates ----
         if hasattr(self.model.policy, "actor") and hasattr(self.model.policy.actor, "log_std"):
             actor = self.model.policy.actor
             if isinstance(actor.log_std, torch.nn.Parameter):
-                actor.log_std.data.fill_(new_log_std)
+                actor.log_std.data.fill_(log_std)
 
         # Update actor LR
         actor_param_ids = {id(p) for p in self.model.policy.actor.parameters()}
         for name, opt in self.model.__dict__.items():
-            if not isinstance(opt, torch.optim.Optimizer):
-                continue
-            for pg in opt.param_groups:
-                params = pg.get("params", [])
-                if any(id(p) in actor_param_ids for p in params):
-                    pg["lr"] = new_actor_lr
-                    if self.verbose:
-                        print(f"[WarmStart] updated optimizer '{name}' lr -> {new_actor_lr}")
-
-        for name, opt in self.model.__dict__.items():
             if isinstance(opt, torch.optim.Optimizer):
-                try:
-                    lrs = [pg.get("lr", None) for pg in opt.param_groups]
-                except Exception:
-                    lrs = None
-                print(f"[OPT] {name}: {lrs}")
-            else:
-                # skip non-optimizer attributes
-                pass
+                for pg in opt.param_groups:
+                    params = pg.get("params", [])
+                    if any(id(p) in actor_param_ids for p in params):
+                        pg["lr"] = actor_lr
+
+        # Update entropy coefficient
+        """
+        if hasattr(self.model, "ent_coef_tensor"):
+            with torch.no_grad():
+                self.model.ent_coef_tensor.fill_(ent_coef)
+        """
+        # ---- Optional log ----
+        if self.verbose and step % 1000 == 0:
+            print(f"[ExplorationSchedule] step={step} "
+                  f"| log_std={log_std:.3f} | lr={actor_lr:.2e} | ent={ent_coef:.4f}")
 
         return True
-
 
 
 # ---------------- BC-initialized Actor ----------------
@@ -288,7 +327,7 @@ def make_vec_env(n_envs: int, seed: int = 0, use_subproc: bool = True, frame_sta
 
 # ---------------- Main ----------------
 if __name__ == "__main__":
-    seed = 42
+    seed = 43
     set_random_seed(seed)
     n_envs = max(1, min(os.cpu_count() or 1, 8))
     env = make_vec_env(n_envs=n_envs, seed=seed, use_subproc=True, frame_stack=4)
@@ -298,15 +337,15 @@ if __name__ == "__main__":
     model = SAC(
         policy=BCInitializedSACPolicy,
         env=env,
-        learning_rate=3e-4,
+        learning_rate=1e-4,
         buffer_size=1_000_000,
         batch_size=256,
         tau=0.005,
         gamma=0.99,
-        train_freq=(1, "step"),
+        train_freq=1,
         gradient_steps=1,
-        ent_coef=0.1, 
-        target_entropy=-16, 
+        ent_coef=0.01,        # fixed scalar
+        #target_entropy=None,  # disable auto-tune   
         verbose=1,
         device=device,
         seed=seed,
@@ -314,7 +353,7 @@ if __name__ == "__main__":
 
 
     # Load BC actor
-    bc_weights_path = "rl/models/tasq_bc/low_freq_v2/tasq_bc_ep350.pt"
+    bc_weights_path = "rl/models/tasq_bc/low_freq_v6/tasq_bc_ep200.pt"
     if os.path.isfile(bc_weights_path):
         model.policy.load_bc_weights(bc_weights_path, device=model.device)
     else:
@@ -336,30 +375,36 @@ if __name__ == "__main__":
         #torch.nn.utils.clip_grad_norm_(model.policy.actor.parameters(), 0.5)
 
     # Callbacks
-    total_timesteps = 100_000  
-    log_interval = 1000
+    total_timesteps = 10_000_000  
+    log_interval = 10_000
     reward_log_path= os.path.join(SAVE_PATH,"reward_log.csv")
     reward_logger = RewardLoggerCallback(log_path=reward_log_path, log_interval=log_interval, verbose=1)
     progress_callback = TrainingProgressCallback(total_timesteps=total_timesteps, log_interval=log_interval)
     checkpoint_callback = ActorCheckpointCallback(
-        save_freq=10_000 // n_envs,
+        save_freq=100_000 // n_envs,
         save_path= os.path.join(SAVE_PATH,"checkpoints"),
         name_prefix="tasq_sac",
         save_replay_buffer=True,
         save_vecnormalize=True,
         actor_save_path=os.path.join(SAVE_PATH,"actors"), 
         device=device,
-        eval_runs=10,
+        eval_runs=3,
         verbose=1,
     )
 
-    warm_start_callback = WarmStartSACCallback(ramp_steps=5_000, verbose=1)
-    callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, warm_start_callback])
+    schedule_callback = MultiPhaseExplorationCallback(
+        warm_start_steps=0,
+        fixed_steps=10_000_000,
+        decay_steps=0,
+        verbose=1
+        )
+
+    callback = CallbackList([reward_logger, progress_callback, checkpoint_callback, schedule_callback])
     
     # ---------- Seed Replay Buffer with BC Demos ----------
-    states_path = "rl/datasets/low_freq_v2/demo_states_merged.npy"
-    actions_path = "rl/datasets/low_freq_v2/demo_actions_merged.npy"
-    episode_lengths_path = "rl/datasets/low_freq_v2/demo_episode_lengths_merged.npy"
+    states_path = "rl/datasets/low_freq_v6/demo_states_merged.npy"
+    actions_path = "rl/datasets/low_freq_v6/demo_actions_merged.npy"
+    episode_lengths_path = "rl/datasets/low_freq_v6/demo_episode_lengths_merged.npy"
     frame_stack = getattr(env, "frame_stack", 4)  # match TASQEnv setting
 
     if os.path.isfile(states_path) and os.path.isfile(actions_path):

@@ -12,8 +12,8 @@ from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
 
 
 # --- Parameters ---
-num_episodes = 300 # Number of simulation rollouts
-save_path = "rl/datasets/low_freq_v5"  # Path to save the dataset
+num_episodes = 500 # Number of simulation rollouts
+save_path = "rl/datasets/low_freq_v6"  # Path to save the dataset
 os.makedirs(save_path, exist_ok=True)
 save_interval = 25  # Episodes per save chunk
 
@@ -31,7 +31,7 @@ def run_episode(episode_idx):
     #gait = np.random.choice([0,1])  # 0 = straight, 1 = turn
     gait = 0
     if gait == 0:
-        gait_length = 1400
+        gait_length = 1200
         #mode = np.random.choice([0,1,2,3])  # forward, left, backward, right
         mode = 0
         pressure_callback = partial(demo_pressures, mode=mode)
@@ -50,10 +50,12 @@ def run_episode(episode_idx):
     sim = TASQSimulator(urdf_path=urdf_path, gui=False, no_links=no_links)
     sim.reset_simulation()
 
-    pressures = np.ones((4,3), dtype=np.float32) *10  # Initial pressures
-    pressures[0,:] = 400
-    pressures[2,:] = 400
-    suction_states = np.array([0,100,100,100], dtype=np.float32) # Initial suction states
+    # Initial pressures and suctions
+    pressures = np.ones((4,3), dtype=np.float32) *10  
+    pressures[1,:] = 400
+    pressures[3,:] = 400
+    suction_states = np.array([0,0,100,0], dtype=np.float32)
+
     episode_states = []
     episode_actions = []
     quaternion_states = []

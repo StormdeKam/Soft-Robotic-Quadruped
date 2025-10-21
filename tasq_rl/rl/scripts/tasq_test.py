@@ -19,7 +19,7 @@ OBSERVED_INDICES = np.r_[
     35:39    # goal pos and orientation
 ]
 
-def test_model(model_path, device, n_runs=10, steps=70, gui=False):
+def test_model(model_path, device, n_runs=10, steps=60, gui=False):
     print(f"[INFO] Loading model from {model_path}")
 
     # Load state_dict and detect actor type
@@ -46,15 +46,18 @@ def test_model(model_path, device, n_runs=10, steps=70, gui=False):
 
     no_links_list = [5, 6, 7]
     urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
-
+    
     for run in range(n_runs):
+        
         print(f"[RUN] Starting test run {run+1}/{n_runs}")
         no_links = np.random.choice(no_links_list)
         urdf_path = urdf_dict[no_links]
 
         # Create TASQEnv (includes frame stacking and noise)
         env = TASQEnv(urdf_path=urdf_path, no_links=no_links, gui=gui, frame_stack=frame_stack)
+        #angle = -5 #degree
         obs, _ = env.reset()
+        #env.sim._set_plane_orientation(angle)  # Set plane orientation
 
         y_traj = []
         failed = False

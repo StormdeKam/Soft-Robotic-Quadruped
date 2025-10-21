@@ -20,7 +20,8 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
 
     # --- Plot total reward ---
     plt.figure(figsize=(10, 6))
-    plt.plot(df_smooth["reward"], label="Total Reward")
+    plt.plot(df_smooth["reward"], label="Total Smoothed Reward")
+    plt.plot(df["reward"], label="Total Reward ", color="blue", alpha=0.3)
     plt.xlabel("Episode")
     plt.ylabel("Reward")
     plt.title("Episode Reward")
@@ -54,4 +55,4 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
         plt.show()
 
 if __name__ == "__main__":
-    plot_reward_log("rl/models/tasq_sac/low_freq/trial_2(10_10_2025)/reward_log.csv", rolling=10)
+    plot_reward_log("rl/models/tasq_sac/low_freqv2/trial4_17_10_2025/reward_log.csv", rolling=200)

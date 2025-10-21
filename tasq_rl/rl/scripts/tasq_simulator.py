@@ -29,7 +29,7 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = True
+        self.data_logging = False
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
         self.randomization = True
@@ -65,13 +65,17 @@ class TASQSimulator:
         # e.g., self.step_count = 0
 
     def _load_environment(self):
-        self.plane_id = p.loadURDF("plane.urdf")
+        #pitch_rad = np.deg2rad(np.random.uniform(-10, 0))
+        pitch_rad = 0  # flat ground for now
+        plane_orientation = p.getQuaternionFromEuler([0, pitch_rad, 0])
+        self.plane_id = p.loadURDF("plane.urdf", [0,0,0], plane_orientation)
         p.changeVisualShape(self.plane_id, -1, rgbaColor=[0.5, 0.5, 0.5, 1])  # grey
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
         self.start_x, self.start_y = 0.0, 0.0
         self.start_pos = [self.start_x, self.start_y, 0.16]
-        self.start_orientation = p.getQuaternionFromEuler([0, 0, self.start_yaw])
+        # Also adjust robot orientation to match plane pitch
+        self.start_orientation = p.getQuaternionFromEuler([0, pitch_rad, self.start_yaw])      
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
             
     def _initialize_robot(self):
@@ -79,7 +83,11 @@ class TASQSimulator:
         self.prismatic_joints = []
         self.suction_states = np.array([0,100,100,100],dtype=np.float64)  # Initialize suction states
         self.pressure_state = np.ones((4,3)) *10 
-        self.last_targets = np.zeros((4,3)) *10 
+        self.last_targets = np.zeros((4,3)) 
+        #PRISMATIC_MAX = -0.001  # meters (as in apply_suction)
+        #self.last_targets[0,2] = PRISMATIC_MAX
+        #REVOLUTE_MAX_Y = 0.16   # rad (example maximum angle for y-axis joints)
+        #self.last_targets[0,1] = REVOLUTE_MAX_Y
         self.control_freq = 24 #Hz
 
         self.num_joints = p.getNumJoints(self.robot_id)
@@ -116,7 +124,7 @@ class TASQSimulator:
                 controlMode=p.POSITION_CONTROL,
                 targetPosition=[0, 0, 0, 1],   # quaternion (w, x, y, z)
                 positionGain=1,                  # proportional gain (same on all axes)
-                velocityGain=1.4,                   # damping gain (same on all axes)
+                velocityGain=1.8,                   # damping gain (same on all axes)
                 force=[self.max_force,self.max_force,self.max_force],             # torque limits per axis
                 #maxVelocity=self.max_lin_vel
                 )
@@ -150,6 +158,19 @@ class TASQSimulator:
             cup_link_idx = leg_idx*(self.no_links*4+2) + self.no_links*4 +1
             self.foot_link_indices[leg_idx] = cup_link_idx  # list of 4 ints
 
+    def _set_plane_orientation(self, angle_deg):
+        """
+        Sets the plane orientation to a specific pitch angle (in degrees).
+        angle_deg: Pitch angle in degrees (negative values tilt downwards).
+        """
+        pitch_rad = np.deg2rad(angle_deg)
+        plane_orientation = p.getQuaternionFromEuler([0, pitch_rad, 0])
+        p.resetBasePositionAndOrientation(self.plane_id, [0, 0, 0], plane_orientation)
+        # Also adjust robot orientation to match plane pitch
+        self.start_orientation = p.getQuaternionFromEuler([0, pitch_rad, self.start_yaw])
+        p.resetBasePositionAndOrientation(self.robot_id, self.start_pos, self.start_orientation)
+
+
     def _randomize_link_masses(self, mass_range=(0.8, 1.2)):
         """
         Randomly scales the mass of each link for domain randomization.
@@ -169,79 +190,16 @@ class TASQSimulator:
 
             scale = np.random.uniform(*mass_range)
             p.changeDynamics(self.robot_id, joint_index, mass=2* mass * scale)
-    
-    """
-    def apply_pressures(self, pressures, pressure_gradients=np.ones((4,3))):
-        self.pressure_state = pressures
-
-        kp_th =0.1
-        kd_th = 0.003
-        kp_z = 10000
-        kd_z = 0.1
-
-        max_pressure = 400  # mBar
-
-        if len(pressures) != 4 or any(len(leg) != 3 for leg in pressures):
-            raise ValueError("Pressures must be a list of 4 arrays, each with 3 pressure values.")
-
-        # Assume revolute and prismatic joints are grouped by leg
-        revolutes_per_leg = len(self.revolute_joints) // 4
-        prismatics_per_leg = len(self.prismatic_joints) // 4
-
-        for leg_index, leg_pressures in enumerate(pressures):
-
-            if leg_pressures.all() <= 400:
-                Tx, Ty, F = pneu2posandgains(leg_pressures, self.no_links)
-
-            else:
-                self.logger.warning(f"Pressure in leg {leg_index+1} exceeding max_pressure of {max_pressure} mBar")
-
-            # -------------------------
-            # Apply to joints
-            # -------------------------
-            for j in range(revolutes_per_leg-2):
-                joint_index = self.revolute_joints[leg_index * revolutes_per_leg + j]
-                # PD control
-                joint_state = p.getJointState(self.robot_id, joint_index)
-                pos = joint_state[0]
-                vel = joint_state[1]
-                
-                if j % 2 == 0:
-                    torque = kp_th * (0 - pos) - kd_th* vel + Tx*500
-                else:
-                    torque = kp_th * (0 - pos) - kd_th* vel + Ty*500
-
-                p.setJointMotorControl2(
-                    bodyIndex=self.robot_id,
-                    jointIndex=joint_index,
-                    controlMode=p.TORQUE_CONTROL,
-                    force=torque
-                )
-
-            cup_link_idx = [leg_index*(self.no_links*4+2) + self.no_links*4 + 1]
-            for j in range(prismatics_per_leg):
-                joint_index = self.prismatic_joints[leg_index * prismatics_per_leg + j]
-                if joint_index not in cup_link_idx:
-                    joint_state = p.getJointState(self.robot_id, joint_index)
-                    pos = joint_state[0]
-                    vel = joint_state[1]
-                    force = kp_z * (0 - pos) - kd_z * vel + F*10000
-                    #print(pos)
-                    p.setJointMotorControl2(
-                        bodyIndex=self.robot_id,
-                        jointIndex=joint_index,
-                        controlMode=p.TORQUE_CONTROL,
-                        force=force
-                    )
-
-        self._current_pressures = np.array(pressures).flatten().tolist()  # Save for logging
-    """            
+          
     def apply_pressures(self, pressures, pressure_gradients = np.ones((4,3))):
         self.pressure_state = pressures
+        
         #print(pressures)
         alpha = 0
-        alpha_up = 0.2
-        alpha_down = 0.02
+        alpha_up = 0.6
+        alpha_down = 0.2
+        alpha_up_revolute = 0.6
+        alpha_down_revolute = 0.2
         """
         Apply actuator pressures to the robot. Converts them to joint target positions/gains.
 
@@ -265,9 +223,9 @@ class TASQSimulator:
                 pos_gain_x, vel_gain_x, \
                 pos_gain_y, vel_gain_y, \
                 pos_gain_z, vel_gain_z = pneu2posandgains(leg_pressures, self.no_links)
-                
                 target_pos_x *= self.joint_randomizer_values[0]
                 target_pos_y *= self.joint_randomizer_values[0]
+                
                 target_pos_z *= self.joint_randomizer_values[1]
                 pos_gain_x *= self.joint_randomizer_values[2]
                 vel_gain_x *= self.joint_randomizer_values[3]
@@ -278,22 +236,22 @@ class TASQSimulator:
             else:
                 self.logger.warning(f"Pressure in leg  {leg_index +1} exceeding max_pressure of {max_pressure} mBar")
 
-            if target_pos_x > self.last_targets[leg_index,0]:
-                alpha = alpha_up*self.hysteresis_randomization[0]
+            if np.abs(target_pos_x) > np.abs(self.last_targets[leg_index,0]):
+                alpha = alpha_up_revolute*self.hysteresis_randomization[0]
             else:
-                alpha = alpha_down*self.hysteresis_randomization[1]
+                alpha = alpha_down_revolute*self.hysteresis_randomization[1]
             thx = self.last_targets[leg_index,0] + alpha * (target_pos_x - self.last_targets[leg_index,0])
 
-            if target_pos_y > self.last_targets[leg_index,1]:
-                alpha = alpha_up*self.hysteresis_randomization[0]
+            if np.abs(target_pos_y) > np.abs(self.last_targets[leg_index,1]):
+                alpha = alpha_up_revolute*self.hysteresis_randomization[0]
             else:
                 alpha = alpha_down*self.hysteresis_randomization[1]
             thy = self.last_targets[leg_index,1] + alpha * (target_pos_y - self.last_targets[leg_index,1])
 
             if target_pos_z > self.last_targets[leg_index,2]:
-                alpha = alpha_up*self.hysteresis_randomization[0]
-            else:
                 alpha = alpha_down*self.hysteresis_randomization[1]
+            else:
+                alpha = alpha_up*self.hysteresis_randomization[0]
             thz = self.last_targets[leg_index,2] + alpha * (target_pos_z - self.last_targets[leg_index,2])
                                                             
                 #print(f"Leg {leg_index}, Joint {joint_index}: {joint_name}")
@@ -339,6 +297,7 @@ class TASQSimulator:
                         force=self.max_force,
                         maxVelocity=self.max_vel
                     )
+
             self.last_targets[leg_index,0] = thx
             self.last_targets[leg_index,1] = thy
             self.last_targets[leg_index,2] = thz
@@ -441,7 +400,9 @@ class TASQSimulator:
     def run(self, steps=200, pressure_callback=None, suction_callback=None, mode=0):
         control_hz=24
         pressures = np.ones((4, 3)) * 10
-        suction_states = np.array([0, 100, 100, 100], dtype=np.float64)
+        pressures[1,:] = 400
+        pressures[3,:] = 400
+        suction_states = np.array([0, 0, 100, 0], dtype=np.float64)
         
         control_period = 1.0 / control_hz
 
@@ -613,6 +574,8 @@ class TASQSimulator:
         p.disconnect()
 
     
+
+
 
 
 

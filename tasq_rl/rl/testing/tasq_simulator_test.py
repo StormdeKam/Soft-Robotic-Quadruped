@@ -9,7 +9,7 @@ parser.add_argument("--no_links", type=str, choices=["5","6","7"], required=True
 args = parser.parse_args()
 
 no_links = int(args.no_links)
-gait_length = 1400*2
+gait_length = 1200
 
 urdf_dict = {5: "rl/urdfs/TASQ_n5.urdf", 6: "rl/urdfs/TASQ_n6.urdf", 7: "rl/urdfs/TASQ_n7.urdf"}
 
@@ -32,17 +32,17 @@ elif args.gait == "straightv3":
     
 elif args.gait == "straight":
     from rl.gaits.demo_gait_straight_low_freq import demo_pressures, demo_suction
-    demo_pressures_scaled = lambda step, mode: demo_pressures(step, mode) / 100
-    demo_suction_scaled = lambda step, mode: demo_suction(step, mode) / 100
-    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=True, no_links=7)
+    demo_pressures_scaled = lambda step, mode: demo_pressures(step, mode) /100
+    demo_suction_scaled = lambda step, mode: demo_suction(step, mode)/100
+    sim = TASQSimulator(urdf_dict[no_links], gui=True, no_links=no_links)
     sim.reset_simulation()
-    sim.run(steps=1400,pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
+    sim.run(steps=int(1200),pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
 
 elif args.gait == "cpg_straight":
     from rl.gaits.CPG_based_gait import demo_pressures, demo_suction
     demo_pressures_scaled = lambda step, mode: demo_pressures(step, mode) / 100
     demo_suction_scaled = lambda step, mode: demo_suction(step, mode) / 100
-    sim = TASQSimulator("rl/urdfs/TASQ_n7.urdf", gui=False, no_links=7)
+    sim = TASQSimulator(urdf_dict[no_links], gui=False, no_links=no_links)
     sim.reset_simulation()
     sim.run(steps=1200,pressure_callback=demo_pressures_scaled,suction_callback=demo_suction_scaled, mode=0)
 

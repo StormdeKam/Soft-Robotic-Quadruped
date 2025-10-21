@@ -11,9 +11,9 @@ URDF_PATH = "rl/urdfs/TASQ_n7.urdf"
 CSV_PATH = "rl/datasets/actuator_validation/hysteresis_data.csv"
 
 TEST_LEG = 0
-NO_LINKS = 3
-CONTROL_FREQ = 240
-STEPS = 10
+NO_LINKS = 7
+CONTROL_FREQ = 24
+STEPS = 100
 MAX_PRESSURE = 400
 DT = 1.0 / CONTROL_FREQ
 HOLD_ZERO_STEPS = 100
@@ -94,9 +94,9 @@ for run in range(NUM_RUNS):
         pressures_record.append(0)
 
     # Make relative to initial Z
-    z_positions = np.array(z_positions) - z_positions[0]
+    z_positions = ( np.array(z_positions) - z_positions[0])
     plt.subplot(1,2,1)
-    plt.plot(pressures_record, z_positions, alpha=0.7)
+    plt.plot(pressures_record, z_positions, alpha=0.7, label="Simulated")
 
     # -------------------------
     # 2) Bending/Straightening
@@ -134,7 +134,7 @@ for run in range(NUM_RUNS):
     # Make relative to initial X
     x_positions = np.array(x_positions) - x_positions[0]
     plt.subplot(1,2,2)
-    plt.plot(pressures_record, x_positions, alpha=0.7)
+    plt.plot(pressures_record, x_positions, alpha=0.7, label="Simulated")
 
     sim.disconnect()
 
@@ -158,7 +158,6 @@ plt.plot(p_expansion, z_expansion, 'k--', linewidth=2, label="Real data")
 
 plt.subplot(1,2,2)
 plt.plot(p_bending, x_deflection, 'k--', linewidth=2, label="Real data")
-
 # -------------------------
 # FINALIZE
 # -------------------------
@@ -169,4 +168,6 @@ plt.subplot(1,2,2)
 plt.legend()
 
 plt.tight_layout()
+plt.savefig("Hysteresis.png", transparent=True, dpi=300)
+
 plt.show()
