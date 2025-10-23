@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 def plot_reward_log(csv_file="reward_log.csv", rolling=10):
     # Define correct column names (matches your CSV content)
     cols = [
-        "reward", "alive", "length", "distance",
-        "orientation_reward", "height_penalty", "orientation_penalty",
-        "pressure_smoothness", "suction_smoothness"
+        "reward", "length", "alive", "forward",
+        "orientation_penalty", "height_penalty",
+        "pressure_smoothness", "suction_smoothness", "total_forward", "?"
     ]
 
     # Load CSV using explicit column names
@@ -45,7 +45,7 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
     if component_cols:
         plt.figure(figsize=(10, 6))
         for c in component_cols:
-            plt.plot(df_smooth[c], label=c)
+            plt.plot(df[c], label=c)
         plt.xlabel("Episode")
         plt.ylabel("Reward Contribution")
         plt.title("Reward Components")
@@ -55,4 +55,4 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
         plt.show()
 
 if __name__ == "__main__":
-    plot_reward_log("rl/models/tasq_sac/low_freqv2/trial4_17_10_2025/reward_log.csv", rolling=200)
+    plot_reward_log("rl/models/tasq_sac/low_freqv6/trial3_22_10_25/reward_log.csv", rolling=100)

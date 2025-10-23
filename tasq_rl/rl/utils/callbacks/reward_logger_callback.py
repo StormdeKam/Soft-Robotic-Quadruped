@@ -42,7 +42,9 @@ class RewardLoggerCallback(BaseCallback):
             if "reward_terms" in info:
                 for k, v in info["reward_terms"].items():
                     self.current_components[i][k] = self.current_components[i].get(k, 0.0) + v
-
+            for k, v in infos[i].items():
+                if isinstance(v, (int, float)) and k not in ["reward_terms"]:
+                    self.current_components[i][k] = self.current_components[i].get(k, 0) + v
         # handle episode end
         for i, done in enumerate(dones):
             if done:

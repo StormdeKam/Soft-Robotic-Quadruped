@@ -6,7 +6,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.models.architecture.actor import BCActor
 
 # ---------------- Config ----------------
-SAVE_PATH = "datasets/replay_buffers/low_freq_v6/replay_buffer1"
+SAVE_PATH = "datasets/replay_buffers/low_freq_v6"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 N_ENVS = 8
@@ -88,14 +88,14 @@ def main():
 
     # Convert to arrays and save
     np.savez_compressed(
-        os.path.join(SAVE_PATH, "replay_buffer.npz"),
+        os.path.join(SAVE_PATH, "replay_buffer1.npz"),
         states=np.array(states),
         actions=np.array(actions),
         next_states=np.array(next_states),
         rewards=np.array(rewards),
         dones=np.array(dones)
     )
-    print(f"[DONE] Saved {transitions_collected} transitions to {SAVE_PATH}/replay_buffer.npz")
+    print(f"[DONE] Saved {transitions_collected} transitions to {SAVE_PATH}/replay_buffer2.npz")
 
 if __name__ == "__main__":
     main()

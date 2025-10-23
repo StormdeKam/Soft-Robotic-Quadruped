@@ -85,6 +85,7 @@ class TASQEnv(gym.Env):
         super().reset(seed=seed)
         self.sim.reset_simulation()
         self.step_count = 0
+        self.total_x_reward = 0.0
         self.last_suctions = np.zeros(4, dtype=np.float32)
         self.target_height = 0.12  # Set a target height for the robot
         self.target_pos = np.array([0.3, 0.0], dtype=np.float32)  # Reset target position
@@ -160,7 +161,12 @@ class TASQEnv(gym.Env):
 
         self.d_pressures = (action[:12].reshape(4, 3)) * 400
         self.d_suctions = (action[12:16]) * 100  
-        
+
+        # Initialize x history if not present
+        if not hasattr(self, 'x_history'):
+            self.x_history = deque(maxlen=2)
+        self.x_history.append(self.sim.get_base_position()[0])
+
         for i in range(100):
             grfs = self.sim.get_grfs_local_foot()
             vel = self.sim.get_base_velocity_local()
@@ -169,75 +175,71 @@ class TASQEnv(gym.Env):
             # Apply pressure deltas
             self.pressures = np.clip(self.pressures + self.d_pressures/100, 0.0, 400.0)
             self.suction_states = np.clip(self.suction_states + self.d_suctions/100, 0, 100)
-            # Step the simulator with current pressure and suction state
             self.sim.apply_pressures(self.pressures)
             self.sim.apply_suction(self.suction_states)
-            #print(self.pressures, self.suction_states)
             self.sim.step()
 
         obs = self._get_obs()
         self.obs_buffer.append(obs)
         stacked_obs = np.concatenate(self.obs_buffer)
 
-        # Calculate reward
         state = self._get_state()
-
-        # 0. Reward survival
-        alive = 1
-        # 1. Traveled x distance and orientation reward
-        pos_x = state[0]
-        x_distance = pos_x#np.linalg.norm(pos - self.target_pos)
-        roll, pitch, sin_yaw, cos_yaw = state[3:7]
-        relative_ori = np.array([sin_yaw, cos_yaw]) - self.target_ori
-        orientation_reward = np.linalg.norm(relative_ori)
-        
-        # 2. Height deviation penalty
         current_height = state[2]
-        height_penalty = np.abs(current_height - self.target_height)
+        roll, pitch, sin_yaw, cos_yaw = state[3:7]
 
-        # 3. Orientation deviation penalty 
-        orientation_penalty = np.abs(pitch) + np.abs(roll)
-
-        # 4. Smoothness penalty (based on pressure change)
-        pressure_smoothness_penalty = np.sum(np.square(self.d_pressures))
-
-        # 4. Smoothness penalty (based on suction change)
-        suction_smoothness_penalty = np.sum(np.square(np.abs(self.d_suctions)))
-
-        # --- Weighting factors ---
-        w_alive = 1.0
-        w_dist = 20.0
-        w_ori = 1.0
-        w_height = 1.0
-        w_orient = 1.0
-        w_pressure_smoothness = 0.0000001
-        w_suction_smoothness = 0.00001
-
-        reward_terms = {
-            "alive": alive * w_alive,
-            "distance": np.clip(w_dist * x_distance, -1,1),
-            "orientation_reward": -w_ori * orientation_reward,
-            "height_penalty": -w_height * height_penalty,
-            "orientation_penalty": -w_orient * orientation_penalty,
-            "pressure_smoothness": -w_pressure_smoothness * pressure_smoothness_penalty,
-            "suction_smoothness": -w_suction_smoothness * suction_smoothness_penalty,
+        # ------------------- Reward Weights -------------------
+        weights = {
+            "alive": 0.02,
+            "forward": 20.0,
+            "orientation_penalty": 0.1,
+            "height_penalty": 0.1,
+            "pressure_smoothness": 1e-8,
+            "suction_smoothness": 1e-6
         }
 
-        reward = sum(reward_terms.values()) 
+        # ------------------- Reward Components -------------------
+        reward_terms = {}
 
-        # Terminate or truncate
+        reward_terms["alive"] = weights["alive"] * 1.0
+
+        # Forward x-motion over last 2 steps
+        if len(self.x_history) == 2:
+            reward_terms["forward"] = weights["forward"] * (self.x_history[-1] - self.x_history[0])
+        else:
+            reward_terms["forward"] = 0.0
+
+        # Orientation penalty
+        reward_terms["orientation_penalty"] = -weights["orientation_penalty"] * (np.abs(roll) + np.abs(pitch))
+
+        # Height penalty
+        reward_terms["height_penalty"] = -weights["height_penalty"] * np.abs(current_height - self.target_height)
+
+        # Action smoothness penalties
+        reward_terms["pressure_smoothness"] = -weights["pressure_smoothness"] * np.sum(np.square(self.d_pressures))
+        reward_terms["suction_smoothness"] = -weights["suction_smoothness"] * np.sum(np.square(np.abs(self.d_suctions)))
+
+        # Total step reward
+        reward = sum(reward_terms.values())
+        #if self.step_count % 10 == 0:
+            #print("total reward:", reward)
+        reward = np.clip(reward, -1.0, 1.0)
+
+        # ------------------- Termination -------------------
         terminated = current_height < 0.05
-        reward -= 0.0 if terminated else 0.0  # Penalty for falling
-        truncated = self.step_count >= self.max_steps 
-
+        truncated = self.step_count >= self.max_steps
         self.step_count += 1
 
-        if np.random.rand() < 0.01:
-            total = sum(reward_terms.values())
-            print(f"[Reward] { {k: round(float(v), 3) for k, v in reward_terms.items()} } total={total:.3f}")
+        # Accumulate episodic reward for total x-motion
+        if truncated or terminated:
+            self.total_x_reward = self.sim.get_base_position()[0]
 
+        info = {
+            "reward_terms": reward_terms,
+            "total_x_reward": self.total_x_reward
+        }
 
-        return stacked_obs, reward, terminated, truncated, {"reward_terms": reward_terms}
+        return stacked_obs, reward, terminated, truncated, info
+
 
     def render(self):
         return None
