@@ -11,6 +11,7 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
 
     # Load CSV using explicit column names
     df = pd.read_csv(csv_file, names=cols, header=0)
+    #df = df.iloc[:2500]
 
     # Separate reward components (all columns except total reward and length)
     component_cols = [c for c in df.columns if c not in ["reward", "length"]]
@@ -55,4 +56,4 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
         plt.show()
 
 if __name__ == "__main__":
-    plot_reward_log("rl/models/tasq_sac/low_freqv6/trial3_22_10_25/reward_log.csv", rolling=100)
+    plot_reward_log("rl/models/tasq_sac/low_freqv6/v2/trial10_03_11_25/reward_log.csv", rolling=200)

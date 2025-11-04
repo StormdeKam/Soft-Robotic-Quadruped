@@ -92,12 +92,9 @@ class TASQEnv(gym.Env):
         self.target_ori = np.array([np.sin(np.pi/4), np.cos(np.pi/4)], dtype=np.float32)  # Reset target orientation
         self.goal_pos = np.array([0.01, 0.0], dtype=np.float32)  # Reset goal position
         self.goal_yaw = np.pi/4
-        #for i in range(100):
-        #    self.pressures[1,:] += 3.9
-        #    self.pressures[3,:] += 3.9
-        #    self.sim.apply_pressures(self.pressures)
-        #    self.sim.apply_suction(self.suction_states)
-        #    self.sim.step()
+        self.vel_ref = 0.03/self.max_steps
+        #self.pitch_rad = self.sim.pitch_rad
+
         obs = self._get_obs()
         self.obs_buffer.clear()
         for _ in range(self.frame_stack):
@@ -190,7 +187,7 @@ class TASQEnv(gym.Env):
         # ------------------- Reward Weights -------------------
         weights = {
             "alive": 0.02,
-            "forward": 20.0,
+            "forward": 200.0,
             "orientation_penalty": 0.1,
             "height_penalty": 0.1,
             "pressure_smoothness": 1e-8,
@@ -201,13 +198,18 @@ class TASQEnv(gym.Env):
         reward_terms = {}
 
         reward_terms["alive"] = weights["alive"] * 1.0
-
+        """
         # Forward x-motion over last 2 steps
         if len(self.x_history) == 2:
             reward_terms["forward"] = weights["forward"] * (self.x_history[-1] - self.x_history[0])
         else:
             reward_terms["forward"] = 0.0
-
+        """
+        # Constant vel:
+        if self.x_history[-1] > self.vel_ref * (self.step_count -5) and self.x_history[-1] < self.vel_ref * (self.step_count + 10):
+            reward_terms["forward"] = 0.2
+        else:
+            reward_terms["forward"] = 0.0
         # Orientation penalty
         reward_terms["orientation_penalty"] = -weights["orientation_penalty"] * (np.abs(roll) + np.abs(pitch))
 

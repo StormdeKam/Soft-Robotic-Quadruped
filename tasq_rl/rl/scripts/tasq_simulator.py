@@ -29,10 +29,10 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = False
+        self.data_logging = False#True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
-        self.randomization = True
+        self.randomization = False#True
 
     def reset_simulation(self):
         # Reset PyBullet simulation (clears all bodies, constraints, etc.)
@@ -66,16 +66,16 @@ class TASQSimulator:
 
     def _load_environment(self):
         #pitch_rad = np.deg2rad(np.random.uniform(-10, 0))
-        pitch_rad = 0  # flat ground for now
-        plane_orientation = p.getQuaternionFromEuler([0, pitch_rad, 0])
+        self.pitch_rad = 0#np.deg2rad(-5)  
+        plane_orientation = p.getQuaternionFromEuler([0, self.pitch_rad, 0])
         self.plane_id = p.loadURDF("plane.urdf", [0,0,0], plane_orientation)
         p.changeVisualShape(self.plane_id, -1, rgbaColor=[0.5, 0.5, 0.5, 1])  # grey
         self.start_x = np.random.uniform(0.1, 0.1)
         self.start_y = np.random.uniform(0.1, 0.1)
         self.start_x, self.start_y = 0.0, 0.0
-        self.start_pos = [self.start_x, self.start_y, 0.16]
+        self.start_pos = [self.start_x, self.start_y, 0.18]
         # Also adjust robot orientation to match plane pitch
-        self.start_orientation = p.getQuaternionFromEuler([0, pitch_rad, self.start_yaw])      
+        self.start_orientation = p.getQuaternionFromEuler([0, self.pitch_rad, self.start_yaw])      
         self.robot_id = p.loadURDF(self.urdf_path, self.start_pos, self.start_orientation)
             
     def _initialize_robot(self):

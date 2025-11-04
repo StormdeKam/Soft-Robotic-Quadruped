@@ -88,14 +88,14 @@ def main():
 
     # Convert to arrays and save
     np.savez_compressed(
-        os.path.join(SAVE_PATH, "replay_buffer1.npz"),
+        os.path.join(SAVE_PATH, "replay_buffer3.npz"),
         states=np.array(states),
         actions=np.array(actions),
         next_states=np.array(next_states),
         rewards=np.array(rewards),
         dones=np.array(dones)
     )
-    print(f"[DONE] Saved {transitions_collected} transitions to {SAVE_PATH}/replay_buffer2.npz")
+    print(f"[DONE] Saved {transitions_collected} transitions to {SAVE_PATH}/replay_buffer3.npz")
 
 if __name__ == "__main__":
     main()
