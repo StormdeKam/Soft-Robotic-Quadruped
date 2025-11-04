@@ -50,7 +50,7 @@ def test_model(model_path, device, n_runs=10, steps=60, gui=False):
     for run in range(n_runs):
         
         print(f"[RUN] Starting test run {run+1}/{n_runs}")
-        no_links = np.random.choice(no_links_list)
+        no_links = 5#np.random.choice(no_links_list)
         urdf_path = urdf_dict[no_links]
 
         # Create TASQEnv (includes frame stacking and noise)

@@ -29,7 +29,7 @@ class TASQSimulator:
         p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
-        self.data_logging = False#True
+        self.data_logging = True#True
         self.log_data = []  # Buffer for logging pressure + suction
         self._current_pressures = None  # Temporarily holds last pressures
         self.randomization = False#True
@@ -66,7 +66,7 @@ class TASQSimulator:
 
     def _load_environment(self):
         #pitch_rad = np.deg2rad(np.random.uniform(-10, 0))
-        self.pitch_rad = 0#np.deg2rad(-5)  
+        self.pitch_rad = np.deg2rad(0)  
         plane_orientation = p.getQuaternionFromEuler([0, self.pitch_rad, 0])
         self.plane_id = p.loadURDF("plane.urdf", [0,0,0], plane_orientation)
         p.changeVisualShape(self.plane_id, -1, rgbaColor=[0.5, 0.5, 0.5, 1])  # grey

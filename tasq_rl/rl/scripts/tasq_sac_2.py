@@ -18,11 +18,11 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 # ---------------- Paths / config ----------------
-SAVE_PATH = "rl/models/tasq_sac/low_freqv6/v2/trial10_03_11_25"
+SAVE_PATH = "rl/models/tasq_sac/low_freqv6/v2/trial11_04_11_25"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 # Where you saved the reward-filled replay buffer (from the script I provided)
-REPLAY_BUFFER_PATH = "datasets/replay_buffers/low_freq_v6/replay_buffer3.npz"
+#REPLAY_BUFFER_PATH = "datasets/replay_buffers/low_freq_v6/replay_buffer3.npz"
 
 # Training / schedule sizes (total = 200_000)
 WARM_START_STEPS = 20_000
@@ -32,11 +32,12 @@ TOTAL_SCHEDULE_STEPS = WARM_START_STEPS + EXPLORATION_STEPS + DECAY_STEPS
 TOTAL_TIMESTEPS = TOTAL_SCHEDULE_STEPS  # train for exactly the schedule length (tweak as desired)
 
 # Actor LR schedule endpoints (warm -> mid -> decay-end)
-START_ACTOR_LR = 2e-3
-MID_ACTOR_LR = 1e-5
-END_ACTOR_LR = 0
+START_ACTOR_LR = 0
+MID_ACTOR_LR = 1e-4
+END_ACTOR_LR = 1e-6
 
 CRITIC_LR = 1e-3
+
 
 # Target entropy schedule (will be adjusted during decay to favor exploitation)
 # We'll pick a reasonable mid target and make the end target *more negative* to reduce entropy target.
@@ -83,10 +84,10 @@ def multiphase_lr_schedule(
             smooth_t = t**2# 1 - np.exp(-5 * t)
             lr = start_lr + smooth_t * (mid_lr - start_lr)
         elif step <= warm_start_steps + exploration_steps:
-            #exploration_step = step - warm_start_steps 
-            #t = min(1.0, exploration_step / max(1, exploration_steps))
-            #smooth_t = 1 - np.exp(-5 * t)
-            lr = mid_lr#start_lr + smooth_t * (mid_lr - start_lr)
+            exploration_step = step - warm_start_steps 
+            t = min(1.0, exploration_step / max(1, exploration_steps))
+            smooth_t = t**2#1 - np.exp(-5 * t)
+            lr = mid_lr + smooth_t * (end_lr - mid_lr)
         else:
             # Smooth decay from mid_lr → end_lr
             decay_step = step - (warm_start_steps + exploration_steps)
@@ -309,6 +310,7 @@ class MultiPhaseExplorationCallback(BaseCallback):
             print(f"[ExplorationSchedule] step={step} | target_entropy={target_entropy:.3f} | ent_coef={ent_val}")
 
         if step % 1000 == 0:
+            print("Critic LR:", [g['lr'] for g in model.critic.optimizer.param_groups])
             actor = getattr(self.model.policy, "actor", None)
             if actor is not None and hasattr(actor, "log_std"):
                 log_std_vals = actor.log_std.detach().cpu().numpy()
@@ -714,7 +716,10 @@ if __name__ == "__main__":
     model.actor.optimizer = torch.optim.Adam(model.policy.actor.parameters(), lr=START_ACTOR_LR)
     model.policy.actor_optimizer = model.actor.optimizer
 
-    initial_ent_coef = 1
+    model.critic.optimizer = torch.optim.Adam(model.critic.parameters(), lr=CRITIC_LR)
+
+
+    initial_ent_coef = 0.1
     if model.ent_coef == 'auto':
         with torch.no_grad():
             model.log_ent_coef.data.fill_(np.log(initial_ent_coef))

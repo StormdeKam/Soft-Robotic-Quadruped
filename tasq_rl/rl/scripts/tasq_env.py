@@ -198,10 +198,10 @@ class TASQEnv(gym.Env):
         reward_terms = {}
 
         reward_terms["alive"] = weights["alive"] * 1.0
-        """
+        #"""
         # Forward x-motion over last 2 steps
         if len(self.x_history) == 2:
-            reward_terms["forward"] = weights["forward"] * (self.x_history[-1] - self.x_history[0])
+            reward_terms["forward"] = weights["forward"] * np.clip((self.x_history[-1] - self.x_history[0]), -0.01, 0.01)
         else:
             reward_terms["forward"] = 0.0
         """
@@ -210,9 +210,9 @@ class TASQEnv(gym.Env):
             reward_terms["forward"] = 0.2
         else:
             reward_terms["forward"] = 0.0
+        """
         # Orientation penalty
-        reward_terms["orientation_penalty"] = -weights["orientation_penalty"] * (np.abs(roll) + np.abs(pitch))
-
+        reward_terms["orientation_penalty"] = -weights["orientation_penalty"] * np.clip((np.abs(roll) + np.abs(pitch)), 0, 0.2)
         # Height penalty
         reward_terms["height_penalty"] = -weights["height_penalty"] * np.abs(current_height - self.target_height)
 
