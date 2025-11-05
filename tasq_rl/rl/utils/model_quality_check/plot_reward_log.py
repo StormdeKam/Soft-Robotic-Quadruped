@@ -56,4 +56,4 @@ def plot_reward_log(csv_file="reward_log.csv", rolling=10):
         plt.show()
 
 if __name__ == "__main__":
-    plot_reward_log("rl/models/tasq_sac/low_freqv6/v2/trial8_03_11_25/reward_log.csv", rolling=200)
+    plot_reward_log("rl/models/tasq_sac/low_freqv6/sac3/trial4_05_11_25/reward_log.csv", rolling=200)

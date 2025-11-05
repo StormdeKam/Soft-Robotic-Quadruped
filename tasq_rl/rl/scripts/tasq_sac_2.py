@@ -1,5 +1,6 @@
 # rl/scripts/tasq_sac_seeded.py
 import os
+import types
 import torch
 import torch.nn as nn
 import numpy as np
@@ -18,7 +19,7 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 # ---------------- Paths / config ----------------
-SAVE_PATH = "rl/models/tasq_sac/low_freqv6/v2/trial11_04_11_25"
+SAVE_PATH = "rl/models/tasq_sac/low_freqv6/sac2/trial1_04_11_25"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 # Where you saved the reward-filled replay buffer (from the script I provided)
@@ -32,11 +33,11 @@ TOTAL_SCHEDULE_STEPS = WARM_START_STEPS + EXPLORATION_STEPS + DECAY_STEPS
 TOTAL_TIMESTEPS = TOTAL_SCHEDULE_STEPS  # train for exactly the schedule length (tweak as desired)
 
 # Actor LR schedule endpoints (warm -> mid -> decay-end)
-START_ACTOR_LR = 0
+START_ACTOR_LR = 2e-3
 MID_ACTOR_LR = 1e-4
 END_ACTOR_LR = 1e-6
 
-CRITIC_LR = 1e-3
+CRITIC_LR = 2e-3
 
 
 # Target entropy schedule (will be adjusted during decay to favor exploitation)
@@ -708,15 +709,33 @@ if __name__ == "__main__":
     else:
         print(f"[BC] Skipping: file not found at {bc_weights_path}")
 
-    #model.policy.make_optimizers()
-
 
     # Recreate actor optimizer to include log_std
     model.actor = model.policy.actor  # ensure SAC uses your BC actor reference
     model.actor.optimizer = torch.optim.Adam(model.policy.actor.parameters(), lr=START_ACTOR_LR)
     model.policy.actor_optimizer = model.actor.optimizer
 
-    model.critic.optimizer = torch.optim.Adam(model.critic.parameters(), lr=CRITIC_LR)
+    # Ensure critic uses a fixed learning rate while actor follows lr_schedule
+    try:
+        # Set critic optimizer LR to fixed value immediately
+        for group in model.policy.critic.optimizer.param_groups:
+            group['lr'] = CRITIC_LR
+
+        # Monkey-patch policy _update_learning_rate to only update actor (and ent_coef) via schedule
+        def _custom_update_learning_rate(self):
+            current_lr = self.lr_schedule(self._current_progress_remaining)
+            # Actor follows schedule
+            self.set_learning_rate(self.actor.optimizer, current_lr)
+            # Keep critic fixed
+            for group in self.critic.optimizer.param_groups:
+                group['lr'] = CRITIC_LR
+            # Keep ent coef consistent with actor schedule if present
+            if hasattr(self, 'log_ent_coef_optimizer') and self.log_ent_coef_optimizer is not None:
+                self.set_learning_rate(self.log_ent_coef_optimizer, current_lr)
+
+        model.policy._update_learning_rate = types.MethodType(_custom_update_learning_rate, model.policy)
+    except Exception as e:
+        print(f"[LR Setup] Warning: could not set separate critic LR: {e}")
 
 
     initial_ent_coef = 0.1

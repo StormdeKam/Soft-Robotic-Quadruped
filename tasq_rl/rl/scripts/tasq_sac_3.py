@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from typing import Callable, List, Tuple
+import torch.nn.functional as F
 
 from stable_baselines3 import SAC
 from stable_baselines3.sac.policies import SACPolicy
@@ -12,14 +13,14 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecMoni
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CallbackList, CheckpointCallback, BaseCallback
 
-from rl.models.architecture.actor import BCActor
+from rl.models.architecture.actor_no_tanh import BCActor
 from rl.utils.callbacks.reward_logger_callback import RewardLoggerCallback
 from rl.utils.callbacks.training_progress_callback import TrainingProgressCallback
 from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 # ---------------- Paths / config ----------------
-SAVE_PATH = "rl/models/tasq_sac/low_freqv6/sac3/trial1_04_11_25"
+SAVE_PATH = "rl/models/tasq_sac/low_freqv6/sac3/trial5_05_11_25"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 # Training / schedule sizes (total = 200_000)
@@ -33,9 +34,7 @@ START_ACTOR_LR = 2e-3
 MID_ACTOR_LR = 1e-5
 END_ACTOR_LR = 1e-6
 
-CRITIC_LR = 1e-3
-
-ENTROPY_TARGET_MID_SCALE = -1.0
+CRITIC_LR = 2e-3
 
 # Other SAC hyperparams
 BUFFER_SIZE = 10_000
@@ -109,6 +108,8 @@ class ActorCheckpointCallback(CheckpointCallback):
             with open(self.metrics_file, "a") as f:
                 f.write(f"Steps {steps}: {results}\n")
         return True
+    
+
 
 # ---------------- Multi-phase exploration callback (modified) ----------------
 class MultiPhaseExplorationCallback(BaseCallback):
@@ -145,6 +146,25 @@ class MultiPhaseExplorationCallback(BaseCallback):
         self.start_actor_lr = start_actor_lr
         self.mid_actor_lr = mid_actor_lr
         self.end_actor_lr = end_actor_lr
+
+    def _schedule_log_std(self, step):
+        """Applies fixed -> decaying log_std schedule."""
+        actor = getattr(self.model.policy, "actor", None)
+        if actor is None or not hasattr(actor, "log_std"):
+            return
+
+        with torch.no_grad():
+            if step <= self.warm_start_steps:
+                target = -0.5
+            elif step <= self.total_steps:
+                # Linear decay from -0.5 → -3.0
+                t = (step - self.warm_start_steps) / max(1, self.fixed_steps)
+                target = -0.5 + t * (-3.0 + 0.5)
+            else:
+                target = -3.0
+
+            # Update the entire log_std tensor toward the target
+            actor.log_std.data.fill_(target)
 
     def _set_requires_grad(self, model, requires_grad: bool):
         """Freeze/unfreeze actor parameters only."""
@@ -184,11 +204,13 @@ class MultiPhaseExplorationCallback(BaseCallback):
         self._set_requires_grad(self.model, requires_grad=False)
 
         # ✅ Keep log_std trainable
+        """
         actor = getattr(self.model.policy, "actor", None)
         if actor is not None and hasattr(actor, "log_std"):
             actor.log_std.requires_grad_(True)
             if self.verbose:
                 print("[ExplorationSchedule] log_std kept trainable during warmstart.")
+        """
         # Keep entropy coefficient trainable
         if hasattr(self.model, "log_ent_coef"):
             self.model.log_ent_coef.requires_grad_(True)
@@ -198,15 +220,17 @@ class MultiPhaseExplorationCallback(BaseCallback):
     def _on_step(self) -> bool:
         step = self.num_timesteps
 
+        # Apply the fixed/decaying schedule
+        self._schedule_log_std(step)
+
         if step <= self.warm_start_steps:
             t = step / max(1, self.warm_start_steps)
-
         else:
             if not getattr(self, "_unfrozen_actor", False) and step >= self.warm_start_steps:
                 self._set_requires_grad(self.model, requires_grad=True)
                 actor = getattr(self.model.policy, "actor", None)
                 print(f"[ExplorationSchedule] 🔓 Warmstart complete — actor and ent_coef unfrozen.")
-                self._unfrozen_actor = True                
+                self._unfrozen_actor = True      
 
         # Logging
         if self.verbose and step % 1000 == 0:
@@ -260,6 +284,12 @@ class SACActorWithBC(nn.Module):
         self.log_std = nn.Parameter(torch.ones(act_dim, device=device) * START_LOG_STD)
         self._eps = 1e-6
 
+    def action_log_prob(self, obs: torch.Tensor):
+        """
+        SB3 SAC calls this during training to compute action and log-prob.
+        """
+        return self.get_action_and_log_prob(obs)
+    
     def load_from_bc(self, bc_weights_path):
         state_dict = torch.load(bc_weights_path, map_location=self.device)
         new_state_dict = {}
@@ -294,41 +324,52 @@ class SACActorWithBC(nn.Module):
             return mu
         normal = torch.distributions.Normal(mu, std)
         z = normal.rsample()
-        action = torch.clamp(z, -1.0, 1.0)
+        action = torch.tanh(z)
         return action
     
-    def get_action_and_log_prob(self, obs: torch.Tensor):
-        """SB3-compatible helper used during training."""
+    def get_action_and_log_prob(self, obs):
         mu, std = self._dist_params(obs)
         normal = torch.distributions.Normal(mu, std)
         z = normal.rsample()
+        action = torch.tanh(z)
+        
+        # log_prob with tanh correction
         log_prob = normal.log_prob(z).sum(dim=-1, keepdim=True)
-        action = torch.clamp(z, -1.0, 1.0)
+        log_prob -= torch.sum(torch.log(1 - action.pow(2) + 1e-6), dim=-1, keepdim=True)
+        
         return action, log_prob
 
 
 # ---------------- Policy wrapper (unchanged) ----------------
 class BCInitializedSACPolicy(SACPolicy):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, bc_weights_path: str = None, bc_device="cpu", **kwargs):
+        """
+        bc_weights_path: path to pretrained BC actor weights
+        bc_device: device to load BC actor
+        """
+        # Do not assign self.device here — use bc_device for BC wrapper
+        self._bc_device = bc_device
+        self._bc_weights_path = bc_weights_path
+        super().__init__(*args, **kwargs)  # SB3 will call _build() internally
 
-    def load_bc_weights(self, bc_weights_path, device="cpu"):
-        # build policy (so class attributes exist)
-        self._build(lr_schedule=lambda _: 3e-4)
-        bc_wrapper = SACActorWithBC(
-            obs_dim=self.observation_space.shape[0],
-            act_dim=self.action_space.shape[0],
-            device=device
-        )
-        bc_wrapper.load_from_bc(bc_weights_path)
-        # replace actor and create its optimizer so training works
-        self.actor = bc_wrapper
-        try:
-            current_lr = self.lr_schedule(1.0) if callable(self.lr_schedule) else float(self.lr_schedule)
-        except Exception:
-            current_lr = 3e-4
-        self.actor.optimizer = self.optimizer_class(self.actor.parameters(), lr=current_lr, **self.optimizer_kwargs)
-        print("[BC] ✅ BC-initialized SAC actor loaded and ready.")
+    def _build(self, lr_schedule) -> None:
+        """Inject BC actor before parent _build finishes."""
+        super()._build(lr_schedule)
+
+        if self._bc_weights_path is not None:
+            # Replace actor with BC wrapper
+            obs_dim = self.observation_space.shape[0]
+            act_dim = self.action_space.shape[0]
+            bc_actor = SACActorWithBC(obs_dim=obs_dim, act_dim=act_dim, device=self._bc_device)
+            bc_actor.load_from_bc(self._bc_weights_path)
+
+            self.actor = bc_actor
+            # Re-create actor optimizer so SAC updates work
+            current_lr = lr_schedule(1.0) if callable(lr_schedule) else float(lr_schedule)
+            self.actor.optimizer = self.optimizer_class(
+                self.actor.parameters(), lr=current_lr, **self.optimizer_kwargs
+            )
+            print(f"[BC] ✅ BC actor injected and optimizer created. Device={self._bc_device}")
 
 # ---------------- VecEnv ----------------
 def make_env_fn(rank: int, seed: int = 0, frame_stack: int = 4, gui: bool = False) -> Callable:
@@ -368,7 +409,7 @@ if __name__ == "__main__":
         end_lr=END_ACTOR_LR
     )
 
-
+    bc_weights_path = "rl/models/tasq_bc/low_freq_v6/tasq_bc_ep200.pt"
 
     model = SAC(
         policy=BCInitializedSACPolicy,
@@ -385,36 +426,48 @@ if __name__ == "__main__":
         verbose=1,
         device=device,
         seed=seed,
+        policy_kwargs={
+        "bc_weights_path": bc_weights_path,
+        "bc_device": device
+    }
     )
 
-    # Ensure critic uses a fixed learning rate while actor follows lr_schedule
-    try:
-        # Set critic optimizer LR to fixed value immediately
-        for group in model.policy.critic.optimizer.param_groups:
-            group['lr'] = CRITIC_LR
+    # --- Fix: decouple critic LR from actor schedule ---
+    def fixed_set_learning_rate(optimizer, lr):
+        """
+        Replacement for SB3's set_learning_rate.
+        Keeps critic LR fixed at CRITIC_LR.
+        """
+        # Detect which optimizer we’re touching
+        if hasattr(model.policy, "critic") and optimizer is model.policy.critic.optimizer:
+            # keep constant
+            for group in optimizer.param_groups:
+                group["lr"] = CRITIC_LR
+        else:
+            # actor or ent_coef optimizer -> apply schedule
+            for group in optimizer.param_groups:
+                group["lr"] = lr
 
-        # Monkey-patch policy _update_learning_rate to only update actor (and ent_coef) via schedule
-        def _custom_update_learning_rate(self):
-            current_lr = self.lr_schedule(self._current_progress_remaining)
-            # Actor follows schedule
-            self.set_learning_rate(self.actor.optimizer, current_lr)
-            # Keep critic fixed
-            for group in self.critic.optimizer.param_groups:
-                group['lr'] = CRITIC_LR
-            # Keep ent coef consistent with actor schedule if present
-            if hasattr(self, 'log_ent_coef_optimizer') and self.log_ent_coef_optimizer is not None:
-                self.set_learning_rate(self.log_ent_coef_optimizer, current_lr)
+    def _custom_update_learning_rate(self):
+        """
+        Override SB3's method so only actor + entropy optimizers follow schedule.
+        """
+        current_lr = self.lr_schedule(self._current_progress_remaining)
+        # actor follows schedule
+        fixed_set_learning_rate(self.actor.optimizer, current_lr)
+        # critic stays fixed
+        fixed_set_learning_rate(self.critic.optimizer, CRITIC_LR)
+        # entropy coef (if present) follows actor
+        if hasattr(self, "log_ent_coef_optimizer") and self.log_ent_coef_optimizer is not None:
+            fixed_set_learning_rate(self.log_ent_coef_optimizer, current_lr)
 
-        model.policy._update_learning_rate = types.MethodType(_custom_update_learning_rate, model.policy)
-    except Exception as e:
-        print(f"[LR Setup] Warning: could not set separate critic LR: {e}")
+    # Inject the patched methods
+    model.policy._update_learning_rate = types.MethodType(_custom_update_learning_rate, model.policy)
+    model.policy.set_learning_rate = fixed_set_learning_rate
+
 
     # Load BC actor weights into policy (keeps log_std trainable)
-    bc_weights_path = "rl/models/tasq_bc/low_freq_v6/tasq_bc_ep200.pt"
-    if os.path.isfile(bc_weights_path):
-        model.policy.load_bc_weights(bc_weights_path, device=model.device)
-    else:
-        print(f"[BC] Skipping: file not found at {bc_weights_path}")
+    
 
     initial_ent_coef = 0.1
     if model.ent_coef == 'auto':

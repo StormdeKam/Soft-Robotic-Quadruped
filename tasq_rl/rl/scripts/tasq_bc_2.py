@@ -10,7 +10,7 @@ from rl.utils.framestacking.dataset_stacker import StackedDataset
 from rl.models.architecture.actor import BCActor
 
 # --- Configuration ---
-MODEL_DIR = "rl/models/tasq_bc/low_freq_v6"
+MODEL_DIR = "rl/models/tasq_bc/low_freq_v7"
 os.makedirs(MODEL_DIR, exist_ok=True)
 MODEL_NAME = "tasq_bc"
 LOG_FILE = os.path.join(MODEL_DIR, f"{MODEL_NAME}_log.txt")
@@ -32,16 +32,14 @@ OBSERVED_INDICES = np.r_[
     13:25,  # pressures
     25:29,  # suctions
     29:33,  # grfs
-    33:35,  # phase signal
-    35:39   # goal_pos and orientation
-
+    33:35  # phase signal
 ]
 
 dataset = StackedDataset(
     "rl/datasets/low_freq_v6/demo_states_merged.npy",
     "rl/datasets/low_freq_v6/demo_actions_merged.npy",
     "rl/datasets/low_freq_v6/demo_episode_lengths_merged.npy",
-    N=4,
+    N=1,
     observed_indices=OBSERVED_INDICES
 )
 
