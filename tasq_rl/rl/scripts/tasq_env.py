@@ -15,7 +15,7 @@ OBSERVED_INDICES = np.r_[
     25:29,  # suctions
     29:33,  # grfs
     33:35,  # phase
-    35:39   # goal_pos and orientation
+    35:39   # goal pos and orientation
 ]
 
 def rotate_world_to_local(base_pos, base_quat, point):

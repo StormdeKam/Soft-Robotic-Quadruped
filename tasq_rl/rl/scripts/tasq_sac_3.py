@@ -20,24 +20,24 @@ from rl.scripts.tasq_env import TASQEnv
 from rl.scripts.tasq_test import test_model, test_model_video_cv2
 
 # ---------------- Paths / config ----------------
-SAVE_PATH = "rl/models/tasq_sac/low_freqv6/sac3/trial5_05_11_25"
+SAVE_PATH = "rl/models/tasq_sac/low_freqv6/sac3/trial7_05_11_25"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 # Training / schedule sizes (total = 200_000)
-WARM_START_STEPS = 20_000
+WARM_START_STEPS = 50_000
 EXPLORATION_STEPS = 100_000
 TOTAL_SCHEDULE_STEPS = WARM_START_STEPS + EXPLORATION_STEPS
 TOTAL_TIMESTEPS = TOTAL_SCHEDULE_STEPS  # train for exactly the schedule length (tweak as desired)
 
 # Actor LR schedule endpoints (warm -> mid -> decay-end)
 START_ACTOR_LR = 2e-3
-MID_ACTOR_LR = 1e-5
-END_ACTOR_LR = 1e-6
+MID_ACTOR_LR = 1e-6
+END_ACTOR_LR = 1e-8
 
 CRITIC_LR = 2e-3
 
 # Other SAC hyperparams
-BUFFER_SIZE = 10_000
+BUFFER_SIZE = 50_000
 BATCH_SIZE = 256
 TAU = 0.005
 GAMMA = 0.97
@@ -155,13 +155,13 @@ class MultiPhaseExplorationCallback(BaseCallback):
 
         with torch.no_grad():
             if step <= self.warm_start_steps:
-                target = -0.5
+                target = -1.5
             elif step <= self.total_steps:
                 # Linear decay from -0.5 → -3.0
                 t = (step - self.warm_start_steps) / max(1, self.fixed_steps)
-                target = -0.5 + t * (-3.0 + 0.5)
+                target = -1.5 + t * (-2.0)
             else:
-                target = -3.0
+                target = -3.5
 
             # Update the entire log_std tensor toward the target
             actor.log_std.data.fill_(target)
@@ -204,13 +204,13 @@ class MultiPhaseExplorationCallback(BaseCallback):
         self._set_requires_grad(self.model, requires_grad=False)
 
         # ✅ Keep log_std trainable
-        """
+        #"""
         actor = getattr(self.model.policy, "actor", None)
         if actor is not None and hasattr(actor, "log_std"):
             actor.log_std.requires_grad_(True)
             if self.verbose:
                 print("[ExplorationSchedule] log_std kept trainable during warmstart.")
-        """
+        #"""
         # Keep entropy coefficient trainable
         if hasattr(self.model, "log_ent_coef"):
             self.model.log_ent_coef.requires_grad_(True)
@@ -221,7 +221,7 @@ class MultiPhaseExplorationCallback(BaseCallback):
         step = self.num_timesteps
 
         # Apply the fixed/decaying schedule
-        self._schedule_log_std(step)
+        #self._schedule_log_std(step)
 
         if step <= self.warm_start_steps:
             t = step / max(1, self.warm_start_steps)
@@ -416,6 +416,7 @@ if __name__ == "__main__":
         env=env,
         learning_rate=lr_schedule, 
         buffer_size=BUFFER_SIZE,
+        learning_starts=BUFFER_SIZE/2,
         batch_size=BATCH_SIZE,
         tau=TAU,
         gamma=GAMMA,
@@ -469,7 +470,7 @@ if __name__ == "__main__":
     # Load BC actor weights into policy (keeps log_std trainable)
     
 
-    initial_ent_coef = 0.1
+    initial_ent_coef = 1
     if model.ent_coef == 'auto':
         with torch.no_grad():
             model.log_ent_coef.data.fill_(np.log(initial_ent_coef))
